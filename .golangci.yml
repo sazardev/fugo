@@ -161,6 +161,8 @@ issues:
   exclude-dirs:
     - .git
     - .github
+    - .agents
+    - .claude
     - vendor
   max-issues-per-linter: 0
   max-same-issues: 0
