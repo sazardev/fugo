@@ -1,0 +1,17 @@
+# Normalize line endings
+* text=auto eol=lf
+
+# Go
+*.go text diff=golang
+*.mod text
+*.sum text
+
+# Markdown
+*.md text diff=markdown
+
+# YAML
+*.yml text
+*.yaml text
+
+# Shell
+*.sh text eol=lf

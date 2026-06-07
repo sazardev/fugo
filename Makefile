@@ -5,7 +5,7 @@ GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_DATE := $(shell date -u '+%Y-%m-%d_%H:%M:%S')
 LDFLAGS := -ldflags="-X main.version=$(VERSION) -X main.commit=$(GIT_COMMIT) -X main.date=$(BUILD_DATE)"
 
-.PHONY: help test build clean lint version changelog release push
+.PHONY: help test build clean lint version changelog release install push
 
 help:
 	@grep -E '^[a-zA-Z/_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -60,6 +60,9 @@ release: ## Create release: make release TYPE=patch|minor|major MSG="description
 	echo ""; \
 	echo "=== Release v$$newver created ==="; \
 	echo "Run: git push --follow-tags origin main"
+
+install: ## Install lefthook hooks
+	go tool lefthook install
 
 push: ## Push commits and tags
 	@echo "Pushing commits and tags..."
