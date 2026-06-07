@@ -1,0 +1,11 @@
+# Default owner for all files
+* @sazardev
+
+# Go source code
+*.go @sazardev
+
+# CI/CD configuration
+/.github/ @sazardev
+
+# Documentation
+*.md @sazardev
