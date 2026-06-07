@@ -5,7 +5,7 @@ GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_DATE := $(shell date -u '+%Y-%m-%d_%H:%M:%S')
 LDFLAGS := -ldflags="-X main.version=$(VERSION) -X main.commit=$(GIT_COMMIT) -X main.date=$(BUILD_DATE)"
 
-.PHONY: help test build clean lint version changelog release install push
+.PHONY: help test build clean lint version changelog release install push pr pr-merge pr-list pr-update
 
 help:
 	@grep -E '^[a-zA-Z/_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -67,3 +67,68 @@ install: ## Install lefthook hooks
 push: ## Push commits and tags
 	@echo "Pushing commits and tags..."
 	git push --follow-tags origin main
+
+pr: ## Create PR: make pr MSG="type: description"
+	@if [ -z "$(MSG)" ]; then \
+		echo "ERROR: MSG is required. Usage: make pr MSG='fix: login bug'"; \
+		exit 1; \
+	fi
+	@branch=$$(echo "$(MSG)" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-zA-Z0-9/_-]/-/g; s/:/\//g; s/--*/-/g; s/^-//; s/-$$//'); \
+	current=$$(git rev-parse --abbrev-ref HEAD); \
+	if [ "$$current" != "main" ]; then \
+		echo "ERROR: You must be on 'main' to create a PR branch. Currently on '$$current'."; \
+		exit 1; \
+	fi; \
+	echo "=== Creating branch: $$branch ==="; \
+	git checkout -b "$$branch" && \
+	git add . && \
+	if git diff --cached --quiet; then \
+		echo "No changes staged, creating empty commit."; \
+		git commit --allow-empty -m "$(MSG)"; \
+	else \
+		git commit -m "$(MSG)"; \
+	fi && \
+	echo "=== Pushing branch ===" && \
+	git push origin "$$branch" && \
+	echo "=== Creating PR ===" && \
+	printf '## Description\n\n%s\n\n## Checklist\n\n- [ ] `gofumpt -w .` run\n- [ ] `go vet ./...` passes\n- [ ] `golangci-lint run` passes\n- [ ] `go test ./... -race -shuffle=on` passes\n- [ ] `go mod tidy` run\n- [ ] CHANGELOG updated\n' "$(MSG)" > /tmp/pr-body-$$$$.md && \
+	gh pr create \
+		--base main \
+		--head "$$branch" \
+		--title "$(MSG)" \
+		--body-file /tmp/pr-body-$$$$.md && \
+	rm -f /tmp/pr-body-$$$$.md && \
+	echo "=== Done: https://github.com/sazardev/fugo/pull/$$(gh pr list --head $$branch --json number -q '.[0].number') ==="
+
+pr-merge: ## Merge PR: make pr-merge PR=<number>
+	@if [ -z "$(PR)" ]; then \
+		echo "ERROR: PR is required. Usage: make pr-merge PR=5"; \
+		exit 1; \
+	fi
+	@echo "=== Merging PR #$(PR) ==="; \
+	head_branch=$$(gh pr view $(PR) --json headRefName -q '.headRefName'); \
+	echo "Branch: $$head_branch"; \
+	gh pr review $(PR) --approve && \
+	gh pr merge $(PR) --squash --admin --subject "$$(gh pr view $(PR) --json title -q '.title')" && \
+	echo "=== Cleaning up branch ===" && \
+	git checkout main && \
+	git pull origin main && \
+	git branch -D "$$head_branch" 2>/dev/null || true && \
+	git push origin --delete "$$head_branch" 2>/dev/null || true && \
+	echo "=== PR #$(PR) merged and branch deleted ==="
+
+pr-list: ## List open PRs
+	@gh pr list --json number,title,headRefName,author,createdAt,mergeStateStatus \
+		-q '.[] | "PR #\(.number): \(.title)\n  author: \(.author.login)  branch: \(.headRefName)  status: \(.mergeStateStatus)  created: \(.createdAt)\n"' \
+		|| gh pr list
+
+pr-update: ## Update current branch with main
+	@current=$$(git rev-parse --abbrev-ref HEAD); \
+	if [ "$$current" = "main" ]; then \
+		echo "Already on main, nothing to update."; \
+		exit 0; \
+	fi; \
+	echo "=== Updating $$current with main ==="; \
+	git fetch origin main && \
+	git rebase origin/main && \
+	echo "=== Branch updated ==="
