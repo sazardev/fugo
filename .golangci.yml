@@ -1,0 +1,172 @@
+linters:
+  enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - canonicalheader
+    - containedctx
+    - contextcheck
+    - copyloopvar
+    - decorder
+    - dupl
+    - dupword
+    - durationcheck
+    - errcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - exhaustive
+    - fatcontext
+    - forbidigo
+    - gocheckcompilerdirectives
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - gofumpt
+    - goheader
+    - goimports
+    - gomoddirectives
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - gosmopolitan
+    - govet
+    - grouper
+    - iface
+    - importas
+    - inamedparam
+    - ineffassign
+    - interfacebloat
+    - intrange
+    - ireturn
+    - lll
+    - loggercheck
+    - maintidx
+    - mirror
+    - misspell
+    - mnd
+    - musttag
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnil
+    - nlreturn
+    - noctx
+    - nolintlint
+    - nonamedreturns
+    - nosprintfhostport
+    - perfsprint
+    - prealloc
+    - predeclared
+    - promlinter
+    - protogetter
+    - reassign
+    - revive
+    - rowserrcheck
+    - sloglint
+    - spancheck
+    - sqlclosecheck
+    - staticcheck
+    - stylecheck
+    - tagalign
+    - tagliatelle
+    - tenv
+    - testableexamples
+    - testifylint
+    - testpackage
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - usestdlibvars
+    - wastedassign
+    - whitespace
+    - wsl
+    - zerologlint
+  disable:
+    - exhaustruct
+    - wrapcheck
+
+linters-settings:
+  gofumpt:
+    extra-rules: true
+  govet:
+    enable:
+      - fieldalignment
+      - nilness
+      - shadow
+      - unusedwrite
+      - appends
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+      - opinionated
+  revive:
+    rules:
+      - name: exported
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: deep-exit
+      - name: defer
+      - name: dot-imports
+      - name: errorf
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: unconditional-recursion
+      - name: superfluous-else
+      - name: unexported-naming
+      - name: useless-break
+      - name: waitgroup-by-value
+      - name: atomic
+      - name: empty-block
+      - name: import-alias-naming
+      - name: string-of-int
+      - name: confusing-results
+      - name: confusing-naming
+      - name: get-return
+      - name: modifies-parameter
+      - name: modifies-value-receiver
+      - name: range-val-in-closure
+      - name: range-val-address
+      - name: nested-structs
+  staticcheck:
+    checks:
+      - all
+      - -ST1023
+  stylecheck:
+    checks:
+      - all
+      - -ST1023
+
+issues:
+  exclude-dirs:
+    - .git
+    - .github
+    - vendor
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+output:
+  formats:
+    - format: colored-line-number
+run:
+  timeout: 5m
