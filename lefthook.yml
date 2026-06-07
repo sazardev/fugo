@@ -33,6 +33,21 @@ pre-commit:
 pre-push:
   parallel: false
   jobs:
+    - name: version-changelog-check
+      run: |
+        version=$(cat VERSION 2>/dev/null)
+        if [ -z "$version" ]; then
+          echo "ERROR: VERSION file not found."
+          exit 1
+        fi
+        if ! grep -q "^## \\[$version\\]" CHANGELOG.md 2>/dev/null; then
+          echo "ERROR: Version v$version has no entry in CHANGELOG.md."
+          echo "Run: make release TYPE=patch|minor|major MSG=\"description of changes\""
+          exit 1
+        fi
+        echo "OK: v$version found in CHANGELOG.md"
+      fail_text: "VERSION and CHANGELOG.md are out of sync. Use 'make release'."
+
     - name: golangci-lint-full
       run: golangci-lint run ./... --timeout 10m
       fail_text: "golangci-lint failed. Fix all issues before pushing."
