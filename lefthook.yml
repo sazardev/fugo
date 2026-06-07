@@ -1,0 +1,67 @@
+assert_lefthook_installed: true
+min_version: 2.1.0
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: golangci-lint
+      glob: "*.go"
+      run: golangci-lint run --fast --fix {staged_files}
+      stage_fixed: true
+      fail_text: "golangci-lint failed. Run 'golangci-lint run --fix' to fix issues."
+
+    - name: go-vet
+      glob: "*.go"
+      run: go vet ./... 2>&1 | head -50
+      fail_text: "go vet found problems."
+
+    - name: gofumpt
+      glob: "*.go"
+      run: test -z "$(gofumpt -l {staged_files})"
+      fail_text: "Files not formatted with gofumpt. Run 'gofumpt -w .'"
+
+    - name: go-mod-tidy
+      glob: "go.mod"
+      run: go mod tidy && git diff --exit-code go.mod go.sum
+      fail_text: "go.mod/go.sum not tidy. Run 'go mod tidy'."
+
+    - name: go-generate
+      glob: "*.go"
+      run: go generate ./...
+      skip: true
+
+pre-push:
+  parallel: false
+  jobs:
+    - name: golangci-lint-full
+      run: golangci-lint run ./... --timeout 10m
+      fail_text: "golangci-lint failed. Fix all issues before pushing."
+
+    - name: go-vet
+      run: go vet ./...
+      fail_text: "go vet failed."
+
+    - name: staticcheck
+      run: staticcheck ./...
+      fail_text: "staticcheck failed."
+
+    - name: go-build
+      run: go build ./...
+      fail_text: "Build failed."
+
+    - name: go-test
+      run: go test ./... -count=1 -race -shuffle=on
+      fail_text: "Tests failed."
+
+    - name: go-mod-tidy
+      run: go mod tidy && git diff --exit-code go.mod go.sum
+      fail_text: "go.mod/go.sum not tidy. Run 'go mod tidy'."
+
+    - name: nilaway-check
+      run: |
+        if command -v nilaway >/dev/null 2>&1; then
+          nilaway ./...
+        else
+          echo "nilaway not installed, skipping (install with: go install go.uber.org/nilaway/cmd/nilaway@latest)"
+        fi
+      skip: true
