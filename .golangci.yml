@@ -75,9 +75,9 @@ linters:
     - stylecheck
     - tagalign
     - tagliatelle
-    - tenv
     - testableexamples
     - testifylint
+    - usetesting
     - testpackage
     - thelper
     - tparallel
