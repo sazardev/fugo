@@ -40,3 +40,6 @@ transport/proto/fugo/v1/*.pb.go
 testapp/
 myapp/
 testproj/
+
+# Scratch / experiments (not part of the framework)
+leetcode/
