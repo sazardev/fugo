@@ -50,11 +50,14 @@ func main() {
 // scaffoldMain returns the main.go source for the chosen starter template,
 // with the project name interpolated into the window title.
 func scaffoldMain(template, name string) string {
-	if template == "app" {
+	switch template {
+	case "app":
 		return fmt.Sprintf(appTemplate, name)
+	case "showcase":
+		return fmt.Sprintf(showcaseTemplate, name)
+	default:
+		return fmt.Sprintf(counterTemplate, name)
 	}
-
-	return fmt.Sprintf(counterTemplate, name)
 }
 
 const counterTemplate = `package main
@@ -170,6 +173,165 @@ func page(t fg.Theme, title string, body ...fg.Widget) fg.Widget {
 }
 `
 
+const showcaseTemplate = `package main
+
+import (
+	"strconv"
+
+	"github.com/sazardev/fugo"
+	"github.com/sazardev/fugo/fg"
+)
+
+func main() {
+	fg.UseTheme(fg.DarkTheme())
+
+	fugo.RunStandalone(fugo.AppOptions{
+		Title:  "%s",
+		Width:  980,
+		Height: 760,
+	}, buildUI)
+}
+
+func buildUI(ctx *fugo.Context) fg.Widget {
+	return fg.Router(map[string]func() fg.Widget{
+		"/":      func() fg.Widget { return showcasePage(ctx) },
+		"/about": func() fg.Widget { return aboutPage(ctx) },
+	}, "/")
+}
+
+func showcasePage(ctx *fugo.Context) fg.Widget {
+	t := fg.CurrentTheme()
+
+	counter := 0
+	countText := fg.Text("0").FontSize(t.Typography.Heading).Weight(fg.WeightBold)
+	dec := fg.Button("−").BgColor(t.Colors.Error).OnClick(func(_ fg.Event) {
+		counter--
+		countText.SetText(strconv.Itoa(counter))
+		ctx.Update()
+	})
+	inc := fg.Button("+").BgColor(t.Colors.Success).OnClick(func(_ fg.Event) {
+		counter++
+		countText.SetText(strconv.Itoa(counter))
+		ctx.Update()
+	})
+
+	cbStatus := fg.Text("off").Color(t.Colors.Muted)
+	cb := fg.Checkbox("Enable feature").OnChange(func(e fg.Event) {
+		cbStatus.SetText(map[bool]string{true: "on", false: "off"}[string(e.Data) == "1"])
+		ctx.Update()
+	})
+	swStatus := fg.Text("off").Color(t.Colors.Muted)
+	sw := fg.Switch().OnChange(func(e fg.Event) {
+		swStatus.SetText(map[bool]string{true: "on", false: "off"}[string(e.Data) == "1"])
+		ctx.Update()
+	})
+	sliderText := fg.Text("50").Color(t.Colors.Muted)
+	sl := fg.Slider().SetMin(0).SetMax(100).SetValue(50)
+	sl.OnChange(func(e fg.Event) {
+		if v, err := strconv.ParseFloat(string(e.Data), 64); err == nil {
+			sl.SetValue(v)
+			sliderText.SetText(strconv.Itoa(int(v)))
+			ctx.Update()
+		}
+	})
+	echo := fg.Text("…").Color(t.Colors.Muted)
+	tf := fg.TextField("Type here").OnChange(func(e fg.Event) {
+		echo.SetText(string(e.Data))
+		ctx.Update()
+	})
+
+	pick := fg.Text("none").Color(t.Colors.Muted)
+	radioA := fg.Radio("a", "Option A").Group("a")
+	radioB := fg.Radio("b", "Option B").Group("a")
+	radioA.OnChange(func(_ fg.Event) { radioA.GroupValue = "a"; radioB.GroupValue = "a"; pick.SetText("A"); ctx.Update() })
+	radioB.OnChange(func(_ fg.Event) { radioA.GroupValue = "b"; radioB.GroupValue = "b"; pick.SetText("B"); ctx.Update() })
+	dd := fg.Dropdown([]string{"Red", "Green", "Blue"}).SetValue("Red")
+	dd.OnChange(func(e fg.Event) { dd.SetValue(string(e.Data)); pick.SetText(string(e.Data)); ctx.Update() })
+
+	animColors := []fg.Color{t.Colors.Primary, t.Colors.Secondary, t.Colors.Success, t.Colors.Error}
+	animIdx := 0
+	anim := fg.AnimatedContainer(fg.PaddingAll(fg.Text("Tap me"), 16)).BgColor(animColors[0]).DurationMs(300)
+	tap := fg.GestureDetector(anim).OnTap(func(_ fg.Event) {
+		animIdx = (animIdx + 1) %% len(animColors)
+		anim.BgColor(animColors[animIdx])
+		ctx.Update()
+	})
+
+	var tiles []fg.Widget
+	for _, c := range []fg.Color{t.Colors.Primary, t.Colors.Secondary, t.Colors.Success, t.Colors.Error, fg.Hex("#F59E0B"), fg.Hex("#EC4899")} {
+		tiles = append(tiles, fg.Container(fg.SizedBox(56, 56)).BgColor(c).BorderRadius(8))
+	}
+	grid := fg.SizedBox(0, 140).Child(fg.GridView(tiles...).CrossAxisCount(6).ChildAspectRatio(1))
+
+	var chips []fg.Widget
+	for _, s := range []string{"go", "flutter", "grpc", "protobuf", "impeller"} {
+		chips = append(chips, fg.Container(fg.PaddingAll(fg.Text(s), 6)).BgColor(t.Colors.Surface).BorderRadius(12))
+	}
+	wrap := fg.Wrap(chips...).Spacing(8).RunSpacing(8)
+
+	icons := fg.Row(
+		fg.Icon("home").Size(28), fg.SizedBox(16, 0),
+		fg.Icon("star").Size(28).Color(t.Colors.Success), fg.SizedBox(16, 0),
+		fg.Icon("favorite").Size(28).Color(t.Colors.Error), fg.SizedBox(16, 0),
+		fg.Icon("settings").Size(28),
+	)
+
+	body := fg.Column(
+		fg.Text("Fugo Showcase").FontSize(t.Typography.Heading*1.6).Weight(fg.WeightBold),
+		fg.Text("Go drives logic & state; Flutter renders. Dark theme, live.").Color(t.Colors.Muted),
+		fg.SizedBox(0, t.Spacing.LG),
+
+		card(t, "Buttons & counter", fg.Row(dec, fg.SizedBox(16, 0), countText, fg.SizedBox(16, 0), inc)),
+		card(t, "Inputs",
+			fg.Row(cb, fg.SizedBox(8, 0), cbStatus),
+			fg.SizedBox(0, t.Spacing.SM),
+			fg.Row(sw, fg.SizedBox(8, 0), swStatus),
+			fg.SizedBox(0, t.Spacing.SM),
+			sl, sliderText,
+			fg.SizedBox(0, t.Spacing.SM),
+			tf, echo,
+		),
+		card(t, "Selection", radioA, radioB, fg.SizedBox(0, t.Spacing.SM), dd,
+			fg.SizedBox(0, t.Spacing.SM), fg.Row(fg.Text("Picked: ").Color(t.Colors.Muted), pick)),
+		card(t, "Animation + gestures", tap),
+		card(t, "Gallery (grid + wrap)", grid, fg.SizedBox(0, t.Spacing.SM), wrap),
+		card(t, "Icons", icons),
+
+		fg.SizedBox(0, t.Spacing.MD),
+		fg.Button("About →").BgColor(t.Colors.Primary).OnClick(func(_ fg.Event) { ctx.NavigateTo("/about") }),
+		fg.SizedBox(0, t.Spacing.XL),
+	)
+
+	return fg.Container(fg.ScrollView(body)).BgColor(t.Colors.Background).Pad(fg.EdgeAll(t.Spacing.LG))
+}
+
+func aboutPage(ctx *fugo.Context) fg.Widget {
+	t := fg.CurrentTheme()
+
+	return fg.Container(
+		fg.Center(fg.Column(
+			fg.Text("About").FontSize(t.Typography.Heading).Weight(fg.WeightBold),
+			fg.SizedBox(0, t.Spacing.MD),
+			fg.Text("Built with Fugo — one Go binary, native Flutter rendering.").Color(t.Colors.Muted),
+			fg.SizedBox(0, t.Spacing.LG),
+			fg.Button("← Back").BgColor(t.Colors.Surface).OnClick(func(_ fg.Event) { ctx.GoBack() }),
+		)),
+	).BgColor(t.Colors.Background).Pad(fg.EdgeAll(t.Spacing.LG))
+}
+
+func card(t fg.Theme, title string, body ...fg.Widget) fg.Widget {
+	items := []fg.Widget{
+		fg.Text(title).Weight(fg.WeightBold).Color(t.Colors.OnSurface),
+		fg.Divider().Color(t.Colors.Border),
+		fg.SizedBox(0, t.Spacing.SM),
+	}
+	items = append(items, body...)
+
+	return fg.Container(fg.PaddingAll(fg.Column(items...), 16)).
+		BgColor(t.Colors.Surface).BorderRadius(12)
+}
+`
+
 func initCmd() *cli.Command {
 	var (
 		fugoSrc  string
@@ -191,7 +353,7 @@ func initCmd() *cli.Command {
 				Aliases:     []string{"t"},
 				Value:       "counter",
 				Destination: &template,
-				Usage:       "starter template: counter | app",
+				Usage:       "starter template: counter | app | showcase",
 			},
 		},
 		Action: func(ctx context.Context, c *cli.Command) error {
