@@ -5,7 +5,7 @@ GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_DATE := $(shell date -u '+%Y-%m-%d_%H:%M:%S')
 LDFLAGS := -ldflags="-X main.version=$(VERSION) -X main.commit=$(GIT_COMMIT) -X main.date=$(BUILD_DATE)"
 
-.PHONY: help test build clean lint version changelog release install push pr pr-merge pr-list pr-update
+.PHONY: help test build clean lint version changelog release install push pr pr-merge pr-list pr-update proto flutter-build spike run-spike
 
 help:
 	@grep -E '^[a-zA-Z/_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -131,3 +131,36 @@ pr-update: ## Update current branch with main
 	git fetch origin main && \
 	git rebase origin/main && \
 	echo "=== Branch updated ==="
+
+proto: ## Generate protobuf code (Go + Dart)
+	@echo "=== Generating Go protobuf code ==="
+	protoc --proto_path=. --go_out=. --go_opt=paths=source_relative \
+		--go-grpc_out=. --go-grpc_opt=paths=source_relative \
+		transport/proto/fugo/v1/fugo.proto
+	@echo "=== Copying proto to flutter_client ==="
+	@mkdir -p flutter_client/proto/fugo/v1
+	cp transport/proto/fugo/v1/fugo.proto flutter_client/proto/fugo/v1/
+	@echo "=== Generating Dart protobuf code ==="
+	@mkdir -p flutter_client/lib/generated
+	protoc --proto_path=flutter_client/proto \
+		--dart_out=grpc:flutter_client/lib/generated \
+		--plugin=protoc-gen-dart=$(HOME)/.pub-cache/bin/protoc-gen-dart \
+		fugo/v1/fugo.proto
+	@echo "=== Proto generation complete ==="
+
+flutter-build: ## Build Flutter client for Linux
+	@echo "=== Building Flutter client ==="
+	cd flutter_client && flutter build linux --debug
+	@echo "=== Flutter build complete ==="
+
+spike: ## Build spike binary
+	@mkdir -p bin
+	go build -o bin/fugo-spike ./cmd/fugo-spike/
+	@echo "=== Spike binary built: bin/fugo-spike ==="
+
+run-spike: spike ## Run spike (starts Go server + Flutter client)
+	@if [ ! -f flutter_client/build/linux/x64/debug/bundle/fugo_flutter_client ]; then \
+		echo "Flutter client not built. Run: make flutter-build"; \
+		exit 1; \
+	fi
+	./bin/fugo-spike

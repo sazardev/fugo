@@ -25,3 +25,13 @@ go.work.sum
 # Temp files
 tmp/
 *.tmp
+
+# Flutter
+flutter_client/build/
+flutter_client/.dart_tool/
+flutter_client/pubspec.lock
+flutter_client/lib/generated/
+flutter_client/proto/
+
+# Go generated
+transport/proto/fugo/v1/*.pb.go

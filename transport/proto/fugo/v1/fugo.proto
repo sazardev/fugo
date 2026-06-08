@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+package fugo.v1;
+
+option go_package = "github.com/sazardev/fugo/transport/proto/fugo/v1;fugov1";
+
+service FugoRender {
+  rpc RenderStream(stream ClientEvent) returns (stream RenderPayload);
+}
+
+message RenderPayload {
+  oneof payload {
+    WidgetTree full_tree = 1;
+    PatchList patches = 2;
+  }
+}
+
+message PatchList {
+  repeated Patch patches = 1;
+  uint64 seq_num = 2;
+}
+
+message Patch {
+  PatchOp op = 1;
+  uint32 node_id = 2;
+  WidgetNode node = 3;
+  bytes props = 4;
+  repeated uint32 children = 5;
+  uint32 parent_id = 6;
+}
+
+enum PatchOp {
+  PATCH_CREATE = 0;
+  PATCH_UPDATE = 1;
+  PATCH_DELETE = 2;
+  PATCH_REPLACE = 3;
+  PATCH_REORDER = 4;
+}
+
+message WidgetTree {
+  repeated WidgetNode nodes = 1;
+  uint32 root = 2;
+}
+
+message WidgetNode {
+  uint32 id = 1;
+  WidgetType type = 2;
+  bytes props = 3;
+  repeated uint32 children = 4;
+}
+
+enum WidgetType {
+  TEXT = 0;
+  CONTAINER = 1;
+  COLUMN = 2;
+  CENTER = 3;
+  BUTTON = 4;
+}
+
+message TextProps {
+  string value = 1;
+  double font_size = 2;
+  string color = 3;
+}
+
+message ButtonProps {
+  string label = 1;
+  string bg_color = 2;
+  double font_size = 3;
+  double border_radius = 4;
+}
+
+message ContainerProps {
+  string bg_color = 1;
+  double padding = 2;
+  double border_radius = 3;
+}
+
+message ClientEvent {
+  string node_id = 1;
+  string event_type = 2;
+  bytes event_data = 3;
+  uint64 timestamp = 4;
+}
