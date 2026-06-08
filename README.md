@@ -170,12 +170,20 @@ fugo/                   # App, Context, lifecycle (RunStandalone, scheduler)
 ## CLI
 
 ```bash
-fugo init <name>     # Scaffold a new project (main.go + go.mod)
-fugo run             # Build Go server + spawn Flutter engine (add --watch to rebuild on change)
-fugo build           # Build + bundle the Flutter client into a self-contained dist/
-fugo doctor          # Verify development environment (Go, Flutter, protoc, gofumpt)
-fugo --version       # Print version information
+fugo init <name>          # Scaffold a project (use --template app for a themed multi-page starter)
+fugo run                  # Build + run; auto-builds the Flutter client the first time if it's missing
+fugo run --watch          # Hot reload: rebuild the Go server on .go changes; the window stays open
+fugo build                # Build + bundle the Flutter client into a self-contained dist/
+fugo doctor               # Verify the dev environment (Go, Flutter, protoc, gofumpt)
+fugo --version            # Print version information
 ```
+
+**Hot reload** keeps the Flutter window open and reconnects after each Go rebuild (the in-memory
+state still resets — full state restore would need a managed-state layer and is not implemented yet).
+
+**Stateful components** are an alternative to a buildUI closure — implement `Render(ctx)` and pass
+the value to `fugo.RunComponent`. **Routing** supports `:params` (e.g. `/user/:id`), read with
+`ctx.Param("id")`. Set **`FUGO_AUTH=1`** to mint a per-run token that hardens the local transport.
 
 ---
 

@@ -263,6 +263,16 @@ func RunStandalone(opts AppOptions, buildUI func(ctx *Context) fg.Widget) {
 		log.Fatalf("start server: %v", err)
 	}
 
+	if os.Getenv("FUGO_NO_FLUTTER") == "1" {
+		// Server-only mode: `fugo run --watch` owns the Flutter process across
+		// reloads (the window stays open and reconnects), so here we just serve
+		// and block until the watcher restarts us.
+		log.Println("[fugo] starting app (server-only; window managed by the watcher)")
+		app.Run(buildUI)
+
+		return
+	}
+
 	flutterBinary := findFlutterBinary()
 	if flutterBinary == "" {
 		server.GracefulStop()

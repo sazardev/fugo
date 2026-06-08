@@ -387,33 +387,111 @@ func buildAndRun(ctx context.Context, addr, flutter string) error {
 }
 
 func runWithWatch(ctx context.Context, addr, flutter string) error {
+	fmt.Println("Hot reload: the window stays open across rebuilds; the Go server restarts on .go changes.")
+
+	flutterProc, err := startFlutterClient(ctx, addr, flutter)
+	if err != nil {
+		fmt.Printf("Could not start the Flutter client (%v) — falling back to full restarts.\n", err)
+
+		return runWithFullRestart(ctx, addr, flutter)
+	}
+	defer killProc(flutterProc)
+
+	snap := fileSnapshot()
+	for {
+		fmt.Println("Building Go server...")
+		if buildErr := buildApp(ctx); buildErr != nil {
+			fmt.Printf("build failed: %v (waiting for changes)\n", buildErr)
+			waitForChange(&snap)
+
+			continue
+		}
+
+		server := startServerOnly(ctx, addr)
+		waitForChange(&snap)
+		killProc(server)
+		fmt.Println("--- change detected, reloading Go server (window stays open) ---")
+	}
+}
+
+func runWithFullRestart(ctx context.Context, addr, flutter string) error {
 	fmt.Println("Watching .go files for changes...")
 
 	snap := fileSnapshot()
-
 	for {
 		if err := buildAndRun(ctx, addr, flutter); err != nil {
 			fmt.Printf("Run error: %v\n", err)
 		}
 
+		waitForChange(&snap)
+		fmt.Println("--- File change detected, restarting ---")
+	}
+}
+
+// startFlutterClient launches the Flutter render client once; it auto-reconnects
+// when the Go server restarts, so the window survives hot reloads.
+func startFlutterClient(ctx context.Context, addr, flutter string) (*exec.Cmd, error) {
+	bin := flutter
+	if bin == "" {
+		dir := flutterBundleDir(ctx)
+		if dir == "" {
+			ensureFlutterClient(ctx)
+			dir = flutterBundleDir(ctx)
+		}
+		if dir == "" {
+			return nil, errors.New("flutter client not built")
+		}
+		bin = filepath.Join(dir, "fugo_flutter_client"+exeSuffix())
+	}
+
+	cmd := exec.CommandContext(ctx, bin)
+	cmd.Env = append(os.Environ(), "FUGO_ADDR="+addr)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd, cmd.Start()
+}
+
+func buildApp(ctx context.Context) error {
+	cmd := exec.CommandContext(ctx, "go", subcmdBuild, "-o", appBinary(), ".")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}
+
+// startServerOnly runs the built app in server-only mode (FUGO_NO_FLUTTER=1) so
+// the externally-managed Flutter client reconnects to it across reloads.
+func startServerOnly(ctx context.Context, addr string) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, appBinary())
+	cmd.Env = append(os.Environ(), "FUGO_ADDR="+addr, "FUGO_NO_FLUTTER=1")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Start(); err != nil {
+		fmt.Printf("start server: %v\n", err)
+
+		return nil
+	}
+
+	return cmd
+}
+
+func waitForChange(snap *map[string]time.Time) {
+	for {
 		time.Sleep(500 * time.Millisecond)
 
-		if changed := fileSnapshot(); !snapshotEq(snap, changed) {
-			snap = changed
-			fmt.Println("--- File change detected, restarting ---")
-		} else {
-			fmt.Println("App exited. Waiting for file changes...")
-			for {
-				time.Sleep(500 * time.Millisecond)
-				changed = fileSnapshot()
-				if !snapshotEq(snap, changed) {
-					snap = changed
-					fmt.Println("--- File change detected, restarting ---")
+		current := fileSnapshot()
+		if !snapshotEq(*snap, current) {
+			*snap = current
 
-					break
-				}
-			}
+			return
 		}
+	}
+}
+
+func killProc(cmd *exec.Cmd) {
+	if cmd != nil && cmd.Process != nil {
+		_ = cmd.Process.Kill()
 	}
 }
 
