@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
@@ -14,7 +14,7 @@ type TextField struct {
 	baseWidget
 }
 
-func NewTextField(placeholder string) *TextField {
+func TextField(placeholder string) *TextField {
 	return &TextField{
 		Placeholder: placeholder,
 		FontSize:    defaultFontSize,
@@ -27,19 +27,19 @@ func (t *TextField) OnChange(handler func(Event)) *TextField {
 	return t
 }
 
-func (t *TextField) WithFontSize(v float64) *TextField {
+func (t *TextField) FontSize(v float64) *TextField {
 	t.FontSize = v
 
 	return t
 }
 
-func (t *TextField) WithValue(v string) *TextField {
+func (t *TextField) SetValue(v string) *TextField {
 	t.Value = v
 
 	return t
 }
 
-func (t *TextField) WithObscure(v bool) *TextField {
+func (t *TextField) Obscure(v bool) *TextField {
 	t.Obscure = v
 
 	return t

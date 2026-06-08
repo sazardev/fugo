@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	"github.com/sazardev/fugo/style"
@@ -16,7 +16,7 @@ type AnimatedContainer struct {
 	baseWidget
 }
 
-func NewAnimatedContainer(child Widget) *AnimatedContainer {
+func AnimatedContainer(child Widget) *AnimatedContainer {
 	return &AnimatedContainer{
 		child:      child,
 		Curve:      "ease",
@@ -24,31 +24,31 @@ func NewAnimatedContainer(child Widget) *AnimatedContainer {
 	}
 }
 
-func (c *AnimatedContainer) WithBgColor(v style.Color) *AnimatedContainer {
+func (c *AnimatedContainer) BgColor(v style.Color) *AnimatedContainer {
 	c.BgColor = v
 
 	return c
 }
 
-func (c *AnimatedContainer) WithPad(v style.EdgeInsets) *AnimatedContainer {
+func (c *AnimatedContainer) Pad(v style.EdgeInsets) *AnimatedContainer {
 	c.Padding = v
 
 	return c
 }
 
-func (c *AnimatedContainer) WithBorderRadius(v float64) *AnimatedContainer {
+func (c *AnimatedContainer) BorderRadius(v float64) *AnimatedContainer {
 	c.BorderRadius = v
 
 	return c
 }
 
-func (c *AnimatedContainer) WithDurationMs(v int32) *AnimatedContainer {
+func (c *AnimatedContainer) DurationMs(v int32) *AnimatedContainer {
 	c.DurationMs = v
 
 	return c
 }
 
-func (c *AnimatedContainer) WithCurve(v string) *AnimatedContainer {
+func (c *AnimatedContainer) Curve(v string) *AnimatedContainer {
 	c.Curve = v
 
 	return c

@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
@@ -12,7 +12,7 @@ type AnimatedOpacity struct {
 	baseWidget
 }
 
-func NewAnimatedOpacity(child Widget) *AnimatedOpacity {
+func AnimatedOpacity(child Widget) *AnimatedOpacity {
 	return &AnimatedOpacity{
 		child:      child,
 		Opacity:    1,
@@ -20,13 +20,13 @@ func NewAnimatedOpacity(child Widget) *AnimatedOpacity {
 	}
 }
 
-func (o *AnimatedOpacity) WithOpacity(v float64) *AnimatedOpacity {
+func (o *AnimatedOpacity) Opacity(v float64) *AnimatedOpacity {
 	o.Opacity = v
 
 	return o
 }
 
-func (o *AnimatedOpacity) WithDurationMs(v int32) *AnimatedOpacity {
+func (o *AnimatedOpacity) DurationMs(v int32) *AnimatedOpacity {
 	o.DurationMs = v
 
 	return o

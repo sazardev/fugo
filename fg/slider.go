@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
@@ -13,7 +13,7 @@ type Slider struct {
 	baseWidget
 }
 
-func NewSlider() *Slider {
+func Slider() *Slider {
 	return &Slider{
 		Min: 0,
 		Max: 100,
@@ -26,19 +26,19 @@ func (s *Slider) OnChange(handler func(Event)) *Slider {
 	return s
 }
 
-func (s *Slider) WithValue(v float64) *Slider {
+func (s *Slider) SetValue(v float64) *Slider {
 	s.Value = v
 
 	return s
 }
 
-func (s *Slider) WithMin(v float64) *Slider {
+func (s *Slider) SetMin(v float64) *Slider {
 	s.Min = v
 
 	return s
 }
 
-func (s *Slider) WithMax(v float64) *Slider {
+func (s *Slider) SetMax(v float64) *Slider {
 	s.Max = v
 
 	return s

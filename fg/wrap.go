@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
@@ -12,17 +12,17 @@ type Wrap struct {
 	baseWidget
 }
 
-func NewWrap(children ...Widget) *Wrap {
+func Wrap(children ...Widget) *Wrap {
 	return &Wrap{children: children}
 }
 
-func (w *Wrap) WithSpacing(v float64) *Wrap {
+func (w *Wrap) Spacing(v float64) *Wrap {
 	w.Spacing = v
 
 	return w
 }
 
-func (w *Wrap) WithRunSpacing(v float64) *Wrap {
+func (w *Wrap) RunSpacing(v float64) *Wrap {
 	w.RunSpacing = v
 
 	return w

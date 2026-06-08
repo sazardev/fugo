@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
@@ -12,24 +12,24 @@ type Image struct {
 	baseWidget
 }
 
-func NewImage(src string) *Image {
+func Image(src string) *Image {
 	return &Image{Src: src}
 }
 
-func (i *Image) WithSize(w, h float64) *Image {
+func (i *Image) Size(w, h float64) *Image {
 	i.Width = w
 	i.Height = h
 
 	return i
 }
 
-func (i *Image) WithWidth(v float64) *Image {
+func (i *Image) Width(v float64) *Image {
 	i.Width = v
 
 	return i
 }
 
-func (i *Image) WithHeight(v float64) *Image {
+func (i *Image) Height(v float64) *Image {
 	i.Height = v
 
 	return i

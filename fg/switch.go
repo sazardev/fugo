@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
@@ -11,7 +11,7 @@ type SwitchWidget struct {
 	baseWidget
 }
 
-func NewSwitch() *SwitchWidget {
+func SwitchWidget() *SwitchWidget {
 	return &SwitchWidget{}
 }
 
@@ -21,7 +21,7 @@ func (s *SwitchWidget) OnChange(handler func(Event)) *SwitchWidget {
 	return s
 }
 
-func (s *SwitchWidget) WithValue(v bool) *SwitchWidget {
+func (s *SwitchWidget) SetValue(v bool) *SwitchWidget {
 	s.Value = v
 
 	return s

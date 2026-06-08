@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
@@ -11,7 +11,7 @@ type Padding struct {
 	baseWidget
 }
 
-func NewPadding(child Widget, top, right, bottom, left float64) *Padding {
+func Padding(child Widget, top, right, bottom, left float64) *Padding {
 	return &Padding{
 		child: child,
 		Insets: struct {
@@ -24,7 +24,7 @@ func NewPadding(child Widget, top, right, bottom, left float64) *Padding {
 }
 
 func PaddingAll(child Widget, value float64) *Padding {
-	return NewPadding(child, value, value, value, value)
+	return Padding(child, value, value, value, value)
 }
 
 func (p *Padding) isWidget() {}

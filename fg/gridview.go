@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
@@ -12,20 +12,20 @@ type GridView struct {
 	baseWidget
 }
 
-func NewGridView(children ...Widget) *GridView {
+func GridView(children ...Widget) *GridView {
 	return &GridView{
 		children:       children,
 		CrossAxisCount: 2,
 	}
 }
 
-func (g *GridView) WithCrossAxisCount(v int32) *GridView {
+func (g *GridView) CrossAxisCount(v int32) *GridView {
 	g.CrossAxisCount = v
 
 	return g
 }
 
-func (g *GridView) WithChildAspectRatio(v float64) *GridView {
+func (g *GridView) ChildAspectRatio(v float64) *GridView {
 	g.ChildAspectRatio = v
 
 	return g

@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
@@ -16,41 +16,41 @@ type Positioned struct {
 	baseWidget
 }
 
-func NewPositioned(child Widget) *Positioned {
+func Positioned(child Widget) *Positioned {
 	return &Positioned{child: child}
 }
 
-func (p *Positioned) WithLeft(v float64) *Positioned {
+func (p *Positioned) Left(v float64) *Positioned {
 	p.Left = v
 
 	return p
 }
 
-func (p *Positioned) WithTop(v float64) *Positioned {
+func (p *Positioned) Top(v float64) *Positioned {
 	p.Top = v
 
 	return p
 }
 
-func (p *Positioned) WithRight(v float64) *Positioned {
+func (p *Positioned) Right(v float64) *Positioned {
 	p.Right = v
 
 	return p
 }
 
-func (p *Positioned) WithBottom(v float64) *Positioned {
+func (p *Positioned) Bottom(v float64) *Positioned {
 	p.Bottom = v
 
 	return p
 }
 
-func (p *Positioned) WithWidth(v float64) *Positioned {
+func (p *Positioned) Width(v float64) *Positioned {
 	p.Width = v
 
 	return p
 }
 
-func (p *Positioned) WithHeight(v float64) *Positioned {
+func (p *Positioned) Height(v float64) *Positioned {
 	p.Height = v
 
 	return p

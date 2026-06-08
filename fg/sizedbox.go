@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
@@ -12,23 +12,23 @@ type SizedBox struct {
 	baseWidget
 }
 
-func NewSizedBox(width, height float64) *SizedBox {
+func SizedBox(width, height float64) *SizedBox {
 	return &SizedBox{Width: width, Height: height}
 }
 
-func (s *SizedBox) WithChild(child Widget) *SizedBox {
+func (s *SizedBox) Child(child Widget) *SizedBox {
 	s.child = child
 
 	return s
 }
 
-func (s *SizedBox) WithWidth(v float64) *SizedBox {
+func (s *SizedBox) Width(v float64) *SizedBox {
 	s.Width = v
 
 	return s
 }
 
-func (s *SizedBox) WithHeight(v float64) *SizedBox {
+func (s *SizedBox) Height(v float64) *SizedBox {
 	s.Height = v
 
 	return s

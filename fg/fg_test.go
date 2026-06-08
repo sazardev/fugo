@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ import (
 )
 
 func TestBuildTree(t *testing.T) {
-	root := NewText("hello")
+	root := Text("hello")
 	tree, m := BuildTree(root)
 
 	if tree == nil {
@@ -26,10 +26,10 @@ func TestBuildTree(t *testing.T) {
 }
 
 func TestBuildTreeNested(t *testing.T) {
-	root := NewContainer(
-		NewColumn(
-			NewText("a"),
-			NewText("b"),
+	root := Container(
+Column(
+			Text("a"),
+			Text("b"),
 		),
 	)
 
@@ -43,7 +43,7 @@ func TestBuildTreeNested(t *testing.T) {
 }
 
 func TestWithKey(t *testing.T) {
-	w := NewText("hello")
+	w := Text("hello")
 	if w.widgetKey() != "" {
 		t.Error("Key should be empty initially")
 	}
@@ -55,7 +55,7 @@ func TestWithKey(t *testing.T) {
 }
 
 func TestTextWalkNodes(t *testing.T) {
-	txt := NewText("hello")
+	txt := Text("hello")
 	txt.Style = style.NewTextStyle(16, style.Hex("#FFFFFF"))
 
 	var counter uint32
@@ -75,7 +75,7 @@ func TestTextWalkNodes(t *testing.T) {
 }
 
 func TestButtonWalkNodes(t *testing.T) {
-	btn := NewButton("Click")
+	btn := Button("Click")
 	btn.OnClick(func(e Event) {})
 
 	var counter uint32
@@ -88,9 +88,9 @@ func TestButtonWalkNodes(t *testing.T) {
 }
 
 func TestColumnWalkNodes(t *testing.T) {
-	col := NewColumn(
-		NewText("a"),
-		NewText("b"),
+	col := Column(
+		Text("a"),
+		Text("b"),
 	)
 
 	var counter uint32
@@ -109,7 +109,7 @@ func TestColumnWalkNodes(t *testing.T) {
 }
 
 func TestRowWalkNodes(t *testing.T) {
-	row := NewRow(NewText("a"), NewText("b"))
+	row := Row(Text("a"), Text("b"))
 
 	var counter uint32
 	nodes := row.walkNodes(&counter)
@@ -120,7 +120,7 @@ func TestRowWalkNodes(t *testing.T) {
 }
 
 func TestStackWalkNodes(t *testing.T) {
-	stack := NewStack(NewText("a"), NewText("b"))
+	stack := Stack(Text("a"), Text("b"))
 
 	var counter uint32
 	nodes := stack.walkNodes(&counter)
@@ -131,8 +131,8 @@ func TestStackWalkNodes(t *testing.T) {
 }
 
 func TestContainerWalkNodes(t *testing.T) {
-	cont := NewContainer(NewText("hello"))
-	cont.WithBgColor(style.Hex("#FF0000"))
+	cont := Container(Text("hello"))
+	cont.BgColor(style.Hex("#FF0000"))
 
 	var counter uint32
 	nodes := cont.walkNodes(&counter)

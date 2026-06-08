@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
@@ -13,26 +13,26 @@ type Row struct {
 	baseWidget
 }
 
-func NewRow(items ...Widget) *Row {
+func Row(items ...Widget) *Row {
 	return &Row{
 		items:      items,
 		CrossAlign: fugov1.CrossAxisAlignment_CROSS_CENTER,
 	}
 }
 
-func (r *Row) WithMainAlign(v fugov1.MainAxisAlignment) *Row {
+func (r *Row) MainAlign(v fugov1.MainAxisAlignment) *Row {
 	r.MainAlign = v
 
 	return r
 }
 
-func (r *Row) WithCrossAlign(v fugov1.CrossAxisAlignment) *Row {
+func (r *Row) CrossAlign(v fugov1.CrossAxisAlignment) *Row {
 	r.CrossAlign = v
 
 	return r
 }
 
-func (r *Row) WithMainAxisSize(v fugov1.MainAxisSize) *Row {
+func (r *Row) MainAxisSize(v fugov1.MainAxisSize) *Row {
 	r.MainAxisSize = v
 
 	return r

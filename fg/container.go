@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	"github.com/sazardev/fugo/style"
@@ -14,26 +14,26 @@ type Container struct {
 	baseWidget
 }
 
-func NewContainer(child Widget) *Container {
+func Container(child Widget) *Container {
 	return &Container{
 		child:   child,
 		BgColor: style.Hex("#121212"),
 	}
 }
 
-func (c *Container) WithBgColor(v style.Color) *Container {
+func (c *Container) BgColor(v style.Color) *Container {
 	c.BgColor = v
 
 	return c
 }
 
-func (c *Container) WithPad(v style.EdgeInsets) *Container {
+func (c *Container) Pad(v style.EdgeInsets) *Container {
 	c.Padding = v
 
 	return c
 }
 
-func (c *Container) WithBorderRadius(v float64) *Container {
+func (c *Container) BorderRadius(v float64) *Container {
 	c.BorderRadius = v
 
 	return c

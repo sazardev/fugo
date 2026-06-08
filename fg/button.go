@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	"github.com/sazardev/fugo/style"
@@ -20,7 +20,7 @@ type Button struct {
 	baseWidget
 }
 
-func NewButton(label string) *Button {
+func Button(label string) *Button {
 	return &Button{
 		Label:        label,
 		BgColor:      style.Hex("#3B82F6"),
@@ -35,19 +35,19 @@ func (b *Button) OnClick(handler func(Event)) *Button {
 	return b
 }
 
-func (b *Button) WithFontSize(v float64) *Button {
+func (b *Button) FontSize(v float64) *Button {
 	b.FontSize = v
 
 	return b
 }
 
-func (b *Button) WithBgColor(c style.Color) *Button {
+func (b *Button) BgColor(c style.Color) *Button {
 	b.BgColor = c
 
 	return b
 }
 
-func (b *Button) WithBorderRadius(v float64) *Button {
+func (b *Button) BorderRadius(v float64) *Button {
 	b.BorderRadius = v
 
 	return b

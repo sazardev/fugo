@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
@@ -12,7 +12,7 @@ type Checkbox struct {
 	baseWidget
 }
 
-func NewCheckbox(label string) *Checkbox {
+func Checkbox(label string) *Checkbox {
 	return &Checkbox{Label: label}
 }
 
@@ -22,13 +22,13 @@ func (c *Checkbox) OnChange(handler func(Event)) *Checkbox {
 	return c
 }
 
-func (c *Checkbox) WithChecked(v bool) *Checkbox {
+func (c *Checkbox) SetChecked(v bool) *Checkbox {
 	c.Checked = v
 
 	return c
 }
 
-func (c *Checkbox) WithLabel(v string) *Checkbox {
+func (c *Checkbox) SetLabel(v string) *Checkbox {
 	c.Label = v
 
 	return c

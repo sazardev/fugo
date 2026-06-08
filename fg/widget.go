@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
 

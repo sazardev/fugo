@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
@@ -11,11 +11,11 @@ type ListView struct {
 	baseWidget
 }
 
-func NewListView(items ...Widget) *ListView {
+func ListView(items ...Widget) *ListView {
 	return &ListView{items: items}
 }
 
-func (l *ListView) WithItemExtent(v float64) *ListView {
+func (l *ListView) ItemExtent(v float64) *ListView {
 	l.ItemExtent = v
 
 	return l

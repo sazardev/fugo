@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
 
@@ -7,7 +7,7 @@ type Stack struct {
 	baseWidget
 }
 
-func NewStack(items ...Widget) *Stack {
+func Stack(items ...Widget) *Stack {
 	return &Stack{items: items}
 }
 

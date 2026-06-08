@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	"log"
@@ -14,7 +14,7 @@ type Router struct {
 	baseWidget
 }
 
-func NewRouter(routes map[string]func() Widget, initialRoute string) *Router {
+func Router(routes map[string]func() Widget, initialRoute string) *Router {
 	return &Router{
 		routes:  routes,
 		current: initialRoute,

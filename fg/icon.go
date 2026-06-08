@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	"github.com/sazardev/fugo/style"
@@ -13,20 +13,20 @@ type Icon struct {
 	baseWidget
 }
 
-func NewIcon(name string) *Icon {
+func Icon(name string) *Icon {
 	return &Icon{
 		Name: name,
 		Size: 24,
 	}
 }
 
-func (i *Icon) WithSize(v float64) *Icon {
+func (i *Icon) Size(v float64) *Icon {
 	i.Size = v
 
 	return i
 }
 
-func (i *Icon) WithColor(c style.Color) *Icon {
+func (i *Icon) Color(c style.Color) *Icon {
 	i.Color = c
 
 	return i

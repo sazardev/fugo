@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
@@ -11,11 +11,11 @@ type Expanded struct {
 	baseWidget
 }
 
-func NewExpanded(child Widget) *Expanded {
+func Expanded(child Widget) *Expanded {
 	return &Expanded{child: child, Flex: 1}
 }
 
-func (e *Expanded) WithFlex(v int32) *Expanded {
+func (e *Expanded) Flex(v int32) *Expanded {
 	e.Flex = v
 
 	return e

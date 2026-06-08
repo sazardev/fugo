@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	"github.com/sazardev/fugo/style"
@@ -12,7 +12,7 @@ type Text struct {
 	baseWidget
 }
 
-func NewText(value string) *Text {
+func Text(value string) *Text {
 	return &Text{
 		Value: value,
 		Style: style.NewTextStyle(defaultFontSize, style.Hex("#FFFFFF")),
@@ -23,25 +23,25 @@ func (t *Text) SetText(value string) {
 	t.Value = value
 }
 
-func (t *Text) WithFontSize(v float64) *Text {
+func (t *Text) FontSize(v float64) *Text {
 	t.Style.FontSize = v
 
 	return t
 }
 
-func (t *Text) WithColor(c style.Color) *Text {
+func (t *Text) Color(c style.Color) *Text {
 	t.Style.Color = c
 
 	return t
 }
 
-func (t *Text) WithWeight(w style.FontWeight) *Text {
+func (t *Text) Weight(w style.FontWeight) *Text {
 	t.Style.Weight = w
 
 	return t
 }
 
-func (t *Text) WithAlign(a style.TextAlign) *Text {
+func (t *Text) Align(a style.TextAlign) *Text {
 	t.Style.Align = a
 
 	return t

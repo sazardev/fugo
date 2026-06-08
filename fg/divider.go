@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import (
 	"github.com/sazardev/fugo/style"
@@ -12,19 +12,19 @@ type Divider struct {
 	baseWidget
 }
 
-func NewDivider() *Divider {
+func Divider() *Divider {
 	return &Divider{
 		Thickness: 1,
 	}
 }
 
-func (d *Divider) WithThickness(v float64) *Divider {
+func (d *Divider) Thickness(v float64) *Divider {
 	d.Thickness = v
 
 	return d
 }
 
-func (d *Divider) WithColor(c style.Color) *Divider {
+func (d *Divider) Color(c style.Color) *Divider {
 	d.Color = c
 
 	return d

@@ -1,4 +1,4 @@
-package ui
+package fg
 
 import fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
 
@@ -7,7 +7,7 @@ type Column struct {
 	baseWidget
 }
 
-func NewColumn(items ...Widget) *Column {
+func Column(items ...Widget) *Column {
 	return &Column{items: items}
 }
 
@@ -46,7 +46,7 @@ type Center struct {
 	baseWidget
 }
 
-func NewCenter(child Widget) *Center {
+func Center(child Widget) *Center {
 	return &Center{child: child}
 }
 
