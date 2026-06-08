@@ -13,6 +13,7 @@ import (
 
 	"github.com/sazardev/fugo"
 	"github.com/sazardev/fugo/fg"
+	"github.com/sazardev/fugo/flog"
 	"github.com/sazardev/fugo/supervisor"
 	"github.com/sazardev/fugo/transport"
 
@@ -52,20 +53,20 @@ func main() {
 	go func() {
 		select {
 		case <-sigCh:
-			log.Println("[fugo] signal received")
+			flog.Infof("signal received")
 		case <-proc.Exited():
-			log.Println("[fugo] flutter window closed")
+			flog.Infof("flutter window closed")
 		}
-		log.Println("[fugo] shutting down")
+		flog.Infof("shutting down")
 		app.Shutdown()
 		if err := proc.Shutdown(shutdownTimeout); err != nil {
-			log.Printf("[fugo] shutdown error: %v", err)
+			flog.Errorf("shutdown error: %v", err)
 		}
 		server.GracefulStop()
 		os.Exit(0)
 	}()
 
-	log.Println("[fugo] starting app")
+	flog.Infof("starting app")
 	app.Run(buildUI)
 }
 

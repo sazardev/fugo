@@ -17,6 +17,7 @@ import (
 
 	"github.com/sazardev/fugo/engine"
 	"github.com/sazardev/fugo/fg"
+	"github.com/sazardev/fugo/flog"
 	"github.com/sazardev/fugo/supervisor"
 	"github.com/sazardev/fugo/transport"
 )
@@ -182,7 +183,7 @@ func (a *App) Run(buildUI func(ctx *Context) fg.Widget) {
 	}
 
 	a.reconciler.SendFullTree(tree)
-	log.Println("[fugo] initial tree sent")
+	flog.Infof("initial tree sent")
 
 	a.scheduler.SetFlush(a.flush)
 	a.scheduler.Start()
@@ -197,7 +198,7 @@ func (a *App) flush() {
 
 	patches := engine.Diff(a.oldTree, tree)
 	if len(patches) > 0 {
-		log.Printf("[fugo] flush: %d patches, %d nodes, %d handlers", len(patches), len(tree.GetNodes()), len(a.handlers))
+		flog.Debugf("flush: %d patches, %d nodes, %d handlers", len(patches), len(tree.GetNodes()), len(a.handlers))
 		a.reconciler.SendPatches(patches)
 	}
 
@@ -220,7 +221,7 @@ func (a *App) HandleEvent(ev *fugov1.ClientEvent) {
 	a.handlersMu.RUnlock()
 
 	if !ok {
-		log.Printf("[fugo] event: node %d not in handlers (%d registered, type=%s)", nodeID, registered, ev.GetEventType())
+		flog.Debugf("event: node %d not in handlers (%d registered, type=%s)", nodeID, registered, ev.GetEventType())
 
 		return
 	}
@@ -229,7 +230,7 @@ func (a *App) HandleEvent(ev *fugov1.ClientEvent) {
 		return
 	}
 
-	log.Printf("[fugo] event: node=%d type=%s", nodeID, ev.GetEventType())
+	flog.Debugf("event: node=%d type=%s", nodeID, ev.GetEventType())
 	w.Handle(fg.Event{
 		NodeID:    ev.GetNodeId(),
 		EventType: ev.GetEventType(),
@@ -279,7 +280,7 @@ func RunStandalone(opts AppOptions, buildUI func(ctx *Context) fg.Widget) {
 		// Server-only mode: `fugo run --watch` owns the Flutter process across
 		// reloads (the window stays open and reconnects), so here we just serve
 		// and block until the watcher restarts us.
-		log.Println("[fugo] starting app (server-only; window managed by the watcher)")
+		flog.Infof("starting app (server-only; window managed by the watcher)")
 		app.Run(buildUI)
 
 		return
@@ -299,13 +300,13 @@ func RunStandalone(opts AppOptions, buildUI func(ctx *Context) fg.Widget) {
 
 	go func() {
 		<-proc.Exited()
-		log.Println("[fugo] flutter window closed")
+		flog.Infof("flutter window closed")
 		app.Shutdown()
 		server.GracefulStop()
 		os.Exit(0)
 	}()
 
-	log.Println("[fugo] starting app")
+	flog.Infof("starting app")
 	app.Run(buildUI)
 }
 
@@ -324,13 +325,13 @@ func enableAuthToken() {
 
 	buf := make([]byte, 16)
 	if _, err := rand.Read(buf); err != nil {
-		log.Printf("[fugo] could not generate auth token: %v", err)
+		flog.Errorf("could not generate auth token: %v", err)
 
 		return
 	}
 
 	_ = os.Setenv("FUGO_TOKEN", hex.EncodeToString(buf))
-	log.Println("[fugo] per-run auth token enabled (FUGO_AUTH=1)")
+	flog.Infof("per-run auth token enabled (FUGO_AUTH=1)")
 }
 
 // exportWindowEnv forwards the window options to the Flutter client through the

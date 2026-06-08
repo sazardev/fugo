@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/subtle"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"time"
@@ -12,6 +11,7 @@ import (
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
 
 	"github.com/sazardev/fugo/engine"
+	"github.com/sazardev/fugo/flog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health"
@@ -56,12 +56,12 @@ func (s *Server) RenderStream(stream fugov1.FugoRender_RenderStreamServer) error
 	adapter := &grpcStreamAdapter{stream: stream}
 	s.app.SetReconciler(adapter)
 
-	log.Println("[fugo] flutter client connected")
+	flog.Infof("flutter client connected")
 
 	for {
 		event, err := stream.Recv()
 		if err != nil {
-			log.Printf("[fugo] client disconnected: %v", err)
+			flog.Infof("client disconnected: %v", err)
 
 			return err
 		}
@@ -94,7 +94,7 @@ func StartServer(addr string, app AppHandler) (*grpc.Server, net.Listener, error
 
 	token := os.Getenv("FUGO_TOKEN")
 	if token != "" {
-		log.Println("[fugo] render stream requires a per-run auth token")
+		flog.Infof("render stream requires a per-run auth token")
 	}
 
 	server := newKeepaliveServer(token)
@@ -103,7 +103,7 @@ func StartServer(addr string, app AppHandler) (*grpc.Server, net.Listener, error
 
 	go func() {
 		if err := server.Serve(listener); err != nil {
-			log.Printf("[fugo] server stopped: %v", err)
+			flog.Errorf("server stopped: %v", err)
 		}
 	}()
 

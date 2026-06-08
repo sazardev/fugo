@@ -3,12 +3,13 @@ package supervisor
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/sazardev/fugo/flog"
 )
 
 // FlutterProcess represents the spawned Flutter render client subprocess and
@@ -39,7 +40,7 @@ func StartFlutter(ctx context.Context, addr, flutterBinary string) (*FlutterProc
 		return nil, fmt.Errorf("start flutter: %w", err)
 	}
 
-	log.Printf("[fugo] flutter client started (pid=%d)", cmd.Process.Pid)
+	flog.Infof("flutter client started (pid=%d)", cmd.Process.Pid)
 
 	fp := &FlutterProcess{
 		cmd:    cmd,
@@ -50,7 +51,7 @@ func StartFlutter(ctx context.Context, addr, flutterBinary string) (*FlutterProc
 	go func() {
 		_ = cmd.Wait()
 		close(fp.exited)
-		log.Println("[fugo] flutter client exited")
+		flog.Infof("flutter client exited")
 	}()
 
 	return fp, nil
@@ -68,7 +69,7 @@ func (p *FlutterProcess) WaitForSignal(timeout time.Duration) error {
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
 	sig := <-sigCh
-	log.Printf("[fugo] received signal %v, shutting down", sig)
+	flog.Infof("received signal %v, shutting down", sig)
 
 	return p.Shutdown(timeout)
 }
@@ -76,10 +77,10 @@ func (p *FlutterProcess) WaitForSignal(timeout time.Duration) error {
 // Shutdown stops the Flutter subprocess by sending SIGTERM and waiting up to
 // timeout for it to exit; if it does not exit in time it is force-killed.
 func (p *FlutterProcess) Shutdown(timeout time.Duration) error {
-	log.Println("[fugo] shutting down flutter client")
+	flog.Infof("shutting down flutter client")
 
 	if err := p.cmd.Process.Signal(syscall.SIGTERM); err != nil {
-		log.Printf("[fugo] signal error: %v", err)
+		flog.Errorf("signal error: %v", err)
 	}
 
 	done := make(chan error, 1)
@@ -90,12 +91,12 @@ func (p *FlutterProcess) Shutdown(timeout time.Duration) error {
 	select {
 	case err := <-done:
 		if err != nil {
-			log.Printf("[fugo] flutter exited with error: %v", err)
+			flog.Errorf("flutter exited with error: %v", err)
 		}
 	case <-time.After(timeout):
-		log.Println("[fugo] flutter didn't exit, force killing")
+		flog.Infof("flutter didn't exit, force killing")
 		if err := p.cmd.Process.Kill(); err != nil {
-			log.Printf("[fugo] force kill error: %v", err)
+			flog.Errorf("force kill error: %v", err)
 		}
 		<-done
 	}

@@ -31,18 +31,36 @@ const (
 func main() {
 	cmd := &cli.Command{
 		Name:    "fugo",
-		Usage:   "Go SDUI framework CLI",
+		Usage:   "Server-Driven UI framework for desktop — write Go, render with Flutter",
 		Version: fmt.Sprintf("%s (commit %s, built %s)", version, commit, date),
+		Description: `Fugo lets you build native desktop apps writing only Go. Your logic, state
+and routing run in a Go process; a precompiled Flutter binary renders the UI
+over a local gRPC stream. Go is the single source of truth.
+
+Typical workflow:
+  fugo init myapp        scaffold a project (try --template app|showcase)
+  cd myapp
+  fugo run               build + launch the app (Go server + Flutter window)
+  fugo run --watch       hot reload: rebuild on .go changes, window stays open
+  fugo build             bundle a shippable dist/ (app + Flutter client)
+
+Other commands:
+  fugo widgets           browse the fg widget catalog and their doc comments
+  fugo doctor            check your toolchain (Go, Flutter, protoc, gofumpt)
+
+Every command accepts -V/--verbose (trace commands, paths, timings and the
+app's runtime logs) and -q/--quiet (errors only). Colors honor NO_COLOR.`,
 		Commands: []*cli.Command{
 			initCmd(),
 			runCmd(),
 			buildCmd(),
+			widgetsCmd(),
 			doctorCmd(),
 		},
 	}
 
 	if err := cmd.Run(context.Background(), os.Args); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		out.failf("%v", err)
 		os.Exit(1)
 	}
 }
@@ -342,11 +360,23 @@ func initCmd() *cli.Command {
 		Name:      "init",
 		Usage:     "Create a new Fugo project",
 		ArgsUsage: "<project-name>",
-		Flags: []cli.Flag{
+		Description: `Scaffold a new Fugo project: write main.go, run 'go mod init', wire a replace
+directive to your local fugo checkout (auto-detected), and run 'go mod tidy'.
+
+Templates (--template, -t):
+  counter   minimal counter — one screen, a button, live state (default)
+  app       themed multi-page starter with a Router and Home/About pages
+  showcase  every widget on one scrollable page — a living API reference
+
+Examples:
+  fugo init myapp
+  fugo init myapp -t showcase
+  fugo init myapp --fugo-src ../fugo`,
+		Flags: append([]cli.Flag{
 			&cli.StringFlag{
 				Name:        "fugo-src",
 				Destination: &fugoSrc,
-				Usage:       "path to local fugo source (for replace directive)",
+				Usage:       "path to a local fugo checkout for the go.mod replace directive (auto-detected if empty)",
 			},
 			&cli.StringFlag{
 				Name:        "template",
@@ -355,86 +385,88 @@ func initCmd() *cli.Command {
 				Destination: &template,
 				Usage:       "starter template: counter | app | showcase",
 			},
-		},
+		}, verbosityFlags()...),
 		Action: func(ctx context.Context, c *cli.Command) error {
+			setupUI()
+
 			name := c.Args().First()
 			if name == "" {
 				return errors.New("project name required: fugo init <name>")
 			}
 
 			dir := filepath.Clean(name)
+			out.tracef("template=%s  dir=%s", template, dir)
 			if err := os.MkdirAll(dir, 0o755); err != nil {
 				return fmt.Errorf("create directory: %w", err)
 			}
 
-			modulePath := name
-			if !strings.Contains(name, "/") {
-				modulePath = name
-			}
-
-			// Write main.go
 			mainFile := filepath.Join(dir, "main.go")
-			content := scaffoldMain(template, name)
-
-			if err := os.WriteFile(mainFile, []byte(content), 0o644); err != nil {
+			if err := os.WriteFile(mainFile, []byte(scaffoldMain(template, name)), 0o644); err != nil {
 				return fmt.Errorf("write main.go: %w", err)
 			}
+			out.successf("wrote %s %s", mainFile, out.paint(cDim, "("+template+" template)"))
 
-			// go mod init
-			fmt.Println("Initializing Go module...")
-			modInit := exec.CommandContext(ctx, "go", "mod", "init", modulePath)
+			modInit := exec.CommandContext(ctx, "go", "mod", "init", name)
 			modInit.Dir = dir
-			modInit.Stdout = os.Stdout
-			modInit.Stderr = os.Stderr
-			if err := modInit.Run(); err != nil {
+			if err := out.runStep("Initializing Go module", modInit); err != nil {
 				return fmt.Errorf("go mod init: %w", err)
 			}
 
-			// Find fugo source: --fugo-src flag > auto-detect from CWD/executable
 			fugoDir := fugoSrc
 			if fugoDir == "" {
 				fugoDir = findFugoRepo()
 			}
 			if fugoDir != "" {
-				absFugo, _ := filepath.Abs(fugoDir)
-				absProject, _ := filepath.Abs(dir)
-				relToProject, err := filepath.Rel(absProject, absFugo)
-				if err != nil {
-					relToProject = fugoDir
+				if err := addReplaceDirective(dir, fugoDir); err != nil {
+					return err
 				}
-				relPath := strings.ReplaceAll(relToProject, "\\", "/")
-
-				fmt.Printf("Detected local fugo source, adding replace => %s\n", relPath)
-				goModFile := filepath.Join(dir, "go.mod")
-				data, err := os.ReadFile(goModFile)
-				if err != nil {
-					return fmt.Errorf("read go.mod: %w", err)
-				}
-				replaceLine := fmt.Sprintf("\nreplace github.com/sazardev/fugo => %s\n", relPath)
-				data = append(data, []byte(replaceLine)...)
-				if err := os.WriteFile(goModFile, data, 0o644); err != nil {
-					return fmt.Errorf("write go.mod: %w", err)
-				}
+			} else {
+				out.warnf("local fugo checkout not found — using the published module (pass --fugo-src to override)")
 			}
 
-			// go mod tidy
-			fmt.Println("Resolving dependencies...")
 			tidy := exec.CommandContext(ctx, "go", "mod", "tidy")
 			tidy.Dir = dir
-			tidy.Stdout = os.Stdout
-			tidy.Stderr = os.Stderr
-			if err := tidy.Run(); err != nil {
+			if err := out.runStep("Resolving dependencies", tidy); err != nil {
 				return fmt.Errorf("go mod tidy: %w", err)
 			}
 
-			fmt.Printf("\nCreated %s/\n", dir)
-			fmt.Printf("  main.go  — your Fugo app\n")
-			fmt.Printf("  go.mod   — Go module\n")
-			fmt.Printf("\nNext: cd %s && fugo run\n", dir)
+			out.infof("")
+			out.successf("created %s%c", dir, os.PathSeparator)
+			out.infof("  next: %s", out.paint(cBold, "cd "+dir+" && fugo run"))
 
 			return nil
 		},
 	}
+}
+
+// addReplaceDirective appends a `replace github.com/sazardev/fugo => <rel>` line
+// to the new project's go.mod so it builds against the local fugo checkout.
+func addReplaceDirective(projectDir, fugoDir string) error {
+	absFugo, _ := filepath.Abs(fugoDir)
+	absProject, _ := filepath.Abs(projectDir)
+
+	rel, err := filepath.Rel(absProject, absFugo)
+	if err != nil {
+		rel = fugoDir
+	}
+	relPath := strings.ReplaceAll(rel, "\\", "/")
+
+	out.tracef("local fugo: %s  (replace => %s)", absFugo, relPath)
+
+	goModFile := filepath.Join(projectDir, "go.mod")
+	data, err := os.ReadFile(goModFile)
+	if err != nil {
+		return fmt.Errorf("read go.mod: %w", err)
+	}
+
+	data = append(data, []byte(fmt.Sprintf("\nreplace github.com/sazardev/fugo => %s\n", relPath))...)
+	if err := os.WriteFile(goModFile, data, 0o644); err != nil {
+		return fmt.Errorf("write go.mod: %w", err)
+	}
+
+	out.successf("linked local fugo %s", out.paint(cDim, "(replace => "+relPath+")"))
+
+	return nil
 }
 
 func findFugoRepo() string {
@@ -493,32 +525,46 @@ func runCmd() *cli.Command {
 
 	return &cli.Command{
 		Name:  "run",
-		Usage: "Run the Fugo app in current directory",
-		Flags: []cli.Flag{
+		Usage: "Build and run the Fugo app in the current directory",
+		Description: `Build the Go app in the current directory and launch it: the gRPC server
+starts, the Flutter render client is spawned (and built once if missing), and
+the window opens. Press Ctrl+C to stop.
+
+With --watch the Flutter window stays open while the Go server rebuilds and
+reconnects on every .go change (in-memory state resets across reloads).
+
+Examples:
+  fugo run
+  fugo run --watch
+  fugo run --addr 127.0.0.1:9600
+  fugo run -V               # verbose: trace the build and stream the app's logs`,
+		Flags: append([]cli.Flag{
 			&cli.StringFlag{
 				Name:        "addr",
 				Value:       "127.0.0.1:9510",
 				Destination: &addr,
-				Usage:       "listen address for gRPC server",
+				Usage:       "gRPC listen address (host:port for TCP, a path for a Unix socket)",
 			},
 			&cli.StringFlag{
 				Name:        "flutter",
 				Destination: &flutter,
-				Usage:       "path to Flutter binary (auto-detect if empty)",
+				Usage:       "path to the Flutter render binary (auto-detected if empty)",
 			},
 			&cli.BoolFlag{
 				Name:        "watch",
 				Aliases:     []string{"w"},
 				Destination: &watch,
-				Usage:       "watch .go files and restart on change",
+				Usage:       "rebuild the Go server on .go changes; keep the window open",
 			},
-		},
+		}, verbosityFlags()...),
 		Action: func(ctx context.Context, _ *cli.Command) error {
+			setupUI()
+
 			if !hasMainGo() {
-				return errors.New("no main.go found in current directory. Run 'fugo init <name>' first")
+				return errors.New("no main.go in the current directory — run 'fugo init <name>' first")
 			}
 
-			fmt.Printf("=== Fugo v%s ===\n", version)
+			out.infof("%s %s", out.paint(cBold, "Fugo"), out.paint(cDim, "v"+version))
 
 			if flutter == "" {
 				ensureFlutterClient(ctx)
@@ -534,25 +580,22 @@ func runCmd() *cli.Command {
 }
 
 func buildAndRun(ctx context.Context, addr, flutter string) error {
-	fmt.Println("Building...")
 	build := exec.CommandContext(ctx, "go", subcmdBuild, "-o", appBinary(), ".")
-	build.Stdout = os.Stdout
-	build.Stderr = os.Stderr
-	if err := build.Run(); err != nil {
+	if err := out.runStep("Building app", build); err != nil {
 		return fmt.Errorf("build failed: %w", err)
 	}
 
-	fmt.Println("Running... (press Ctrl+C to stop)")
+	out.infof("%s running %s", out.paint(cBlue, "▶"), out.paint(cDim, "(Ctrl+C to stop)"))
 
 	return runApp(ctx, addr, flutter)
 }
 
 func runWithWatch(ctx context.Context, addr, flutter string) error {
-	fmt.Println("Hot reload: the window stays open across rebuilds; the Go server restarts on .go changes.")
+	out.infof("%s hot reload — window stays open; the Go server rebuilds on .go changes", out.paint(cCyan, "↻"))
 
 	flutterProc, err := startFlutterClient(ctx, addr, flutter)
 	if err != nil {
-		fmt.Printf("Could not start the Flutter client (%v) — falling back to full restarts.\n", err)
+		out.warnf("could not start the Flutter client (%v) — falling back to full restarts", err)
 
 		return runWithFullRestart(ctx, addr, flutter)
 	}
@@ -560,9 +603,8 @@ func runWithWatch(ctx context.Context, addr, flutter string) error {
 
 	snap := fileSnapshot()
 	for {
-		fmt.Println("Building Go server...")
 		if buildErr := buildApp(ctx); buildErr != nil {
-			fmt.Printf("build failed: %v (waiting for changes)\n", buildErr)
+			out.warnf("waiting for changes after build failure")
 			waitForChange(&snap)
 
 			continue
@@ -571,21 +613,21 @@ func runWithWatch(ctx context.Context, addr, flutter string) error {
 		server := startServerOnly(ctx, addr)
 		waitForChange(&snap)
 		killProc(server)
-		fmt.Println("--- change detected, reloading Go server (window stays open) ---")
+		out.infof("%s change detected — reloading Go server", out.paint(cCyan, "↻"))
 	}
 }
 
 func runWithFullRestart(ctx context.Context, addr, flutter string) error {
-	fmt.Println("Watching .go files for changes...")
+	out.infof("watching .go files for changes")
 
 	snap := fileSnapshot()
 	for {
 		if err := buildAndRun(ctx, addr, flutter); err != nil {
-			fmt.Printf("Run error: %v\n", err)
+			out.failf("%v", err)
 		}
 
 		waitForChange(&snap)
-		fmt.Println("--- File change detected, restarting ---")
+		out.infof("%s change detected — restarting", out.paint(cCyan, "↻"))
 	}
 }
 
@@ -615,10 +657,8 @@ func startFlutterClient(ctx context.Context, addr, flutter string) (*exec.Cmd, e
 
 func buildApp(ctx context.Context) error {
 	cmd := exec.CommandContext(ctx, "go", subcmdBuild, "-o", appBinary(), ".")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 
-	return cmd.Run()
+	return out.runStep("Building Go server", cmd)
 }
 
 // startServerOnly runs the built app in server-only mode (FUGO_NO_FLUTTER=1) so
@@ -629,7 +669,7 @@ func startServerOnly(ctx context.Context, addr string) *exec.Cmd {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
-		fmt.Printf("start server: %v\n", err)
+		out.failf("start server: %v", err)
 
 		return nil
 	}
@@ -727,41 +767,55 @@ func runApp(ctx context.Context, addr, flutter string) error {
 func buildCmd() *cli.Command {
 	return &cli.Command{
 		Name:  "build",
-		Usage: "Build the app and bundle the Flutter client into dist/",
+		Usage: "Build a release binary and bundle the Flutter client into dist/",
+		Description: `Compile a stripped release binary and copy the precompiled Flutter render
+client next to it under dist/. Ship the whole dist/ folder; it runs without a
+Go or Flutter toolchain installed.
+
+If the Flutter client bundle hasn't been built yet, only the Go binary is
+produced (build the client once with: cd <fugo>/flutter_client && flutter build).
+
+Examples:
+  fugo build
+  fugo build -V`,
+		Flags: verbosityFlags(),
 		Action: func(ctx context.Context, _ *cli.Command) error {
+			setupUI()
+
 			if !hasMainGo() {
-				return errors.New("no main.go found in current directory. Run 'fugo init <name>' first")
+				return errors.New("no main.go in the current directory — run 'fugo init <name>' first")
 			}
 
 			outDir := "dist"
 			appOut := filepath.Join(outDir, projectName()+exeSuffix())
 
-			fmt.Println("Building app (release)...")
 			build := exec.CommandContext(ctx, "go", subcmdBuild, "-ldflags=-s -w", "-o", appOut, ".")
-			build.Stdout = os.Stdout
-			build.Stderr = os.Stderr
-			if err := build.Run(); err != nil {
+			if err := out.runStep("Building app (release)", build); err != nil {
 				return fmt.Errorf("build failed: %w", err)
 			}
 
 			src := flutterBundleDir(ctx)
 			if src == "" {
-				fmt.Println("  ! Flutter client bundle not found — built the Go binary only.")
-				fmt.Println("    Build the client first: cd <fugo>/flutter_client && flutter build windows")
-				fmt.Printf("\nBuild complete (app only): %s\n", appOut)
+				out.warnf("Flutter client bundle not found — built the Go binary only")
+				out.infof("  build the client once: cd <fugo>/flutter_client && flutter build %s", flutterTarget())
+				out.successf("built %s %s", appOut, out.paint(cDim, "(app only)"))
 
 				return nil
 			}
 
-			fmt.Println("Bundling Flutter client...")
-			if err := copyDir(src, filepath.Join(outDir, "flutter")); err != nil {
+			dst := filepath.Join(outDir, "flutter")
+			start := time.Now()
+			out.tracef("copy %s -> %s", src, dst)
+			if err := copyDir(src, dst); err != nil {
 				return fmt.Errorf("bundle flutter client: %w", err)
 			}
+			out.successf("bundled Flutter client %s", out.paint(cDim, "("+time.Since(start).Round(time.Millisecond).String()+")"))
 
-			fmt.Printf("\nBuild complete: %s/\n", outDir)
-			fmt.Printf("  %s — your app\n", filepath.Base(appOut))
-			fmt.Printf("  flutter/      — bundled render client\n")
-			fmt.Printf("\nShip the whole %s/ folder; run it with: %s\n", outDir, appOut)
+			out.infof("")
+			out.successf("build complete → %s%c", outDir, os.PathSeparator)
+			out.infof("  %-9s your app", filepath.Base(appOut))
+			out.infof("  %-9s bundled render client", "flutter"+string(os.PathSeparator))
+			out.infof("  ship the whole %s%c folder; run: %s", outDir, os.PathSeparator, appOut)
 
 			return nil
 		},
@@ -840,26 +894,31 @@ func ensureFlutterClient(ctx context.Context) {
 	}
 
 	if _, err := exec.LookPath("flutter"); err != nil {
-		fmt.Println("Flutter client not built and 'flutter' is not on PATH.")
-		fmt.Println("Build it once with: cd flutter_client && flutter build windows")
+		out.warnf("Flutter client not built and 'flutter' is not on PATH")
+		out.infof("  build it once: cd flutter_client && flutter build %s", flutterTarget())
 
 		return
 	}
 
-	fmt.Println("Flutter client not built yet — building it once (this can take a few minutes)...")
-
-	args := []string{subcmdBuild, "windows"}
+	args := []string{subcmdBuild, flutterTarget()}
 	if runtime.GOOS != osWindows {
-		args = []string{subcmdBuild, "linux", "--debug"}
+		args = append(args, "--debug")
 	}
 
 	cmd := exec.CommandContext(ctx, "flutter", args...)
 	cmd.Dir = clientDir
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		fmt.Printf("flutter build failed: %v\n", err)
+	if err := out.runStep("Building Flutter client (first run — this can take a few minutes)", cmd); err != nil {
+		out.failf("flutter build failed: %v", err)
 	}
+}
+
+// flutterTarget is the `flutter build` target for the host OS.
+func flutterTarget() string {
+	if runtime.GOOS == osWindows {
+		return "windows"
+	}
+
+	return "linux"
 }
 
 // copyDir recursively copies the contents of src into dst.
@@ -924,55 +983,70 @@ func appBinary() string {
 func doctorCmd() *cli.Command {
 	return &cli.Command{
 		Name:  "doctor",
-		Usage: "Check development environment",
+		Usage: "Check the development environment",
+		Description: `Probe the toolchain Fugo needs and report what's found. Use -V for full
+version output and the resolved fugo module path.`,
+		Flags: verbosityFlags(),
 		Action: func(ctx context.Context, _ *cli.Command) error {
+			setupUI()
+
 			checks := []struct {
 				name string
-				cmd  string
+				bin  string
 				args []string
+				hint string
 			}{
-				{"Go", "go", []string{"version"}},
-				{"Flutter", "flutter", []string{"--version"}},
-				{"protoc", "protoc", []string{"--version"}},
-				{"gofumpt", "gofumpt", []string{"-version"}},
+				{"Go", "go", []string{"version"}, "required — https://go.dev/dl"},
+				{"Flutter", "flutter", []string{"--version"}, "required to render — https://docs.flutter.dev"},
+				{"protoc", "protoc", []string{"--version"}, "only to regenerate protobuf (make proto)"},
+				{"gofumpt", "gofumpt", []string{"-version"}, "formatter — go install mvdan.cc/gofumpt@latest"},
 			}
 
-			fmt.Println("Fugo Doctor")
-			fmt.Println("===========")
-			fmt.Println()
+			out.heading("Fugo Doctor")
 
-			for _, check := range checks {
-				cmd := exec.CommandContext(ctx, check.cmd, check.args...)
-				out, err := cmd.CombinedOutput()
+			missing := 0
+			for _, c := range checks {
+				line, err := firstLine(ctx, c.bin, c.args...)
 				if err != nil {
-					fmt.Printf("  %-10s NOT FOUND\n", check.name)
-				} else {
-					firstLine := string(out)
-					if idx := indexByte(firstLine, '\n'); idx >= 0 {
-						firstLine = firstLine[:idx]
-					}
-					if idx := indexByte(firstLine, '\r'); idx >= 0 {
-						firstLine = firstLine[:idx]
-					}
-					fmt.Printf("  %-10s %s\n", check.name, strings.TrimSpace(firstLine))
+					missing++
+					out.printf("  %s %-9s %s\n", out.paint(cRed, "✗"), c.name, out.paint(cDim, c.hint))
+
+					continue
 				}
+
+				out.printf("  %s %-9s %s\n", out.paint(cGreen, "✓"), c.name, line)
+				out.tracef("%s: %s %s", c.name, c.bin, strings.Join(c.args, " "))
 			}
 
-			fmt.Println()
-			fmt.Printf("  OS/Arch   %s/%s\n", runtime.GOOS, runtime.GOARCH)
-			fmt.Println()
+			out.printf("\n  %-11s %s/%s\n", "platform", runtime.GOOS, runtime.GOARCH)
+			if repo := fugoModuleDir(ctx); repo != "" {
+				out.printf("  %-11s %s\n", "fugo module", repo)
+			}
+
+			out.printf("\n")
+			if missing == 0 {
+				out.successf("environment looks good")
+			} else {
+				out.warnf("%d tool(s) missing — see the hints above", missing)
+			}
 
 			return nil
 		},
 	}
 }
 
-func indexByte(s string, b byte) int {
-	for i := range len(s) {
-		if s[i] == b {
-			return i
-		}
+// firstLine runs name with args and returns the trimmed first line of its
+// combined output, or an error if the command cannot be run.
+func firstLine(ctx context.Context, name string, args ...string) (string, error) {
+	o, err := exec.CommandContext(ctx, name, args...).CombinedOutput()
+	if err != nil {
+		return "", err
 	}
 
-	return -1
+	s := string(o)
+	if i := strings.IndexAny(s, "\r\n"); i >= 0 {
+		s = s[:i]
+	}
+
+	return strings.TrimSpace(s), nil
 }
