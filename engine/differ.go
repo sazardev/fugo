@@ -31,6 +31,13 @@ func Diff(oldTree, newTree *fugov1.WidgetTree) []Patch {
 		return fullCreate(newTree)
 	}
 
+	// Fast path: the retained tree assigns ids in a stable order every frame,
+	// so an allocation-free positional compare lets the common "nothing changed"
+	// case return early without building the lookup maps.
+	if treesEqual(oldTree, newTree) {
+		return nil
+	}
+
 	s := &diffState{
 		oldMap: indexByID(oldTree.GetNodes()),
 	}
@@ -118,6 +125,32 @@ func fullCreate(tree *fugov1.WidgetTree) []Patch {
 	}
 
 	return patches
+}
+
+// treesEqual reports whether a and b are structurally identical, comparing
+// nodes positionally with no allocations. It is the diff's no-change fast path.
+func treesEqual(a, b *fugov1.WidgetTree) bool {
+	an, bn := a.GetNodes(), b.GetNodes()
+	if len(an) != len(bn) {
+		return false
+	}
+
+	for i := range an {
+		x, y := an[i], bn[i]
+		if x.GetId() != y.GetId() || x.GetType() != y.GetType() || x.GetKey() != y.GetKey() {
+			return false
+		}
+
+		if !bytesEqual(x.GetProps(), y.GetProps()) {
+			return false
+		}
+
+		if !uint32SliceEqual(x.GetChildren(), y.GetChildren()) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func indexByID(nodes []*fugov1.WidgetNode) map[uint32]*fugov1.WidgetNode {

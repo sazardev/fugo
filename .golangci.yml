@@ -21,7 +21,6 @@ linters:
     - fatcontext
     - forbidigo
     - gocheckcompilerdirectives
-    - gochecknoglobals
     - gochecknoinits
     - gocognit
     - goconst
@@ -42,13 +41,10 @@ linters:
     - ineffassign
     - interfacebloat
     - intrange
-    - ireturn
-    - lll
     - loggercheck
     - maintidx
     - mirror
     - misspell
-    - mnd
     - musttag
     - nakedret
     - nestif
@@ -76,7 +72,6 @@ linters:
     - testableexamples
     - testifylint
     - usetesting
-    - testpackage
     - thelper
     - tparallel
     - unconvert
@@ -84,11 +79,17 @@ linters:
     - usestdlibvars
     - wastedassign
     - whitespace
-    - wsl_v5
     - zerologlint
   disable:
-    - exhaustruct
-    - wrapcheck
+    # Disabled deliberately — these conflict with idiomatic framework code:
+    - exhaustruct       # widget structs are partially initialized by design
+    - wrapcheck         # not every error needs wrapping in this codebase
+    - mnd               # UI sizes, durations and color literals are meaningful
+    - gochecknoglobals  # the style aliases and the active theme are intentional package state
+    - ireturn           # the widget API returns the fg.Widget interface by design
+    - testpackage       # internal _test packages intentionally exercise unexported behavior
+    - lll               # line length is handled by gofumpt, not gated here
+    - wsl_v5            # whitespace-between-statements is too pedantic here
   exclusions:
     rules:
       # A CLI legitimately writes to stdout/stderr and does file I/O on
