@@ -9,7 +9,7 @@ import (
 // DividerWidget is a thin horizontal rule used to separate content. Build one with Divider.
 type DividerWidget struct {
 	thickness float64
-	color_    style.Color
+	color     style.Color
 	baseWidget
 }
 
@@ -17,7 +17,7 @@ type DividerWidget struct {
 func Divider() *DividerWidget {
 	return &DividerWidget{
 		thickness: 1,
-		color_:    active.Colors.Border,
+		color:     active.Colors.Border,
 	}
 }
 
@@ -30,7 +30,7 @@ func (d *DividerWidget) Thickness(v float64) *DividerWidget {
 
 // Color sets the divider color and returns the widget for chaining.
 func (d *DividerWidget) Color(c style.Color) *DividerWidget {
-	d.color_ = c
+	d.color = c
 
 	return d
 }
@@ -44,7 +44,7 @@ func (d *DividerWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 
 	props, _ := proto.Marshal(&fugov1.DividerProps{
 		Thickness: d.thickness,
-		Color:     d.color_.String(),
+		Color:     d.color.String(),
 	})
 
 	return []*fugov1.WidgetNode{{

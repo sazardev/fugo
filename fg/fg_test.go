@@ -14,11 +14,11 @@ func TestBuildTree(t *testing.T) {
 	if tree == nil {
 		t.Fatal("BuildTree returned nil")
 	}
-	if tree.Root == 0 {
+	if tree.GetRoot() == 0 {
 		t.Error("Root should be non-zero")
 	}
-	if len(tree.Nodes) != 1 {
-		t.Errorf("Expected 1 node, got %d", len(tree.Nodes))
+	if len(tree.GetNodes()) != 1 {
+		t.Errorf("Expected 1 node, got %d", len(tree.GetNodes()))
 	}
 	if len(m) != 1 {
 		t.Errorf("Expected 1 widget in map, got %d", len(m))
@@ -34,10 +34,10 @@ func TestBuildTreeNested(t *testing.T) {
 	)
 
 	tree, _ := BuildTree(root)
-	if len(tree.Nodes) != 4 {
-		t.Errorf("Expected 4 nodes (container+column+2text), got %d", len(tree.Nodes))
+	if len(tree.GetNodes()) != 4 {
+		t.Errorf("Expected 4 nodes (container+column+2text), got %d", len(tree.GetNodes()))
 	}
-	if tree.Root != tree.Nodes[0].GetId() {
+	if tree.GetRoot() != tree.GetNodes()[0].GetId() {
 		t.Error("Root should point to first node")
 	}
 }
@@ -76,7 +76,7 @@ func TestTextWalkNodes(t *testing.T) {
 
 func TestButtonWalkNodes(t *testing.T) {
 	btn := Button("Click")
-	btn.OnClick(func(e Event) {})
+	btn.OnClick(func(_ Event) {})
 
 	var counter uint32
 	nodes := btn.walkNodes(&counter)

@@ -10,8 +10,8 @@ import (
 
 type testHandler struct{}
 
-func (t *testHandler) HandleEvent(ev *fugov1.ClientEvent)       {}
-func (t *testHandler) SetReconciler(stream engine.RenderStream) {}
+func (t *testHandler) HandleEvent(_ *fugov1.ClientEvent)   {}
+func (t *testHandler) SetReconciler(_ engine.RenderStream) {}
 
 func TestResolveNetwork_TCP(t *testing.T) {
 	network, addr := resolveNetwork("127.0.0.1:9510")
@@ -25,7 +25,7 @@ func TestResolveNetwork_TCP(t *testing.T) {
 
 func TestResolveNetwork_UDS(t *testing.T) {
 	network, addr := resolveNetwork("/tmp/fugo.sock")
-	if network != "unix" {
+	if network != networkUnix {
 		t.Errorf("network = %s, want unix", network)
 	}
 	if addr != "/tmp/fugo.sock" {
@@ -35,7 +35,7 @@ func TestResolveNetwork_UDS(t *testing.T) {
 
 func TestResolveNetwork_UDS_Relative(t *testing.T) {
 	network, _ := resolveNetwork("fugo.sock")
-	if network != "unix" {
+	if network != networkUnix {
 		t.Errorf("network = %s, want unix", network)
 	}
 }

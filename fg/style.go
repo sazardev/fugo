@@ -5,12 +5,19 @@ import "github.com/sazardev/fugo/style"
 // Convenience aliases for the most-used types from the style package, so app
 // code can stay in the fg namespace (fg.Color, fg.EdgeInsets, ...).
 type (
-	Color      = style.Color
+	// Color is an RGBA color (alias of style.Color).
+	Color = style.Color
+	// EdgeInsets are padding/margin offsets (alias of style.EdgeInsets).
 	EdgeInsets = style.EdgeInsets
+	// FontWeight is a text weight (alias of style.FontWeight).
 	FontWeight = style.FontWeight
-	TextAlign  = style.TextAlign
-	TextStyle  = style.TextStyle
-	Border     = style.Border
+	// TextAlign is a horizontal text alignment (alias of style.TextAlign).
+	TextAlign = style.TextAlign
+	// TextStyle describes text rendering (alias of style.TextStyle).
+	TextStyle = style.TextStyle
+	// Border describes a box border (alias of style.Border).
+	Border = style.Border
+	// BorderSide describes one side of a border (alias of style.BorderSide).
 	BorderSide = style.BorderSide
 )
 

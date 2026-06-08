@@ -77,7 +77,7 @@ func buildUI(ctx *fugo.Context) fg.Widget {
 	}, "/")
 }
 
-// --- Home Page ---
+// Home page.
 func homePage(ctx *fugo.Context) fg.Widget {
 	accent := fg.Hex("#0F3460")
 	green := fg.Hex("#10B981")
@@ -132,7 +132,7 @@ func homePage(ctx *fugo.Context) fg.Widget {
 	).BgColor(fg.Hex("#1A1A2E")).Pad(fg.EdgeAll(24))
 }
 
-// --- Inputs Page ---
+// Inputs page.
 func inputsPage(ctx *fugo.Context) fg.Widget {
 	accent := fg.Hex("#0F3460")
 
@@ -258,7 +258,7 @@ func inputsPage(ctx *fugo.Context) fg.Widget {
 	).BgColor(fg.Hex("#1A1A2E")).Pad(fg.EdgeAll(24))
 }
 
-// --- Gallery Page ---
+// Gallery page.
 func galleryPage(ctx *fugo.Context) fg.Widget {
 	accent := fg.Hex("#0F3460")
 	red := fg.Hex("#EF4444")
@@ -292,7 +292,7 @@ func galleryPage(ctx *fugo.Context) fg.Widget {
 
 	// GridView
 	gridColors := []fg.Color{red, orange, green, blue, purple, pink}
-	var gridItems []fg.Widget
+	gridItems := make([]fg.Widget, 0, len(gridColors))
 	for _, c := range gridColors {
 		gridItems = append(
 			gridItems,
@@ -304,8 +304,9 @@ func galleryPage(ctx *fugo.Context) fg.Widget {
 	grid := fg.SizedBox(0, 120).Child(gridView)
 
 	// Wrap
-	var wrapItems []fg.Widget
-	for _, c := range []fg.Color{red, blue, green, orange, purple} {
+	wrapColors := []fg.Color{red, blue, green, orange, purple}
+	wrapItems := make([]fg.Widget, 0, len(wrapColors))
+	for _, c := range wrapColors {
 		wrapItems = append(
 			wrapItems,
 			fg.Container(fg.PaddingAll(fg.Text("chip"), 4)).BgColor(c),

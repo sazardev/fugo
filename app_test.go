@@ -1,7 +1,7 @@
 package fugo
 
 import (
-	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/sazardev/fugo/engine"
@@ -29,7 +29,7 @@ func TestHandleEventDispatch(t *testing.T) {
 		id = k
 	}
 
-	app.HandleEvent(&fugov1.ClientEvent{NodeId: fmt.Sprint(id), EventType: "click"})
+	app.HandleEvent(&fugov1.ClientEvent{NodeId: strconv.FormatUint(uint64(id), 10), EventType: "click"})
 
 	if !clicked {
 		t.Error("expected button handler to fire for matching node id")

@@ -64,7 +64,7 @@ func TestScheduler_FlushOnlyWhenDirty(t *testing.T) {
 	}
 }
 
-func TestScheduler_Stop(t *testing.T) {
+func TestScheduler_Stop(_ *testing.T) {
 	sched := engine.NewScheduler(5 * time.Millisecond)
 	sched.Start()
 	sched.Stop()

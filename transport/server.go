@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"context"
 	"crypto/subtle"
 	"fmt"
 	"log"
@@ -20,8 +21,11 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// networkUnix is the net.Listen network name for Unix domain sockets.
+const networkUnix = "unix"
+
 // tokenMetadataKey is the gRPC metadata key carrying the per-run auth token.
-const tokenMetadataKey = "x-fugo-token"
+const tokenMetadataKey = "x-fugo-token" //nolint:gosec // metadata key name, not a credential
 
 // Server implements the FugoRender gRPC service, bridging the bidirectional
 // render stream to the application: it pushes render payloads to the Flutter
@@ -73,12 +77,13 @@ func (s *Server) RenderStream(stream fugov1.FugoRender_RenderStreamServer) error
 func StartServer(addr string, app AppHandler) (*grpc.Server, net.Listener, error) {
 	network, address := resolveNetwork(addr)
 
-	listener, err := net.Listen(network, address)
+	var lc net.ListenConfig
+	listener, err := lc.Listen(context.Background(), network, address)
 	if err != nil {
 		return nil, nil, fmt.Errorf("listen %s: %w", address, err)
 	}
 
-	if network == "unix" {
+	if network == networkUnix {
 		if err := os.Chmod(address, 0o600); err != nil {
 			return nil, nil, fmt.Errorf("chmod %s: %w", address, err)
 		}
@@ -111,7 +116,7 @@ func resolveNetwork(addr string) (string, string) {
 		// can bind; a missing or already-removed file is fine to ignore.
 		_ = os.Remove(addr)
 
-		return "unix", addr
+		return networkUnix, addr
 	}
 
 	return "tcp", addr

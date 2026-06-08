@@ -8,18 +8,18 @@ import (
 
 // IconWidget displays a named icon glyph. Build one with Icon.
 type IconWidget struct {
-	Name   string
-	size   float64
-	color_ style.Color
+	Name  string
+	size  float64
+	color style.Color
 	baseWidget
 }
 
 // Icon creates an icon widget for the named glyph, colored from the active Theme.
 func Icon(name string) *IconWidget {
 	return &IconWidget{
-		Name:   name,
-		size:   24,
-		color_: active.Colors.OnSurface,
+		Name:  name,
+		size:  24,
+		color: active.Colors.OnSurface,
 	}
 }
 
@@ -32,7 +32,7 @@ func (i *IconWidget) Size(v float64) *IconWidget {
 
 // Color sets the icon color and returns the widget for chaining.
 func (i *IconWidget) Color(c style.Color) *IconWidget {
-	i.color_ = c
+	i.color = c
 
 	return i
 }
@@ -47,7 +47,7 @@ func (i *IconWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	props, _ := proto.Marshal(&fugov1.IconProps{
 		Name:  i.Name,
 		Size:  i.size,
-		Color: i.color_.String(),
+		Color: i.color.String(),
 	})
 
 	return []*fugov1.WidgetNode{{

@@ -1,7 +1,9 @@
+// Command fugo is the Fugo CLI: init, run, build and doctor.
 package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -58,7 +60,7 @@ func initCmd() *cli.Command {
 		Action: func(ctx context.Context, c *cli.Command) error {
 			name := c.Args().First()
 			if name == "" {
-				return fmt.Errorf("project name required: fugo init <name>")
+				return errors.New("project name required: fugo init <name>")
 			}
 
 			dir := filepath.Clean(name)
@@ -252,9 +254,9 @@ func runCmd() *cli.Command {
 				Usage:       "watch .go files and restart on change",
 			},
 		},
-		Action: func(ctx context.Context, c *cli.Command) error {
+		Action: func(ctx context.Context, _ *cli.Command) error {
 			if !hasMainGo() {
-				return fmt.Errorf("no main.go found in current directory. Run 'fugo init <name>' first")
+				return errors.New("no main.go found in current directory. Run 'fugo init <name>' first")
 			}
 
 			fmt.Printf("=== Fugo v%s ===\n", version)
@@ -318,7 +320,7 @@ func fileSnapshot() map[string]time.Time {
 
 	_ = filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return nil
+			return nil //nolint:nilerr // intentional fallback: skip unreadable paths during walk
 		}
 		if info.IsDir() {
 			base := filepath.Base(path)
@@ -387,9 +389,9 @@ func buildCmd() *cli.Command {
 	return &cli.Command{
 		Name:  "build",
 		Usage: "Build the app and bundle the Flutter client into dist/",
-		Action: func(ctx context.Context, c *cli.Command) error {
+		Action: func(ctx context.Context, _ *cli.Command) error {
 			if !hasMainGo() {
-				return fmt.Errorf("no main.go found in current directory. Run 'fugo init <name>' first")
+				return errors.New("no main.go found in current directory. Run 'fugo init <name>' first")
 			}
 
 			outDir := "dist"
@@ -518,6 +520,7 @@ func copyFile(src, dst string) error {
 
 func hasMainGo() bool {
 	_, err := os.Stat("main.go")
+
 	return err == nil
 }
 
@@ -535,7 +538,7 @@ func doctorCmd() *cli.Command {
 	return &cli.Command{
 		Name:  "doctor",
 		Usage: "Check development environment",
-		Action: func(ctx context.Context, c *cli.Command) error {
+		Action: func(ctx context.Context, _ *cli.Command) error {
 			checks := []struct {
 				name string
 				cmd  string
@@ -552,7 +555,7 @@ func doctorCmd() *cli.Command {
 			fmt.Println()
 
 			for _, check := range checks {
-				cmd := exec.Command(check.cmd, check.args...)
+				cmd := exec.CommandContext(ctx, check.cmd, check.args...)
 				out, err := cmd.CombinedOutput()
 				if err != nil {
 					fmt.Printf("  %-10s NOT FOUND\n", check.name)

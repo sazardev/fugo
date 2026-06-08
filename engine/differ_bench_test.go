@@ -17,7 +17,7 @@ func makeTree(nodeCount int) *fugov1.WidgetTree {
 
 		var children []uint32
 		if i > 0 && i%5 == 0 {
-			children = []uint32{uint32(i - 2), uint32(i - 1)}
+			children = []uint32{uint32(i - 2), uint32(i - 1)} //nolint:gosec // controlled small loop indices in a benchmark
 		}
 
 		nodes[i] = &fugov1.WidgetNode{
