@@ -2,19 +2,19 @@ package fg
 
 import fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
 
-type Stack struct {
+type StackWidget struct {
 	items []Widget
 	baseWidget
 }
 
-func Stack(items ...Widget) *Stack {
-	return &Stack{items: items}
+func Stack(items ...Widget) *StackWidget {
+	return &StackWidget{items: items}
 }
 
-func (s *Stack) isWidget()                {}
-func (s *Stack) widgetChildren() []Widget { return s.items }
+func (s *StackWidget) isWidget()                {}
+func (s *StackWidget) widgetChildren() []Widget { return s.items }
 
-func (s *Stack) walkNodes(counter *uint32) []*fugov1.WidgetNode {
+func (s *StackWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	s.id = *counter
 

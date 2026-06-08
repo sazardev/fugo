@@ -77,8 +77,7 @@ import (
 	"strconv"
 
 	"github.com/sazardev/fugo"
-	"github.com/sazardev/fugo/style"
-	"github.com/sazardev/fugo/ui"
+	"github.com/sazardev/fugo/fg"
 )
 
 func main() {
@@ -89,28 +88,28 @@ func main() {
 	}, buildUI)
 }
 
-func buildUI(ctx *fugo.Context) ui.Widget {
+func buildUI(ctx *fugo.Context) fg.Widget {
 	counter := 0
-	counterText := ui.NewText("0").
-		WithFontSize(48).
-		WithColor(style.Hex("#FFFFFF"))
+	counterText := fg.Text("0").
+		FontSize(48).
+		Color(fg.Hex("#FFFFFF"))
 
-	incBtn := ui.NewButton("+").
-		WithBgColor(style.Hex("#10B981")).
-		WithFontSize(20).
-		OnClick(func(_ ui.Event) {
+	incBtn := fg.Button("+").
+		BgColor(fg.Hex("#10B981")).
+		FontSize(20).
+		OnClick(func(_ fg.Event) {
 			counter++
 			counterText.SetText(strconv.Itoa(counter))
 			ctx.Update()
 		})
 
-	return ui.NewContainer(
-		ui.NewColumn(
+	return fg.Container(
+		fg.Column(
 			counterText,
-			ui.NewSizedBox(0, 16),
+			fg.SizedBox(0, 16),
 			incBtn,
 		),
-	).WithBgColor(style.Hex("#1A1A2E")).WithPad(style.EdgeAll(24))
+	).BgColor(fg.Hex("#1A1A2E")).Pad(fg.EdgeAll(24))
 }
 `, name)
 

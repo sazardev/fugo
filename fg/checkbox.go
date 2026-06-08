@@ -5,46 +5,46 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type Checkbox struct {
+type CheckboxWidget struct {
 	handler func(Event)
 	Label   string
 	Checked bool
 	baseWidget
 }
 
-func Checkbox(label string) *Checkbox {
-	return &Checkbox{Label: label}
+func Checkbox(label string) *CheckboxWidget {
+	return &CheckboxWidget{Label: label}
 }
 
-func (c *Checkbox) OnChange(handler func(Event)) *Checkbox {
+func (c *CheckboxWidget) OnChange(handler func(Event)) *CheckboxWidget {
 	c.handler = handler
 
 	return c
 }
 
-func (c *Checkbox) SetChecked(v bool) *Checkbox {
+func (c *CheckboxWidget) SetChecked(v bool) *CheckboxWidget {
 	c.Checked = v
 
 	return c
 }
 
-func (c *Checkbox) SetLabel(v string) *Checkbox {
+func (c *CheckboxWidget) SetLabel(v string) *CheckboxWidget {
 	c.Label = v
 
 	return c
 }
 
-func (c *Checkbox) isWidget()                {}
-func (c *Checkbox) widgetChildren() []Widget { return nil }
-func (c *Checkbox) HasHandler() bool         { return c.handler != nil }
+func (c *CheckboxWidget) isWidget()                {}
+func (c *CheckboxWidget) widgetChildren() []Widget { return nil }
+func (c *CheckboxWidget) HasHandler() bool         { return c.handler != nil }
 
-func (c *Checkbox) Handle(event Event) {
+func (c *CheckboxWidget) Handle(event Event) {
 	if c.handler != nil {
 		c.handler(event)
 	}
 }
 
-func (c *Checkbox) walkNodes(counter *uint32) []*fugov1.WidgetNode {
+func (c *CheckboxWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	c.id = *counter
 

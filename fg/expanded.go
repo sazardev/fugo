@@ -5,24 +5,24 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type Expanded struct {
+type ExpandedWidget struct {
 	child Widget
-	Flex  int32
+	flex  int32
 	baseWidget
 }
 
-func Expanded(child Widget) *Expanded {
-	return &Expanded{child: child, Flex: 1}
+func Expanded(child Widget) *ExpandedWidget {
+	return &ExpandedWidget{child: child, flex: 1}
 }
 
-func (e *Expanded) Flex(v int32) *Expanded {
-	e.Flex = v
+func (e *ExpandedWidget) Flex(v int32) *ExpandedWidget {
+	e.flex = v
 
 	return e
 }
 
-func (e *Expanded) isWidget() {}
-func (e *Expanded) widgetChildren() []Widget {
+func (e *ExpandedWidget) isWidget() {}
+func (e *ExpandedWidget) widgetChildren() []Widget {
 	if e.child != nil {
 		return []Widget{e.child}
 	}
@@ -30,7 +30,7 @@ func (e *Expanded) widgetChildren() []Widget {
 	return nil
 }
 
-func (e *Expanded) walkNodes(counter *uint32) []*fugov1.WidgetNode {
+func (e *ExpandedWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	e.id = *counter
 
@@ -45,7 +45,7 @@ func (e *Expanded) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 		}
 	}
 
-	props, _ := proto.Marshal(&fugov1.ExpandedProps{Flex: e.Flex})
+	props, _ := proto.Marshal(&fugov1.ExpandedProps{Flex: e.flex})
 
 	return append([]*fugov1.WidgetNode{{
 		Id:       e.id,

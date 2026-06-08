@@ -5,30 +5,22 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type Padding struct {
+type PaddingWidget struct {
 	child  Widget
-	Insets struct{ Top, Right, Bottom, Left float64 }
+	Insets EdgeInsets
 	baseWidget
 }
 
-func Padding(child Widget, top, right, bottom, left float64) *Padding {
-	return &Padding{
-		child: child,
-		Insets: struct {
-			Top    float64
-			Right  float64
-			Bottom float64
-			Left   float64
-		}{Top: top, Right: right, Bottom: bottom, Left: left},
-	}
+func Padding(child Widget, insets EdgeInsets) *PaddingWidget {
+	return &PaddingWidget{child: child, Insets: insets}
 }
 
-func PaddingAll(child Widget, value float64) *Padding {
-	return Padding(child, value, value, value, value)
+func PaddingAll(child Widget, value float64) *PaddingWidget {
+	return Padding(child, EdgeAll(value))
 }
 
-func (p *Padding) isWidget() {}
-func (p *Padding) widgetChildren() []Widget {
+func (p *PaddingWidget) isWidget() {}
+func (p *PaddingWidget) widgetChildren() []Widget {
 	if p.child != nil {
 		return []Widget{p.child}
 	}
@@ -36,12 +28,14 @@ func (p *Padding) widgetChildren() []Widget {
 	return nil
 }
 
-func (p *Padding) walkNodes(counter *uint32) []*fugov1.WidgetNode {
+func (p *PaddingWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	p.id = *counter
 
-	var childIDs []uint32
-	var allNodes []*fugov1.WidgetNode
+	var (
+		childIDs []uint32
+		allNodes []*fugov1.WidgetNode
+	)
 
 	for _, child := range p.widgetChildren() {
 		subNodes := child.walkNodes(counter)

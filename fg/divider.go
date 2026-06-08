@@ -6,40 +6,41 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type Divider struct {
-	Thickness float64
-	Color     style.Color
+type DividerWidget struct {
+	thickness float64
+	color_    style.Color
 	baseWidget
 }
 
-func Divider() *Divider {
-	return &Divider{
-		Thickness: 1,
+func Divider() *DividerWidget {
+	return &DividerWidget{
+		thickness: 1,
+		color_:    active.Colors.Border,
 	}
 }
 
-func (d *Divider) Thickness(v float64) *Divider {
-	d.Thickness = v
+func (d *DividerWidget) Thickness(v float64) *DividerWidget {
+	d.thickness = v
 
 	return d
 }
 
-func (d *Divider) Color(c style.Color) *Divider {
-	d.Color = c
+func (d *DividerWidget) Color(c style.Color) *DividerWidget {
+	d.color_ = c
 
 	return d
 }
 
-func (d *Divider) isWidget()                {}
-func (d *Divider) widgetChildren() []Widget { return nil }
+func (d *DividerWidget) isWidget()                {}
+func (d *DividerWidget) widgetChildren() []Widget { return nil }
 
-func (d *Divider) walkNodes(counter *uint32) []*fugov1.WidgetNode {
+func (d *DividerWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	d.id = *counter
 
 	props, _ := proto.Marshal(&fugov1.DividerProps{
-		Thickness: d.Thickness,
-		Color:     d.Color.String(),
+		Thickness: d.thickness,
+		Color:     d.color_.String(),
 	})
 
 	return []*fugov1.WidgetNode{{

@@ -5,43 +5,43 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type Row struct {
+type RowWidget struct {
 	items        []Widget
-	MainAxisSize fugov1.MainAxisSize
-	MainAlign    fugov1.MainAxisAlignment
-	CrossAlign   fugov1.CrossAxisAlignment
+	mainAxisSize fugov1.MainAxisSize
+	mainAlign    fugov1.MainAxisAlignment
+	crossAlign   fugov1.CrossAxisAlignment
 	baseWidget
 }
 
-func Row(items ...Widget) *Row {
-	return &Row{
+func Row(items ...Widget) *RowWidget {
+	return &RowWidget{
 		items:      items,
-		CrossAlign: fugov1.CrossAxisAlignment_CROSS_CENTER,
+		crossAlign: fugov1.CrossAxisAlignment_CROSS_CENTER,
 	}
 }
 
-func (r *Row) MainAlign(v fugov1.MainAxisAlignment) *Row {
-	r.MainAlign = v
+func (r *RowWidget) MainAlign(v fugov1.MainAxisAlignment) *RowWidget {
+	r.mainAlign = v
 
 	return r
 }
 
-func (r *Row) CrossAlign(v fugov1.CrossAxisAlignment) *Row {
-	r.CrossAlign = v
+func (r *RowWidget) CrossAlign(v fugov1.CrossAxisAlignment) *RowWidget {
+	r.crossAlign = v
 
 	return r
 }
 
-func (r *Row) MainAxisSize(v fugov1.MainAxisSize) *Row {
-	r.MainAxisSize = v
+func (r *RowWidget) MainAxisSize(v fugov1.MainAxisSize) *RowWidget {
+	r.mainAxisSize = v
 
 	return r
 }
 
-func (r *Row) isWidget()                {}
-func (r *Row) widgetChildren() []Widget { return r.items }
+func (r *RowWidget) isWidget()                {}
+func (r *RowWidget) widgetChildren() []Widget { return r.items }
 
-func (r *Row) walkNodes(counter *uint32) []*fugov1.WidgetNode {
+func (r *RowWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	r.id = *counter
 
@@ -57,9 +57,9 @@ func (r *Row) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	}
 
 	props, _ := proto.Marshal(&fugov1.RowProps{
-		MainAxisSize:   r.MainAxisSize,
-		MainAlignment:  r.MainAlign,
-		CrossAlignment: r.CrossAlign,
+		MainAxisSize:   r.mainAxisSize,
+		MainAlignment:  r.mainAlign,
+		CrossAlignment: r.crossAlign,
 	})
 
 	return append([]*fugov1.WidgetNode{{

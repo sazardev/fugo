@@ -5,36 +5,36 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type GridView struct {
+type GridViewWidget struct {
 	children         []Widget
-	CrossAxisCount   int32
-	ChildAspectRatio float64
+	crossAxisCount   int32
+	childAspectRatio float64
 	baseWidget
 }
 
-func GridView(children ...Widget) *GridView {
-	return &GridView{
+func GridView(children ...Widget) *GridViewWidget {
+	return &GridViewWidget{
 		children:       children,
-		CrossAxisCount: 2,
+		crossAxisCount: 2,
 	}
 }
 
-func (g *GridView) CrossAxisCount(v int32) *GridView {
-	g.CrossAxisCount = v
+func (g *GridViewWidget) CrossAxisCount(v int32) *GridViewWidget {
+	g.crossAxisCount = v
 
 	return g
 }
 
-func (g *GridView) ChildAspectRatio(v float64) *GridView {
-	g.ChildAspectRatio = v
+func (g *GridViewWidget) ChildAspectRatio(v float64) *GridViewWidget {
+	g.childAspectRatio = v
 
 	return g
 }
 
-func (g *GridView) isWidget()                {}
-func (g *GridView) widgetChildren() []Widget { return g.children }
+func (g *GridViewWidget) isWidget()                {}
+func (g *GridViewWidget) widgetChildren() []Widget { return g.children }
 
-func (g *GridView) walkNodes(counter *uint32) []*fugov1.WidgetNode {
+func (g *GridViewWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	g.id = *counter
 
@@ -50,8 +50,8 @@ func (g *GridView) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	}
 
 	props, _ := proto.Marshal(&fugov1.GridViewProps{
-		CrossAxisCount:   g.CrossAxisCount,
-		ChildAspectRatio: g.ChildAspectRatio,
+		CrossAxisCount:   g.crossAxisCount,
+		ChildAspectRatio: g.childAspectRatio,
 	})
 
 	return append([]*fugov1.WidgetNode{{

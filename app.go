@@ -12,9 +12,9 @@ import (
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
 
 	"github.com/sazardev/fugo/engine"
+	"github.com/sazardev/fugo/fg"
 	"github.com/sazardev/fugo/supervisor"
 	"github.com/sazardev/fugo/transport"
-	"github.com/sazardev/fugo/ui"
 )
 
 const schedulerInterval = 16 * time.Millisecond
@@ -26,9 +26,9 @@ type AppOptions struct {
 }
 
 type App struct {
-	uiRoot     ui.Widget
+	uiRoot     fg.Widget
 	ctx        *Context
-	handlers   map[uint32]ui.Widget
+	handlers   map[uint32]fg.Widget
 	reconciler *engine.Reconciler
 	scheduler  *engine.Scheduler
 	oldTree    *fugov1.WidgetTree
@@ -38,7 +38,7 @@ type App struct {
 
 type Context struct {
 	app    *App
-	router *ui.Router
+	router *fg.RouterWidget
 }
 
 func (c *Context) NavigateTo(route string) {
@@ -60,7 +60,7 @@ func (c *Context) Update() {
 func NewApp(opts AppOptions) *App {
 	return &App{
 		opts:      opts,
-		handlers:  make(map[uint32]ui.Widget),
+		handlers:  make(map[uint32]fg.Widget),
 		done:      make(chan struct{}),
 		scheduler: engine.NewScheduler(schedulerInterval),
 	}
@@ -74,16 +74,16 @@ func (a *App) SetReconciler(stream engine.RenderStream) {
 	a.reconciler.SetStream(stream)
 }
 
-func (a *App) Run(buildUI func(ctx *Context) ui.Widget) {
+func (a *App) Run(buildUI func(ctx *Context) fg.Widget) {
 	a.ctx = &Context{app: a}
 
 	a.uiRoot = buildUI(a.ctx)
 
-	if router, ok := a.uiRoot.(*ui.Router); ok {
+	if router, ok := a.uiRoot.(*fg.RouterWidget); ok {
 		a.ctx.router = router
 	}
 
-	tree, widgetMap := ui.BuildTree(a.uiRoot)
+	tree, widgetMap := fg.BuildTree(a.uiRoot)
 	a.collectHandlers(widgetMap)
 	a.oldTree = tree
 
@@ -102,7 +102,7 @@ func (a *App) Run(buildUI func(ctx *Context) ui.Widget) {
 }
 
 func (a *App) flush() {
-	tree, widgetMap := ui.BuildTreeWithMerge(a.uiRoot, a.handlers)
+	tree, widgetMap := fg.BuildTreeWithMerge(a.uiRoot, a.handlers)
 	a.collectHandlers(widgetMap)
 
 	patches := engine.Diff(a.oldTree, tree)
@@ -133,14 +133,14 @@ func (a *App) HandleEvent(ev *fugov1.ClientEvent) {
 	}
 
 	log.Printf("[fugo] event: node=%d type=%s", nodeID, ev.GetEventType())
-	w.Handle(ui.Event{
+	w.Handle(fg.Event{
 		NodeID:    ev.GetNodeId(),
 		EventType: ev.GetEventType(),
 		Data:      ev.GetEventData(),
 	})
 }
 
-func (a *App) collectHandlers(m map[uint32]ui.Widget) {
+func (a *App) collectHandlers(m map[uint32]fg.Widget) {
 	for id, w := range m {
 		if w.HasHandler() {
 			a.handlers[id] = w
@@ -157,7 +157,7 @@ func parseNodeID(s string) uint32 {
 	return id
 }
 
-func RunStandalone(opts AppOptions, buildUI func(ctx *Context) ui.Widget) {
+func RunStandalone(opts AppOptions, buildUI func(ctx *Context) fg.Widget) {
 	app := NewApp(opts)
 
 	addr := os.Getenv("FUGO_ADDR")

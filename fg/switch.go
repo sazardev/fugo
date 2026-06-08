@@ -11,7 +11,7 @@ type SwitchWidget struct {
 	baseWidget
 }
 
-func SwitchWidget() *SwitchWidget {
+func Switch() *SwitchWidget {
 	return &SwitchWidget{}
 }
 

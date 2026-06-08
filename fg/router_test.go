@@ -1,0 +1,64 @@
+package fg
+
+import "testing"
+
+func newTestRouter() *RouterWidget {
+	return Router(map[string]func() Widget{
+		"/":     func() Widget { return Text("home") },
+		"/next": func() Widget { return Text("next") },
+	}, "/")
+}
+
+func TestRouterInitialRoute(t *testing.T) {
+	r := newTestRouter()
+	if r.CurrentRoute() != "/" {
+		t.Errorf("initial route = %s, want /", r.CurrentRoute())
+	}
+}
+
+func TestRouterNavigateTo(t *testing.T) {
+	r := newTestRouter()
+	if !r.NavigateTo("/next") {
+		t.Fatal("NavigateTo(/next) should succeed")
+	}
+	if r.CurrentRoute() != "/next" {
+		t.Errorf("route = %s, want /next", r.CurrentRoute())
+	}
+}
+
+func TestRouterNavigateUnknown(t *testing.T) {
+	r := newTestRouter()
+	if r.NavigateTo("/missing") {
+		t.Error("NavigateTo to an unregistered route should return false")
+	}
+	if r.CurrentRoute() != "/" {
+		t.Errorf("route should stay /, got %s", r.CurrentRoute())
+	}
+}
+
+func TestRouterGoBack(t *testing.T) {
+	r := newTestRouter()
+	r.NavigateTo("/next")
+
+	if !r.GoBack() {
+		t.Error("GoBack should succeed when history is non-empty")
+	}
+	if r.CurrentRoute() != "/" {
+		t.Errorf("after GoBack route = %s, want /", r.CurrentRoute())
+	}
+	if r.GoBack() {
+		t.Error("GoBack with empty history should return false")
+	}
+}
+
+func TestRouterWalkNodesRendersCurrent(t *testing.T) {
+	r := newTestRouter()
+
+	var counter uint32
+	nodes := r.walkNodes(&counter)
+
+	// router wrapper node + the current page's Text node
+	if len(nodes) != 2 {
+		t.Errorf("expected 2 nodes (router + current page), got %d", len(nodes))
+	}
+}

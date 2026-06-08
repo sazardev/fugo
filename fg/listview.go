@@ -5,26 +5,26 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type ListView struct {
+type ListViewWidget struct {
 	items      []Widget
-	ItemExtent float64
+	itemExtent float64
 	baseWidget
 }
 
-func ListView(items ...Widget) *ListView {
-	return &ListView{items: items}
+func ListView(items ...Widget) *ListViewWidget {
+	return &ListViewWidget{items: items}
 }
 
-func (l *ListView) ItemExtent(v float64) *ListView {
-	l.ItemExtent = v
+func (l *ListViewWidget) ItemExtent(v float64) *ListViewWidget {
+	l.itemExtent = v
 
 	return l
 }
 
-func (l *ListView) isWidget()                {}
-func (l *ListView) widgetChildren() []Widget { return l.items }
+func (l *ListViewWidget) isWidget()                {}
+func (l *ListViewWidget) widgetChildren() []Widget { return l.items }
 
-func (l *ListView) walkNodes(counter *uint32) []*fugov1.WidgetNode {
+func (l *ListViewWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	l.id = *counter
 
@@ -40,7 +40,7 @@ func (l *ListView) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	}
 
 	props, _ := proto.Marshal(&fugov1.ListViewProps{
-		ItemExtent: l.ItemExtent,
+		ItemExtent: l.itemExtent,
 	})
 
 	return append([]*fugov1.WidgetNode{{

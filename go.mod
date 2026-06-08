@@ -5,6 +5,7 @@ go 1.26.3
 tool github.com/evilmartians/lefthook/v2
 
 require (
+	github.com/urfave/cli/v3 v3.9.0
 	google.golang.org/grpc v1.81.1
 	google.golang.org/protobuf v1.36.11
 )
@@ -56,7 +57,6 @@ require (
 	github.com/schollz/progressbar/v3 v3.19.0 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/tidwall/jsonc v0.3.3 // indirect
-	github.com/urfave/cli/v3 v3.9.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/mod v0.35.0 // indirect

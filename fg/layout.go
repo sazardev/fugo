@@ -2,20 +2,20 @@ package fg
 
 import fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
 
-type Column struct {
+type ColumnWidget struct {
 	items []Widget
 	baseWidget
 }
 
-func Column(items ...Widget) *Column {
-	return &Column{items: items}
+func Column(items ...Widget) *ColumnWidget {
+	return &ColumnWidget{items: items}
 }
 
-func (c *Column) isWidget() {}
+func (c *ColumnWidget) isWidget() {}
 
-func (c *Column) widgetChildren() []Widget { return c.items }
+func (c *ColumnWidget) widgetChildren() []Widget { return c.items }
 
-func (c *Column) walkNodes(counter *uint32) []*fugov1.WidgetNode {
+func (c *ColumnWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	c.id = *counter
 
@@ -41,18 +41,18 @@ func (c *Column) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	return append([]*fugov1.WidgetNode{self}, allNodes...)
 }
 
-type Center struct {
+type CenterWidget struct {
 	child Widget
 	baseWidget
 }
 
-func Center(child Widget) *Center {
-	return &Center{child: child}
+func Center(child Widget) *CenterWidget {
+	return &CenterWidget{child: child}
 }
 
-func (c *Center) isWidget() {}
+func (c *CenterWidget) isWidget() {}
 
-func (c *Center) widgetChildren() []Widget {
+func (c *CenterWidget) widgetChildren() []Widget {
 	if c.child != nil {
 		return []Widget{c.child}
 	}
@@ -60,7 +60,7 @@ func (c *Center) widgetChildren() []Widget {
 	return nil
 }
 
-func (c *Center) walkNodes(counter *uint32) []*fugov1.WidgetNode {
+func (c *CenterWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	c.id = *counter
 

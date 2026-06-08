@@ -5,61 +5,61 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type Positioned struct {
+type PositionedWidget struct {
 	child  Widget
-	Left   float64
-	Top    float64
-	Right  float64
-	Bottom float64
-	Width  float64
-	Height float64
+	left   float64
+	top    float64
+	right  float64
+	bottom float64
+	width  float64
+	height float64
 	baseWidget
 }
 
-func Positioned(child Widget) *Positioned {
-	return &Positioned{child: child}
+func Positioned(child Widget) *PositionedWidget {
+	return &PositionedWidget{child: child}
 }
 
-func (p *Positioned) Left(v float64) *Positioned {
-	p.Left = v
+func (p *PositionedWidget) Left(v float64) *PositionedWidget {
+	p.left = v
 
 	return p
 }
 
-func (p *Positioned) Top(v float64) *Positioned {
-	p.Top = v
+func (p *PositionedWidget) Top(v float64) *PositionedWidget {
+	p.top = v
 
 	return p
 }
 
-func (p *Positioned) Right(v float64) *Positioned {
-	p.Right = v
+func (p *PositionedWidget) Right(v float64) *PositionedWidget {
+	p.right = v
 
 	return p
 }
 
-func (p *Positioned) Bottom(v float64) *Positioned {
-	p.Bottom = v
+func (p *PositionedWidget) Bottom(v float64) *PositionedWidget {
+	p.bottom = v
 
 	return p
 }
 
-func (p *Positioned) Width(v float64) *Positioned {
-	p.Width = v
+func (p *PositionedWidget) Width(v float64) *PositionedWidget {
+	p.width = v
 
 	return p
 }
 
-func (p *Positioned) Height(v float64) *Positioned {
-	p.Height = v
+func (p *PositionedWidget) Height(v float64) *PositionedWidget {
+	p.height = v
 
 	return p
 }
 
-func (p *Positioned) isWidget()                {}
-func (p *Positioned) widgetChildren() []Widget { return []Widget{p.child} }
+func (p *PositionedWidget) isWidget()                {}
+func (p *PositionedWidget) widgetChildren() []Widget { return []Widget{p.child} }
 
-func (p *Positioned) walkNodes(counter *uint32) []*fugov1.WidgetNode {
+func (p *PositionedWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	p.id = *counter
 
@@ -75,12 +75,12 @@ func (p *Positioned) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	}
 
 	props, _ := proto.Marshal(&fugov1.PositionedProps{
-		Left:   p.Left,
-		Top:    p.Top,
-		Right:  p.Right,
-		Bottom: p.Bottom,
-		Width:  p.Width,
-		Height: p.Height,
+		Left:   p.left,
+		Top:    p.top,
+		Right:  p.right,
+		Bottom: p.bottom,
+		Width:  p.width,
+		Height: p.height,
 	})
 
 	return append([]*fugov1.WidgetNode{{

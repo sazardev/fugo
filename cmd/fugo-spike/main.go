@@ -12,10 +12,9 @@ import (
 	"time"
 
 	"github.com/sazardev/fugo"
-	"github.com/sazardev/fugo/style"
+	"github.com/sazardev/fugo/fg"
 	"github.com/sazardev/fugo/supervisor"
 	"github.com/sazardev/fugo/transport"
-	"github.com/sazardev/fugo/ui"
 
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
 )
@@ -70,97 +69,97 @@ func main() {
 	app.Run(buildUI)
 }
 
-func buildUI(ctx *fugo.Context) ui.Widget {
-	return ui.NewRouter(map[string]func() ui.Widget{
-		"/":        func() ui.Widget { return homePage(ctx) },
-		"/inputs":  func() ui.Widget { return inputsPage(ctx) },
-		"/gallery": func() ui.Widget { return galleryPage(ctx) },
+func buildUI(ctx *fugo.Context) fg.Widget {
+	return fg.Router(map[string]func() fg.Widget{
+		"/":        func() fg.Widget { return homePage(ctx) },
+		"/inputs":  func() fg.Widget { return inputsPage(ctx) },
+		"/gallery": func() fg.Widget { return galleryPage(ctx) },
 	}, "/")
 }
 
 // --- Home Page ---
-func homePage(ctx *fugo.Context) ui.Widget {
-	accent := style.Hex("#0F3460")
-	green := style.Hex("#10B981")
+func homePage(ctx *fugo.Context) fg.Widget {
+	accent := fg.Hex("#0F3460")
+	green := fg.Hex("#10B981")
 
 	counter := 0
-	counterText := ui.NewText("0").
-		WithFontSize(32).
-		WithColor(style.Hex("#FFFFFF"))
+	counterText := fg.Text("0").
+		FontSize(32).
+		Color(fg.Hex("#FFFFFF"))
 
-	decBtn := ui.NewButton("-").
-		WithBgColor(style.Hex("#EF4444")).
-		OnClick(func(_ ui.Event) {
+	decBtn := fg.Button("-").
+		BgColor(fg.Hex("#EF4444")).
+		OnClick(func(_ fg.Event) {
 			counter--
 			counterText.SetText(strconv.Itoa(counter))
 			ctx.Update()
 		})
 
-	incBtn := ui.NewButton("+").
-		WithBgColor(green).
-		OnClick(func(_ ui.Event) {
+	incBtn := fg.Button("+").
+		BgColor(green).
+		OnClick(func(_ fg.Event) {
 			counter++
 			counterText.SetText(strconv.Itoa(counter))
 			ctx.Update()
 		})
 
-	counterRow := ui.NewRow(decBtn, counterText, incBtn).
-		WithMainAlign(fugov1.MainAxisAlignment_MAIN_CENTER)
+	counterRow := fg.Row(decBtn, counterText, incBtn).
+		MainAlign(fugov1.MainAxisAlignment_MAIN_CENTER)
 
-	goInputs := ui.NewButton("Go to Inputs →").
-		WithBgColor(accent).
-		OnClick(func(_ ui.Event) {
+	goInputs := fg.Button("Go to Inputs \u2192").
+		BgColor(accent).
+		OnClick(func(_ fg.Event) {
 			ctx.NavigateTo("/inputs")
 		})
 
-	goGallery := ui.NewButton("Go to Gallery →").
-		WithBgColor(style.Hex("#8B5CF6")).
-		OnClick(func(_ ui.Event) {
+	goGallery := fg.Button("Go to Gallery \u2192").
+		BgColor(fg.Hex("#8B5CF6")).
+		OnClick(func(_ fg.Event) {
 			ctx.NavigateTo("/gallery")
 		})
 
-	header := ui.NewText("Home").WithFontSize(20).WithWeight(style.WeightBold)
+	header := fg.Text("Home").FontSize(20).Weight(fg.WeightBold)
 
-	return ui.NewContainer(
-		ui.NewColumn(
-			ui.NewPadding(header, 0, 0, 12, 0),
+	return fg.Container(
+		fg.Column(
+			fg.Padding(header, fg.EdgeOnly(0, 0, 12, 0)),
 			counterRow,
-			ui.NewSizedBox(0, 24),
+			fg.SizedBox(0, 24),
 			goInputs,
-			ui.NewSizedBox(0, 8),
+			fg.SizedBox(0, 8),
 			goGallery,
 		),
-	).WithBgColor(style.Hex("#1A1A2E")).WithPad(style.EdgeAll(24))
+	).BgColor(fg.Hex("#1A1A2E")).Pad(fg.EdgeAll(24))
 }
 
 // --- Inputs Page ---
-func inputsPage(ctx *fugo.Context) ui.Widget {
-	accent := style.Hex("#0F3460")
+func inputsPage(ctx *fugo.Context) fg.Widget {
+	accent := fg.Hex("#0F3460")
 
 	checkboxOn := false
 	switchOn := false
 	sliderVal := 50.0
 
-	checkboxStatus := ui.NewText("Checkbox: OFF").
-		WithColor(style.Hex("#9CA3AF"))
-	switchStatus := ui.NewText("Switch: OFF").
-		WithColor(style.Hex("#9CA3AF"))
-	sliderText := ui.NewText("Slider: 50").
-		WithColor(style.Hex("#9CA3AF"))
-	textfieldEcho := ui.NewText("").
-		WithColor(style.Hex("#9CA3AF"))
+	checkboxStatus := fg.Text("Checkbox: OFF").
+		Color(fg.Hex("#9CA3AF"))
+	switchStatus := fg.Text("Switch: OFF").
+		Color(fg.Hex("#9CA3AF"))
+	sliderText := fg.Text("Slider: 50").
+		Color(fg.Hex("#9CA3AF"))
+	textfieldEcho := fg.Text("").
+		Color(fg.Hex("#9CA3AF"))
 	counter := 0
-	animStatus := ui.NewText("Tap button to cycle color").
-		WithColor(style.Hex("#9CA3AF"))
+	animStatus := fg.Text("Tap button to cycle color").
+		Color(fg.Hex("#9CA3AF"))
 
-	tf := ui.NewTextField("Type something...").
-		OnChange(func(e ui.Event) {
+	tf := fg.TextField("Type something...").
+		OnChange(func(e fg.Event) {
 			textfieldEcho.SetText(string(e.Data))
 			ctx.Update()
 		})
 
-	cb := ui.NewCheckbox("Toggle me").
-		OnChange(func(_ ui.Event) {
+	cb := fg.Checkbox("Toggle me").
+		OnChange(func(_ fg.Event) {
 			checkboxOn = !checkboxOn
 			if checkboxOn {
 				checkboxStatus.SetText("Checkbox: ON")
@@ -170,8 +169,8 @@ func inputsPage(ctx *fugo.Context) ui.Widget {
 			ctx.Update()
 		})
 
-	sw := ui.NewSwitch().
-		OnChange(func(_ ui.Event) {
+	sw := fg.Switch().
+		OnChange(func(_ fg.Event) {
 			switchOn = !switchOn
 			if switchOn {
 				switchStatus.SetText("Switch: ON")
@@ -181,10 +180,10 @@ func inputsPage(ctx *fugo.Context) ui.Widget {
 			ctx.Update()
 		})
 
-	sl := ui.NewSlider().
-		WithMin(0).WithMax(100).
-		WithValue(sliderVal)
-	sl.OnChange(func(e ui.Event) {
+	sl := fg.Slider().
+		SetMin(0).SetMax(100).
+		SetValue(sliderVal)
+	sl.OnChange(func(e fg.Event) {
 		if v, err := strconv.ParseFloat(string(e.Data), 64); err == nil {
 			sliderVal = v
 			sl.Value = v
@@ -193,178 +192,178 @@ func inputsPage(ctx *fugo.Context) ui.Widget {
 		}
 	})
 
-	animBg := style.Hex("#0F3460")
-	animCont := ui.NewAnimatedContainer(
-		ui.NewPadding(ui.NewText("Tap to animate"), 12, 12, 12, 12),
-	).WithBgColor(animBg).WithDurationMs(300)
+	animBg := fg.Hex("#0F3460")
+	animCont := fg.AnimatedContainer(
+		fg.PaddingAll(fg.Text("Tap to animate"), 12),
+	).BgColor(animBg).DurationMs(300)
 
-	animContBtn := ui.NewButton("Cycle color").
-		WithBgColor(style.Hex("#F59E0B")).
-		OnClick(func(_ ui.Event) {
-			colors := []style.Color{
-				style.Hex("#0F3460"), style.Hex("#10B981"),
-				style.Hex("#8B5CF6"), style.Hex("#F59E0B"),
-				style.Hex("#EF4444"),
+	animContBtn := fg.Button("Cycle color").
+		BgColor(fg.Hex("#F59E0B")).
+		OnClick(func(_ fg.Event) {
+			colors := []fg.Color{
+				fg.Hex("#0F3460"), fg.Hex("#10B981"),
+				fg.Hex("#8B5CF6"), fg.Hex("#F59E0B"),
+				fg.Hex("#EF4444"),
 			}
 			animBg = colors[counter%len(colors)]
-			animCont.BgColor = animBg
+			animCont.BgColor(animBg)
 			counter++
 			animStatus.SetText("Cycled " + strconv.Itoa(counter) + " times")
 			ctx.Update()
 		})
 
-	backBtn := ui.NewButton("← Back").
-		WithBgColor(accent).
-		OnClick(func(_ ui.Event) {
+	backBtn := fg.Button("\u2190 Back").
+		BgColor(accent).
+		OnClick(func(_ fg.Event) {
 			ctx.GoBack()
 		})
 
-	header := ui.NewText("Inputs").WithFontSize(20).WithWeight(style.WeightBold)
+	header := fg.Text("Inputs").FontSize(20).Weight(fg.WeightBold)
 
-	sectionLabel := func(s string) ui.Widget {
-		return ui.NewText(s).WithFontSize(14).WithWeight(style.WeightBold).WithColor(style.Hex("#FFFFFF"))
+	sectionLabel := func(s string) fg.Widget {
+		return fg.Text(s).FontSize(14).Weight(fg.WeightBold).Color(fg.Hex("#FFFFFF"))
 	}
 
-	return ui.NewContainer(
-		ui.NewColumn(
-			ui.NewRow(backBtn, ui.NewSizedBox(16, 0), header),
-			ui.NewSizedBox(0, 16),
+	return fg.Container(
+		fg.Column(
+			fg.Row(backBtn, fg.SizedBox(16, 0), header),
+			fg.SizedBox(0, 16),
 
 			sectionLabel("TextField"),
 			tf,
-			ui.NewSizedBox(0, 4),
+			fg.SizedBox(0, 4),
 			textfieldEcho,
-			ui.NewSizedBox(0, 12),
+			fg.SizedBox(0, 12),
 
 			sectionLabel("Checkbox + Switch"),
 			cb,
 			checkboxStatus,
-			ui.NewSizedBox(0, 4),
+			fg.SizedBox(0, 4),
 			sw,
 			switchStatus,
-			ui.NewSizedBox(0, 12),
+			fg.SizedBox(0, 12),
 
 			sectionLabel("Slider"),
 			sl,
 			sliderText,
-			ui.NewSizedBox(0, 12),
+			fg.SizedBox(0, 12),
 
 			sectionLabel("AnimatedContainer"),
 			animCont,
-			ui.NewSizedBox(0, 4),
+			fg.SizedBox(0, 4),
 			animContBtn,
-			ui.NewSizedBox(0, 4),
+			fg.SizedBox(0, 4),
 			animStatus,
 		),
-	).WithBgColor(style.Hex("#1A1A2E")).WithPad(style.EdgeAll(24))
+	).BgColor(fg.Hex("#1A1A2E")).Pad(fg.EdgeAll(24))
 }
 
 // --- Gallery Page ---
-func galleryPage(ctx *fugo.Context) ui.Widget {
-	accent := style.Hex("#0F3460")
-	red := style.Hex("#EF4444")
-	green := style.Hex("#10B981")
-	blue := style.Hex("#3B82F6")
-	orange := style.Hex("#F59E0B")
-	purple := style.Hex("#8B5CF6")
-	pink := style.Hex("#EC4899")
+func galleryPage(ctx *fugo.Context) fg.Widget {
+	accent := fg.Hex("#0F3460")
+	red := fg.Hex("#EF4444")
+	green := fg.Hex("#10B981")
+	blue := fg.Hex("#3B82F6")
+	orange := fg.Hex("#F59E0B")
+	purple := fg.Hex("#8B5CF6")
+	pink := fg.Hex("#EC4899")
 
 	// Row + Expanded
-	redBox := ui.NewContainer(ui.NewPadding(ui.NewText("Red"), 8, 8, 8, 8)).WithBgColor(red)
-	greenBox := ui.NewContainer(ui.NewPadding(ui.NewText("Green"), 8, 8, 8, 8)).WithBgColor(green)
-	blueBox := ui.NewContainer(ui.NewPadding(ui.NewText("Blue"), 8, 8, 8, 8)).WithBgColor(blue)
+	redBox := fg.Container(fg.PaddingAll(fg.Text("Red"), 8)).BgColor(red)
+	greenBox := fg.Container(fg.PaddingAll(fg.Text("Green"), 8)).BgColor(green)
+	blueBox := fg.Container(fg.PaddingAll(fg.Text("Blue"), 8)).BgColor(blue)
 
-	boxRow := ui.NewRow(
-		ui.NewExpanded(redBox),
-		ui.NewExpanded(greenBox),
-		ui.NewExpanded(blueBox),
+	boxRow := fg.Row(
+		fg.Expanded(redBox),
+		fg.Expanded(greenBox),
+		fg.Expanded(blueBox),
 	)
 
 	// Stack + Positioned
-	stackBg := ui.NewContainer(ui.NewSizedBox(250, 80)).WithBgColor(accent)
-	stack := ui.NewStack(
+	stackBg := fg.Container(fg.SizedBox(250, 80)).BgColor(accent)
+	stack := fg.Stack(
 		stackBg,
-		ui.NewPositioned(ui.NewText("TL")).WithLeft(8).WithTop(8),
-		ui.NewPositioned(ui.NewText("TR")).WithRight(8).WithTop(8),
-		ui.NewPositioned(ui.NewText("C")).WithLeft(120).WithTop(30),
-		ui.NewPositioned(ui.NewText("BL")).WithLeft(8).WithBottom(8),
-		ui.NewPositioned(ui.NewText("BR")).WithRight(8).WithBottom(8),
+		fg.Positioned(fg.Text("TL")).Left(8).Top(8),
+		fg.Positioned(fg.Text("TR")).Right(8).Top(8),
+		fg.Positioned(fg.Text("C")).Left(120).Top(30),
+		fg.Positioned(fg.Text("BL")).Left(8).Bottom(8),
+		fg.Positioned(fg.Text("BR")).Right(8).Bottom(8),
 	)
 
 	// GridView
-	gridColors := []style.Color{red, orange, green, blue, purple, pink}
-	var gridItems []ui.Widget
+	gridColors := []fg.Color{red, orange, green, blue, purple, pink}
+	var gridItems []fg.Widget
 	for _, c := range gridColors {
 		gridItems = append(
 			gridItems,
-			ui.NewContainer(ui.NewSizedBox(50, 50)).WithBgColor(c),
+			fg.Container(fg.SizedBox(50, 50)).BgColor(c),
 		)
 	}
-	gridView := ui.NewGridView(gridItems...).
-		WithCrossAxisCount(3).WithChildAspectRatio(1.5)
-	grid := ui.NewSizedBox(0, 120).WithChild(gridView)
+	gridView := fg.GridView(gridItems...).
+		CrossAxisCount(3).ChildAspectRatio(1.5)
+	grid := fg.SizedBox(0, 120).Child(gridView)
 
 	// Wrap
-	var wrapItems []ui.Widget
-	for _, c := range []style.Color{red, blue, green, orange, purple} {
+	var wrapItems []fg.Widget
+	for _, c := range []fg.Color{red, blue, green, orange, purple} {
 		wrapItems = append(
 			wrapItems,
-			ui.NewContainer(ui.NewPadding(ui.NewText("chip"), 4, 4, 4, 4)).WithBgColor(c),
+			fg.Container(fg.PaddingAll(fg.Text("chip"), 4)).BgColor(c),
 		)
 	}
-	wrap := ui.NewWrap(wrapItems...).WithSpacing(6).WithRunSpacing(4)
+	wrap := fg.Wrap(wrapItems...).Spacing(6).RunSpacing(4)
 
 	// Icons
-	horizGap := ui.NewSizedBox(12, 0)
-	iconRow := ui.NewRow(
-		ui.NewIcon("home"), horizGap,
-		ui.NewIcon("star"), horizGap,
-		ui.NewIcon("favorite"), horizGap,
-		ui.NewIcon("settings"), horizGap,
-		ui.NewIcon("info"),
-	).WithMainAlign(fugov1.MainAxisAlignment_MAIN_CENTER)
+	horizGap := fg.SizedBox(12, 0)
+	iconRow := fg.Row(
+		fg.Icon("home"), horizGap,
+		fg.Icon("star"), horizGap,
+		fg.Icon("favorite"), horizGap,
+		fg.Icon("settings"), horizGap,
+		fg.Icon("info"),
+	).MainAlign(fugov1.MainAxisAlignment_MAIN_CENTER)
 
-	divider := ui.NewDivider().WithColor(style.Hex("#6B7280")).WithThickness(1)
+	divider := fg.Divider().Color(fg.Hex("#6B7280")).Thickness(1)
 
-	backBtn := ui.NewButton("← Back").
-		WithBgColor(accent).
-		OnClick(func(_ ui.Event) {
+	backBtn := fg.Button("\u2190 Back").
+		BgColor(accent).
+		OnClick(func(_ fg.Event) {
 			ctx.GoBack()
 		})
 
-	header := ui.NewText("Gallery").WithFontSize(20).WithWeight(style.WeightBold)
+	header := fg.Text("Gallery").FontSize(20).Weight(fg.WeightBold)
 
-	sectionLabel := func(s string) ui.Widget {
-		return ui.NewText(s).WithFontSize(14).WithWeight(style.WeightBold).WithColor(style.Hex("#FFFFFF"))
+	sectionLabel := func(s string) fg.Widget {
+		return fg.Text(s).FontSize(14).Weight(fg.WeightBold).Color(fg.Hex("#FFFFFF"))
 	}
 
-	return ui.NewContainer(
-		ui.NewColumn(
-			ui.NewRow(backBtn, ui.NewSizedBox(16, 0), header),
-			ui.NewSizedBox(0, 16),
+	return fg.Container(
+		fg.Column(
+			fg.Row(backBtn, fg.SizedBox(16, 0), header),
+			fg.SizedBox(0, 16),
 
 			sectionLabel("Row + Expanded"),
 			boxRow,
-			ui.NewSizedBox(0, 16),
+			fg.SizedBox(0, 16),
 
 			sectionLabel("Stack + Positioned"),
 			stack,
-			ui.NewSizedBox(0, 16),
+			fg.SizedBox(0, 16),
 
 			sectionLabel("GridView (in SizedBox)"),
 			grid,
-			ui.NewSizedBox(0, 16),
+			fg.SizedBox(0, 16),
 
 			sectionLabel("Wrap"),
 			wrap,
-			ui.NewSizedBox(0, 16),
+			fg.SizedBox(0, 16),
 
 			sectionLabel("Icons + Divider"),
 			iconRow,
-			ui.NewSizedBox(0, 8),
+			fg.SizedBox(0, 8),
 			divider,
 		),
-	).WithBgColor(style.Hex("#1A1A2E")).WithPad(style.EdgeAll(24))
+	).BgColor(fg.Hex("#1A1A2E")).Pad(fg.EdgeAll(24))
 }
 
 func findFlutterBinary() string {

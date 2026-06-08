@@ -5,7 +5,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type Slider struct {
+type SliderWidget struct {
 	handler func(Event)
 	Value   float64
 	Min     float64
@@ -13,48 +13,48 @@ type Slider struct {
 	baseWidget
 }
 
-func Slider() *Slider {
-	return &Slider{
+func Slider() *SliderWidget {
+	return &SliderWidget{
 		Min: 0,
 		Max: 100,
 	}
 }
 
-func (s *Slider) OnChange(handler func(Event)) *Slider {
+func (s *SliderWidget) OnChange(handler func(Event)) *SliderWidget {
 	s.handler = handler
 
 	return s
 }
 
-func (s *Slider) SetValue(v float64) *Slider {
+func (s *SliderWidget) SetValue(v float64) *SliderWidget {
 	s.Value = v
 
 	return s
 }
 
-func (s *Slider) SetMin(v float64) *Slider {
+func (s *SliderWidget) SetMin(v float64) *SliderWidget {
 	s.Min = v
 
 	return s
 }
 
-func (s *Slider) SetMax(v float64) *Slider {
+func (s *SliderWidget) SetMax(v float64) *SliderWidget {
 	s.Max = v
 
 	return s
 }
 
-func (s *Slider) isWidget()                {}
-func (s *Slider) widgetChildren() []Widget { return nil }
-func (s *Slider) HasHandler() bool         { return s.handler != nil }
+func (s *SliderWidget) isWidget()                {}
+func (s *SliderWidget) widgetChildren() []Widget { return nil }
+func (s *SliderWidget) HasHandler() bool         { return s.handler != nil }
 
-func (s *Slider) Handle(event Event) {
+func (s *SliderWidget) Handle(event Event) {
 	if s.handler != nil {
 		s.handler(event)
 	}
 }
 
-func (s *Slider) walkNodes(counter *uint32) []*fugov1.WidgetNode {
+func (s *SliderWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	s.id = *counter
 

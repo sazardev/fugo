@@ -5,33 +5,33 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type Wrap struct {
+type WrapWidget struct {
 	children   []Widget
-	Spacing    float64
-	RunSpacing float64
+	spacing    float64
+	runSpacing float64
 	baseWidget
 }
 
-func Wrap(children ...Widget) *Wrap {
-	return &Wrap{children: children}
+func Wrap(children ...Widget) *WrapWidget {
+	return &WrapWidget{children: children}
 }
 
-func (w *Wrap) Spacing(v float64) *Wrap {
-	w.Spacing = v
+func (w *WrapWidget) Spacing(v float64) *WrapWidget {
+	w.spacing = v
 
 	return w
 }
 
-func (w *Wrap) RunSpacing(v float64) *Wrap {
-	w.RunSpacing = v
+func (w *WrapWidget) RunSpacing(v float64) *WrapWidget {
+	w.runSpacing = v
 
 	return w
 }
 
-func (w *Wrap) isWidget()                {}
-func (w *Wrap) widgetChildren() []Widget { return w.children }
+func (w *WrapWidget) isWidget()                {}
+func (w *WrapWidget) widgetChildren() []Widget { return w.children }
 
-func (w *Wrap) walkNodes(counter *uint32) []*fugov1.WidgetNode {
+func (w *WrapWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	w.id = *counter
 
@@ -47,8 +47,8 @@ func (w *Wrap) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	}
 
 	props, _ := proto.Marshal(&fugov1.WrapProps{
-		Spacing:    w.Spacing,
-		RunSpacing: w.RunSpacing,
+		Spacing:    w.spacing,
+		RunSpacing: w.runSpacing,
 	})
 
 	return append([]*fugov1.WidgetNode{{

@@ -6,57 +6,57 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type AnimatedContainer struct {
+type AnimatedContainerWidget struct {
 	child        Widget
-	BgColor      style.Color
+	bgColor      style.Color
 	Padding      style.EdgeInsets
-	BorderRadius float64
-	DurationMs   int32
-	Curve        string
+	borderRadius float64
+	durationMs   int32
+	curve        string
 	baseWidget
 }
 
-func AnimatedContainer(child Widget) *AnimatedContainer {
-	return &AnimatedContainer{
+func AnimatedContainer(child Widget) *AnimatedContainerWidget {
+	return &AnimatedContainerWidget{
 		child:      child,
-		Curve:      "ease",
-		DurationMs: 200,
+		curve:      "ease",
+		durationMs: 200,
 	}
 }
 
-func (c *AnimatedContainer) BgColor(v style.Color) *AnimatedContainer {
-	c.BgColor = v
+func (c *AnimatedContainerWidget) BgColor(v style.Color) *AnimatedContainerWidget {
+	c.bgColor = v
 
 	return c
 }
 
-func (c *AnimatedContainer) Pad(v style.EdgeInsets) *AnimatedContainer {
+func (c *AnimatedContainerWidget) Pad(v style.EdgeInsets) *AnimatedContainerWidget {
 	c.Padding = v
 
 	return c
 }
 
-func (c *AnimatedContainer) BorderRadius(v float64) *AnimatedContainer {
-	c.BorderRadius = v
+func (c *AnimatedContainerWidget) BorderRadius(v float64) *AnimatedContainerWidget {
+	c.borderRadius = v
 
 	return c
 }
 
-func (c *AnimatedContainer) DurationMs(v int32) *AnimatedContainer {
-	c.DurationMs = v
+func (c *AnimatedContainerWidget) DurationMs(v int32) *AnimatedContainerWidget {
+	c.durationMs = v
 
 	return c
 }
 
-func (c *AnimatedContainer) Curve(v string) *AnimatedContainer {
-	c.Curve = v
+func (c *AnimatedContainerWidget) Curve(v string) *AnimatedContainerWidget {
+	c.curve = v
 
 	return c
 }
 
-func (c *AnimatedContainer) isWidget() {}
+func (c *AnimatedContainerWidget) isWidget() {}
 
-func (c *AnimatedContainer) widgetChildren() []Widget {
+func (c *AnimatedContainerWidget) widgetChildren() []Widget {
 	if c.child != nil {
 		return []Widget{c.child}
 	}
@@ -64,7 +64,7 @@ func (c *AnimatedContainer) widgetChildren() []Widget {
 	return nil
 }
 
-func (c *AnimatedContainer) walkNodes(counter *uint32) []*fugov1.WidgetNode {
+func (c *AnimatedContainerWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	c.id = *counter
 
@@ -80,11 +80,11 @@ func (c *AnimatedContainer) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	}
 
 	props, _ := proto.Marshal(&fugov1.AnimatedContainerProps{
-		BgColor:      c.BgColor.String(),
+		BgColor:      c.bgColor.String(),
 		Padding:      c.Padding.Top,
-		BorderRadius: c.BorderRadius,
-		DurationMs:   c.DurationMs,
-		Curve:        c.Curve,
+		BorderRadius: c.borderRadius,
+		DurationMs:   c.durationMs,
+		Curve:        c.curve,
 	})
 
 	return append([]*fugov1.WidgetNode{{

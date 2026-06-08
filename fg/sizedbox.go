@@ -5,37 +5,37 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type SizedBox struct {
+type SizedBoxWidget struct {
 	child  Widget
-	Width  float64
-	Height float64
+	width  float64
+	height float64
 	baseWidget
 }
 
-func SizedBox(width, height float64) *SizedBox {
-	return &SizedBox{Width: width, Height: height}
+func SizedBox(width, height float64) *SizedBoxWidget {
+	return &SizedBoxWidget{width: width, height: height}
 }
 
-func (s *SizedBox) Child(child Widget) *SizedBox {
+func (s *SizedBoxWidget) Child(child Widget) *SizedBoxWidget {
 	s.child = child
 
 	return s
 }
 
-func (s *SizedBox) Width(v float64) *SizedBox {
-	s.Width = v
+func (s *SizedBoxWidget) Width(v float64) *SizedBoxWidget {
+	s.width = v
 
 	return s
 }
 
-func (s *SizedBox) Height(v float64) *SizedBox {
-	s.Height = v
+func (s *SizedBoxWidget) Height(v float64) *SizedBoxWidget {
+	s.height = v
 
 	return s
 }
 
-func (s *SizedBox) isWidget() {}
-func (s *SizedBox) widgetChildren() []Widget {
+func (s *SizedBoxWidget) isWidget() {}
+func (s *SizedBoxWidget) widgetChildren() []Widget {
 	if s.child != nil {
 		return []Widget{s.child}
 	}
@@ -43,7 +43,7 @@ func (s *SizedBox) widgetChildren() []Widget {
 	return nil
 }
 
-func (s *SizedBox) walkNodes(counter *uint32) []*fugov1.WidgetNode {
+func (s *SizedBoxWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	s.id = *counter
 
@@ -59,8 +59,8 @@ func (s *SizedBox) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	}
 
 	props, _ := proto.Marshal(&fugov1.SizedBoxProps{
-		Width:  s.Width,
-		Height: s.Height,
+		Width:  s.width,
+		Height: s.height,
 	})
 
 	return append([]*fugov1.WidgetNode{{

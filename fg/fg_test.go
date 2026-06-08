@@ -3,8 +3,8 @@ package fg
 import (
 	"testing"
 
-	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
 	"github.com/sazardev/fugo/style"
+	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
 )
 
 func TestBuildTree(t *testing.T) {
@@ -27,7 +27,7 @@ func TestBuildTree(t *testing.T) {
 
 func TestBuildTreeNested(t *testing.T) {
 	root := Container(
-Column(
+		Column(
 			Text("a"),
 			Text("b"),
 		),

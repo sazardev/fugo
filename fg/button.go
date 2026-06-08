@@ -6,74 +6,69 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-const (
-	defaultFontSize     = 14.0
-	defaultBorderRadius = 8.0
-)
-
-type Button struct {
+type ButtonWidget struct {
 	handler      func(Event)
 	Label        string
-	BgColor      style.Color
-	FontSize     float64
-	BorderRadius float64
+	bgColor      style.Color
+	fontSize     float64
+	borderRadius float64
 	baseWidget
 }
 
-func Button(label string) *Button {
-	return &Button{
+func Button(label string) *ButtonWidget {
+	return &ButtonWidget{
 		Label:        label,
-		BgColor:      style.Hex("#3B82F6"),
-		FontSize:     defaultFontSize,
-		BorderRadius: defaultBorderRadius,
+		bgColor:      active.Colors.Primary,
+		fontSize:     active.Typography.Body,
+		borderRadius: active.Radius.MD,
 	}
 }
 
-func (b *Button) OnClick(handler func(Event)) *Button {
+func (b *ButtonWidget) OnClick(handler func(Event)) *ButtonWidget {
 	b.handler = handler
 
 	return b
 }
 
-func (b *Button) FontSize(v float64) *Button {
-	b.FontSize = v
+func (b *ButtonWidget) FontSize(v float64) *ButtonWidget {
+	b.fontSize = v
 
 	return b
 }
 
-func (b *Button) BgColor(c style.Color) *Button {
-	b.BgColor = c
+func (b *ButtonWidget) BgColor(c style.Color) *ButtonWidget {
+	b.bgColor = c
 
 	return b
 }
 
-func (b *Button) BorderRadius(v float64) *Button {
-	b.BorderRadius = v
+func (b *ButtonWidget) BorderRadius(v float64) *ButtonWidget {
+	b.borderRadius = v
 
 	return b
 }
 
-func (b *Button) isWidget() {}
+func (b *ButtonWidget) isWidget() {}
 
-func (b *Button) widgetChildren() []Widget { return nil }
+func (b *ButtonWidget) widgetChildren() []Widget { return nil }
 
-func (b *Button) HasHandler() bool { return b.handler != nil }
+func (b *ButtonWidget) HasHandler() bool { return b.handler != nil }
 
-func (b *Button) Handle(event Event) {
+func (b *ButtonWidget) Handle(event Event) {
 	if b.handler != nil {
 		b.handler(event)
 	}
 }
 
-func (b *Button) walkNodes(counter *uint32) []*fugov1.WidgetNode {
+func (b *ButtonWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	b.id = *counter
 
 	props, _ := proto.Marshal(&fugov1.ButtonProps{
 		Label:        b.Label,
-		BgColor:      b.BgColor.String(),
-		FontSize:     b.FontSize,
-		BorderRadius: b.BorderRadius,
+		BgColor:      b.bgColor.String(),
+		FontSize:     b.fontSize,
+		BorderRadius: b.borderRadius,
 	})
 
 	return []*fugov1.WidgetNode{{

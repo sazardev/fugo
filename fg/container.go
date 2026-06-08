@@ -6,42 +6,42 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type Container struct {
+type ContainerWidget struct {
 	child        Widget
-	BgColor      style.Color
+	bgColor      style.Color
 	Padding      style.EdgeInsets
-	BorderRadius float64
+	borderRadius float64
 	baseWidget
 }
 
-func Container(child Widget) *Container {
-	return &Container{
+func Container(child Widget) *ContainerWidget {
+	return &ContainerWidget{
 		child:   child,
-		BgColor: style.Hex("#121212"),
+		bgColor: style.Hex("#121212"),
 	}
 }
 
-func (c *Container) BgColor(v style.Color) *Container {
-	c.BgColor = v
+func (c *ContainerWidget) BgColor(v style.Color) *ContainerWidget {
+	c.bgColor = v
 
 	return c
 }
 
-func (c *Container) Pad(v style.EdgeInsets) *Container {
+func (c *ContainerWidget) Pad(v style.EdgeInsets) *ContainerWidget {
 	c.Padding = v
 
 	return c
 }
 
-func (c *Container) BorderRadius(v float64) *Container {
-	c.BorderRadius = v
+func (c *ContainerWidget) BorderRadius(v float64) *ContainerWidget {
+	c.borderRadius = v
 
 	return c
 }
 
-func (c *Container) isWidget() {}
+func (c *ContainerWidget) isWidget() {}
 
-func (c *Container) widgetChildren() []Widget {
+func (c *ContainerWidget) widgetChildren() []Widget {
 	if c.child != nil {
 		return []Widget{c.child}
 	}
@@ -49,7 +49,7 @@ func (c *Container) widgetChildren() []Widget {
 	return nil
 }
 
-func (c *Container) walkNodes(counter *uint32) []*fugov1.WidgetNode {
+func (c *ContainerWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	c.id = *counter
 
@@ -65,9 +65,9 @@ func (c *Container) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	}
 
 	props, _ := proto.Marshal(&fugov1.ContainerProps{
-		BgColor:      c.BgColor.String(),
+		BgColor:      c.bgColor.String(),
 		Padding:      c.Padding.Top,
-		BorderRadius: c.BorderRadius,
+		BorderRadius: c.borderRadius,
 	})
 
 	self := &fugov1.WidgetNode{

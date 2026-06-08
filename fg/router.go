@@ -6,7 +6,7 @@ import (
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
 )
 
-type Router struct {
+type RouterWidget struct {
 	routes        map[string]func() Widget
 	current       string
 	history       []string
@@ -14,14 +14,14 @@ type Router struct {
 	baseWidget
 }
 
-func Router(routes map[string]func() Widget, initialRoute string) *Router {
-	return &Router{
+func Router(routes map[string]func() Widget, initialRoute string) *RouterWidget {
+	return &RouterWidget{
 		routes:  routes,
 		current: initialRoute,
 	}
 }
 
-func (r *Router) NavigateTo(route string) bool {
+func (r *RouterWidget) NavigateTo(route string) bool {
 	if _, ok := r.routes[route]; !ok {
 		log.Printf("[router] route not found: %s", route)
 
@@ -37,7 +37,7 @@ func (r *Router) NavigateTo(route string) bool {
 	return true
 }
 
-func (r *Router) GoBack() bool {
+func (r *RouterWidget) GoBack() bool {
 	if len(r.history) == 0 {
 		log.Println("[router] goback: no history")
 
@@ -51,13 +51,13 @@ func (r *Router) GoBack() bool {
 	return true
 }
 
-func (r *Router) CurrentRoute() string {
+func (r *RouterWidget) CurrentRoute() string {
 	return r.current
 }
 
-func (r *Router) isWidget() {}
+func (r *RouterWidget) isWidget() {}
 
-func (r *Router) widgetChildren() []Widget {
+func (r *RouterWidget) widgetChildren() []Widget {
 	if r.currentWidget != nil {
 		return []Widget{r.currentWidget}
 	}
@@ -65,7 +65,7 @@ func (r *Router) widgetChildren() []Widget {
 	return nil
 }
 
-func (r *Router) walkNodes(counter *uint32) []*fugov1.WidgetNode {
+func (r *RouterWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	r.id = *counter
 

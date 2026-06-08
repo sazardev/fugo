@@ -5,65 +5,65 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type TextField struct {
+type TextFieldWidget struct {
 	handler     func(Event)
 	Value       string
 	Placeholder string
-	FontSize    float64
-	Obscure     bool
+	fontSize    float64
+	obscure     bool
 	baseWidget
 }
 
-func TextField(placeholder string) *TextField {
-	return &TextField{
+func TextField(placeholder string) *TextFieldWidget {
+	return &TextFieldWidget{
 		Placeholder: placeholder,
-		FontSize:    defaultFontSize,
+		fontSize:    active.Typography.Body,
 	}
 }
 
-func (t *TextField) OnChange(handler func(Event)) *TextField {
+func (t *TextFieldWidget) OnChange(handler func(Event)) *TextFieldWidget {
 	t.handler = handler
 
 	return t
 }
 
-func (t *TextField) FontSize(v float64) *TextField {
-	t.FontSize = v
+func (t *TextFieldWidget) FontSize(v float64) *TextFieldWidget {
+	t.fontSize = v
 
 	return t
 }
 
-func (t *TextField) SetValue(v string) *TextField {
+func (t *TextFieldWidget) SetValue(v string) *TextFieldWidget {
 	t.Value = v
 
 	return t
 }
 
-func (t *TextField) Obscure(v bool) *TextField {
-	t.Obscure = v
+func (t *TextFieldWidget) Obscure(v bool) *TextFieldWidget {
+	t.obscure = v
 
 	return t
 }
 
-func (t *TextField) isWidget()                {}
-func (t *TextField) widgetChildren() []Widget { return nil }
-func (t *TextField) HasHandler() bool         { return t.handler != nil }
+func (t *TextFieldWidget) isWidget()                {}
+func (t *TextFieldWidget) widgetChildren() []Widget { return nil }
+func (t *TextFieldWidget) HasHandler() bool         { return t.handler != nil }
 
-func (t *TextField) Handle(event Event) {
+func (t *TextFieldWidget) Handle(event Event) {
 	if t.handler != nil {
 		t.handler(event)
 	}
 }
 
-func (t *TextField) walkNodes(counter *uint32) []*fugov1.WidgetNode {
+func (t *TextFieldWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	t.id = *counter
 
 	props, _ := proto.Marshal(&fugov1.TextFieldProps{
 		Value:       t.Value,
 		Placeholder: t.Placeholder,
-		FontSize:    t.FontSize,
-		Obscure:     t.Obscure,
+		FontSize:    t.fontSize,
+		Obscure:     t.obscure,
 	})
 
 	return []*fugov1.WidgetNode{{

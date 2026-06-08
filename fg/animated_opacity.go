@@ -5,36 +5,36 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type AnimatedOpacity struct {
+type AnimatedOpacityWidget struct {
 	child      Widget
-	Opacity    float64
-	DurationMs int32
+	opacity    float64
+	durationMs int32
 	baseWidget
 }
 
-func AnimatedOpacity(child Widget) *AnimatedOpacity {
-	return &AnimatedOpacity{
+func AnimatedOpacity(child Widget) *AnimatedOpacityWidget {
+	return &AnimatedOpacityWidget{
 		child:      child,
-		Opacity:    1,
-		DurationMs: 200,
+		opacity:    1,
+		durationMs: 200,
 	}
 }
 
-func (o *AnimatedOpacity) Opacity(v float64) *AnimatedOpacity {
-	o.Opacity = v
+func (o *AnimatedOpacityWidget) Opacity(v float64) *AnimatedOpacityWidget {
+	o.opacity = v
 
 	return o
 }
 
-func (o *AnimatedOpacity) DurationMs(v int32) *AnimatedOpacity {
-	o.DurationMs = v
+func (o *AnimatedOpacityWidget) DurationMs(v int32) *AnimatedOpacityWidget {
+	o.durationMs = v
 
 	return o
 }
 
-func (o *AnimatedOpacity) isWidget() {}
+func (o *AnimatedOpacityWidget) isWidget() {}
 
-func (o *AnimatedOpacity) widgetChildren() []Widget {
+func (o *AnimatedOpacityWidget) widgetChildren() []Widget {
 	if o.child != nil {
 		return []Widget{o.child}
 	}
@@ -42,7 +42,7 @@ func (o *AnimatedOpacity) widgetChildren() []Widget {
 	return nil
 }
 
-func (o *AnimatedOpacity) walkNodes(counter *uint32) []*fugov1.WidgetNode {
+func (o *AnimatedOpacityWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	o.id = *counter
 
@@ -58,8 +58,8 @@ func (o *AnimatedOpacity) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	}
 
 	props, _ := proto.Marshal(&fugov1.AnimatedOpacityProps{
-		Opacity:    o.Opacity,
-		DurationMs: o.DurationMs,
+		Opacity:    o.opacity,
+		DurationMs: o.durationMs,
 	})
 
 	return append([]*fugov1.WidgetNode{{
