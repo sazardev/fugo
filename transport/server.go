@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"log"
 	"net"
@@ -11,10 +12,16 @@ import (
 
 	"github.com/sazardev/fugo/engine"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
+
+// tokenMetadataKey is the gRPC metadata key carrying the per-run auth token.
+const tokenMetadataKey = "x-fugo-token"
 
 // Server implements the FugoRender gRPC service, bridging the bidirectional
 // render stream to the application: it pushes render payloads to the Flutter
@@ -80,7 +87,12 @@ func StartServer(addr string, app AppHandler) (*grpc.Server, net.Listener, error
 	healthSrv := health.NewServer()
 	healthSrv.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
 
-	server := newKeepaliveServer()
+	token := os.Getenv("FUGO_TOKEN")
+	if token != "" {
+		log.Println("[fugo] render stream requires a per-run auth token")
+	}
+
+	server := newKeepaliveServer(token)
 	fugov1.RegisterFugoRenderServer(server, NewServer(app))
 	healthpb.RegisterHealthServer(server, healthSrv)
 
@@ -115,8 +127,8 @@ func isUDS(addr string) bool {
 	return true
 }
 
-func newKeepaliveServer() *grpc.Server {
-	return grpc.NewServer(
+func newKeepaliveServer(token string) *grpc.Server {
+	opts := []grpc.ServerOption{
 		grpc.KeepaliveParams(keepalive.ServerParameters{
 			Time:    10 * time.Second,
 			Timeout: 3 * time.Second,
@@ -125,7 +137,35 @@ func newKeepaliveServer() *grpc.Server {
 			MinTime:             5 * time.Second,
 			PermitWithoutStream: true,
 		}),
-	)
+	}
+
+	if token != "" {
+		opts = append(opts, grpc.ChainStreamInterceptor(tokenStreamInterceptor(token)))
+	}
+
+	return grpc.NewServer(opts...)
+}
+
+// tokenStreamInterceptor rejects render streams whose metadata does not carry a
+// matching per-run token. It hardens the loopback TCP transport (Windows)
+// against other local processes connecting to the gRPC port. Auth is opt-in:
+// the interceptor is only installed when a token is configured.
+func tokenStreamInterceptor(token string) grpc.StreamServerInterceptor {
+	want := []byte(token)
+
+	return func(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		md, ok := metadata.FromIncomingContext(ss.Context())
+		if !ok {
+			return status.Error(codes.Unauthenticated, "missing fugo auth token")
+		}
+
+		got := md.Get(tokenMetadataKey)
+		if len(got) == 0 || subtle.ConstantTimeCompare([]byte(got[0]), want) != 1 {
+			return status.Error(codes.Unauthenticated, "invalid fugo auth token")
+		}
+
+		return handler(srv, ss)
+	}
 }
 
 type grpcStreamAdapter struct {

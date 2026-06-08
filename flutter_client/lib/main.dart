@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
 
@@ -15,10 +16,14 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
 
-  const windowOptions = WindowOptions(
-    size: Size(800, 600),
+  final title = Platform.environment['FUGO_TITLE'] ?? 'Fugo';
+  final width = double.tryParse(Platform.environment['FUGO_WIDTH'] ?? '') ?? 800;
+  final height = double.tryParse(Platform.environment['FUGO_HEIGHT'] ?? '') ?? 600;
+
+  final windowOptions = WindowOptions(
+    size: Size(width, height),
     center: true,
-    title: 'Fugo',
+    title: title,
   );
 
   await windowManager.waitUntilReadyToShow(windowOptions, () async {

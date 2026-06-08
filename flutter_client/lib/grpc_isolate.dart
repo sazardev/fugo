@@ -68,9 +68,15 @@ Future<void> _runStream(
     }
   });
 
+  final token = Platform.environment['FUGO_TOKEN'];
+  final options = (token != null && token.isNotEmpty)
+      ? CallOptions(metadata: {'x-fugo-token': token})
+      : null;
+
   try {
-    final stream = client.renderStream(eventController.stream);
-    print('[fugo] connected to $addr');
+    final stream = client.renderStream(eventController.stream, options: options);
+    final authNote = (token != null && token.isNotEmpty) ? ' (authenticated)' : '';
+    print('[fugo] connected to $addr$authNote');
 
     await for (final payload in stream) {
       mainSendPort.send(payload.writeToBuffer());

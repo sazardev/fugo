@@ -2,10 +2,13 @@ package fugo
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -180,6 +183,9 @@ func parseNodeID(s string) uint32 {
 func RunStandalone(opts AppOptions, buildUI func(ctx *Context) fg.Widget) {
 	app := NewApp(opts)
 
+	enableAuthToken()
+	exportWindowEnv(opts)
+
 	addr := os.Getenv("FUGO_ADDR")
 	if addr == "" {
 		addr = "127.0.0.1:9510"
@@ -212,6 +218,41 @@ func RunStandalone(opts AppOptions, buildUI func(ctx *Context) fg.Widget) {
 
 	log.Println("[fugo] starting app")
 	app.Run(buildUI)
+}
+
+// enableAuthToken generates a per-run token when FUGO_AUTH=1 so the transport
+// rejects any local process that does not present it. It is opt-in to avoid
+// breaking a Flutter client that was built without token support.
+func enableAuthToken() {
+	if os.Getenv("FUGO_AUTH") != "1" || os.Getenv("FUGO_TOKEN") != "" {
+		return
+	}
+
+	buf := make([]byte, 16)
+	if _, err := rand.Read(buf); err != nil {
+		log.Printf("[fugo] could not generate auth token: %v", err)
+
+		return
+	}
+
+	_ = os.Setenv("FUGO_TOKEN", hex.EncodeToString(buf))
+	log.Println("[fugo] per-run auth token enabled (FUGO_AUTH=1)")
+}
+
+// exportWindowEnv forwards the window options to the Flutter client through the
+// environment (FUGO_TITLE/WIDTH/HEIGHT); the supervisor passes them along.
+func exportWindowEnv(opts AppOptions) {
+	if opts.Title != "" {
+		_ = os.Setenv("FUGO_TITLE", opts.Title)
+	}
+
+	if opts.Width > 0 {
+		_ = os.Setenv("FUGO_WIDTH", strconv.Itoa(opts.Width))
+	}
+
+	if opts.Height > 0 {
+		_ = os.Setenv("FUGO_HEIGHT", strconv.Itoa(opts.Height))
+	}
 }
 
 func findFlutterBinary() string {
