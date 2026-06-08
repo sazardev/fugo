@@ -24,6 +24,8 @@ var (
 	date    = "unknown"
 )
 
+const osWindows = "windows"
+
 func main() {
 	cmd := &cli.Command{
 		Name:    "fugo",
@@ -43,8 +45,134 @@ func main() {
 	}
 }
 
+// scaffoldMain returns the main.go source for the chosen starter template,
+// with the project name interpolated into the window title.
+func scaffoldMain(template, name string) string {
+	if template == "app" {
+		return fmt.Sprintf(appTemplate, name)
+	}
+
+	return fmt.Sprintf(counterTemplate, name)
+}
+
+const counterTemplate = `package main
+
+import (
+	"strconv"
+
+	"github.com/sazardev/fugo"
+	"github.com/sazardev/fugo/fg"
+)
+
+func main() {
+	fugo.RunStandalone(fugo.AppOptions{
+		Title:  "%s",
+		Width:  800,
+		Height: 600,
+	}, buildUI)
+}
+
+func buildUI(ctx *fugo.Context) fg.Widget {
+	counter := 0
+	counterText := fg.Text("0").FontSize(48)
+
+	incBtn := fg.Button("+").
+		BgColor(fg.Hex("#10B981")).
+		FontSize(20).
+		OnClick(func(_ fg.Event) {
+			counter++
+			counterText.SetText(strconv.Itoa(counter))
+			ctx.Update()
+		})
+
+	return fg.Container(
+		fg.Column(
+			counterText,
+			fg.SizedBox(0, 16),
+			incBtn,
+		),
+	).BgColor(fg.Hex("#1A1A2E")).Pad(fg.EdgeAll(24))
+}
+`
+
+const appTemplate = `package main
+
+import (
+	"strconv"
+
+	"github.com/sazardev/fugo"
+	"github.com/sazardev/fugo/fg"
+)
+
+func main() {
+	fg.UseTheme(fg.DarkTheme()) // try fg.LightTheme() to re-skin the whole app
+
+	fugo.RunStandalone(fugo.AppOptions{
+		Title:  "%s",
+		Width:  900,
+		Height: 640,
+	}, buildUI)
+}
+
+func buildUI(ctx *fugo.Context) fg.Widget {
+	return fg.Router(map[string]func() fg.Widget{
+		"/":      func() fg.Widget { return homePage(ctx) },
+		"/about": func() fg.Widget { return aboutPage(ctx) },
+	}, "/")
+}
+
+func homePage(ctx *fugo.Context) fg.Widget {
+	t := fg.CurrentTheme()
+	counter := 0
+	count := fg.Text("0").FontSize(t.Typography.Heading * 2)
+
+	inc := fg.Button("Increment").
+		BgColor(t.Colors.Primary).
+		OnClick(func(_ fg.Event) {
+			counter++
+			count.SetText(strconv.Itoa(counter))
+			ctx.Update()
+		})
+
+	about := fg.Button("About →").
+		BgColor(t.Colors.Secondary).
+		OnClick(func(_ fg.Event) { ctx.NavigateTo("/about") })
+
+	return page(t, "Home", count, fg.SizedBox(0, t.Spacing.MD), inc, fg.SizedBox(0, t.Spacing.SM), about)
+}
+
+func aboutPage(ctx *fugo.Context) fg.Widget {
+	t := fg.CurrentTheme()
+	back := fg.Button("← Back").
+		BgColor(t.Colors.Surface).
+		OnClick(func(_ fg.Event) { ctx.GoBack() })
+
+	return page(t, "About",
+		fg.Text("Built with Fugo — Go drives logic, Flutter renders.").Color(t.Colors.Muted),
+		fg.SizedBox(0, t.Spacing.MD),
+		back,
+	)
+}
+
+func page(t fg.Theme, title string, body ...fg.Widget) fg.Widget {
+	items := []fg.Widget{
+		fg.Text(title).FontSize(t.Typography.Heading).Weight(fg.WeightBold),
+		fg.Divider().Color(t.Colors.Border),
+		fg.SizedBox(0, t.Spacing.MD),
+	}
+	items = append(items, body...)
+
+	return fg.Container(fg.Column(items...)).
+		BgColor(t.Colors.Background).
+		Pad(fg.EdgeAll(t.Spacing.LG))
+}
+`
+
 func initCmd() *cli.Command {
-	var fugoSrc string
+	var (
+		fugoSrc  string
+		template string
+	)
 
 	return &cli.Command{
 		Name:      "init",
@@ -55,6 +183,13 @@ func initCmd() *cli.Command {
 				Name:        "fugo-src",
 				Destination: &fugoSrc,
 				Usage:       "path to local fugo source (for replace directive)",
+			},
+			&cli.StringFlag{
+				Name:        "template",
+				Aliases:     []string{"t"},
+				Value:       "counter",
+				Destination: &template,
+				Usage:       "starter template: counter | app",
 			},
 		},
 		Action: func(ctx context.Context, c *cli.Command) error {
@@ -75,47 +210,7 @@ func initCmd() *cli.Command {
 
 			// Write main.go
 			mainFile := filepath.Join(dir, "main.go")
-			content := fmt.Sprintf(`package main
-
-import (
-	"strconv"
-
-	"github.com/sazardev/fugo"
-	"github.com/sazardev/fugo/fg"
-)
-
-func main() {
-	fugo.RunStandalone(fugo.AppOptions{
-		Title:  "%s",
-		Width:  800,
-		Height: 600,
-	}, buildUI)
-}
-
-func buildUI(ctx *fugo.Context) fg.Widget {
-	counter := 0
-	counterText := fg.Text("0").
-		FontSize(48).
-		Color(fg.Hex("#FFFFFF"))
-
-	incBtn := fg.Button("+").
-		BgColor(fg.Hex("#10B981")).
-		FontSize(20).
-		OnClick(func(_ fg.Event) {
-			counter++
-			counterText.SetText(strconv.Itoa(counter))
-			ctx.Update()
-		})
-
-	return fg.Container(
-		fg.Column(
-			counterText,
-			fg.SizedBox(0, 16),
-			incBtn,
-		),
-	).BgColor(fg.Hex("#1A1A2E")).Pad(fg.EdgeAll(24))
-}
-`, name)
+			content := scaffoldMain(template, name)
 
 			if err := os.WriteFile(mainFile, []byte(content), 0o644); err != nil {
 				return fmt.Errorf("write main.go: %w", err)
@@ -260,6 +355,10 @@ func runCmd() *cli.Command {
 			}
 
 			fmt.Printf("=== Fugo v%s ===\n", version)
+
+			if flutter == "" {
+				ensureFlutterClient(ctx)
+			}
 
 			if watch {
 				return runWithWatch(ctx, addr, flutter)
@@ -441,23 +540,29 @@ func projectName() string {
 
 // exeSuffix is the executable extension for the host OS.
 func exeSuffix() string {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == osWindows {
 		return ".exe"
 	}
 
 	return ""
 }
 
-// flutterBundleDir locates the precompiled Flutter client bundle inside the
-// fugo module — resolved via `go list -m` so it honors a replace directive —
-// or "" if fugo is not a local checkout or the client has not been built yet.
-func flutterBundleDir(ctx context.Context) string {
+// fugoModuleDir resolves the on-disk directory of the fugo module via
+// `go list -m`, honoring any replace directive; "" if it can't be resolved.
+func fugoModuleDir(ctx context.Context) string {
 	out, err := exec.CommandContext(ctx, "go", "list", "-m", "-f", "{{.Dir}}", "github.com/sazardev/fugo").Output()
 	if err != nil {
 		return ""
 	}
 
-	repo := strings.TrimSpace(string(out))
+	return strings.TrimSpace(string(out))
+}
+
+// flutterBundleDir locates the precompiled Flutter client bundle inside the
+// fugo module (resolved via fugoModuleDir so it honors a replace directive), or
+// "" if fugo is not a local checkout or the client has not been built yet.
+func flutterBundleDir(ctx context.Context) string {
+	repo := fugoModuleDir(ctx)
 	if repo == "" {
 		return ""
 	}
@@ -473,6 +578,48 @@ func flutterBundleDir(ctx context.Context) string {
 	}
 
 	return ""
+}
+
+// ensureFlutterClient builds the Flutter render client once if it isn't built
+// yet, so `fugo run` works without a manual `flutter build`. It is a no-op when
+// the client is already built, flutter isn't on PATH, or the fugo source tree
+// can't be located.
+func ensureFlutterClient(ctx context.Context) {
+	if flutterBundleDir(ctx) != "" {
+		return
+	}
+
+	repo := fugoModuleDir(ctx)
+	if repo == "" {
+		return
+	}
+
+	clientDir := filepath.Join(repo, "flutter_client")
+	if _, err := os.Stat(clientDir); err != nil {
+		return
+	}
+
+	if _, err := exec.LookPath("flutter"); err != nil {
+		fmt.Println("Flutter client not built and 'flutter' is not on PATH.")
+		fmt.Println("Build it once with: cd flutter_client && flutter build windows")
+
+		return
+	}
+
+	fmt.Println("Flutter client not built yet — building it once (this can take a few minutes)...")
+
+	args := []string{"build", "windows"}
+	if runtime.GOOS != osWindows {
+		args = []string{"build", "linux", "--debug"}
+	}
+
+	cmd := exec.CommandContext(ctx, "flutter", args...)
+	cmd.Dir = clientDir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("flutter build failed: %v\n", err)
+	}
 }
 
 // copyDir recursively copies the contents of src into dst.
@@ -527,7 +674,7 @@ func hasMainGo() bool {
 // appBinary returns the build output path for the current OS so that
 // `fugo build` and `fugo run` always agree on the binary name.
 func appBinary() string {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == osWindows {
 		return "bin/app.exe"
 	}
 

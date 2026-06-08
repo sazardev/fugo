@@ -117,6 +117,14 @@ func (w *WindowController) SetFullScreen(on bool) {
 	w.send(&fugov1.WindowCommand{Op: fugov1.WindowOp_WINDOW_FULLSCREEN, Flag: on})
 }
 
+// Component renders a UI from a value that can carry state, as an alternative
+// to a buildUI closure. Implement Render and pass the component to RunComponent
+// (or app.Run(c.Render)); event handlers mutate the component's fields and the
+// widgets it built, then call Context.Update — the same retained-tree model.
+type Component interface {
+	Render(ctx *Context) fg.Widget
+}
+
 // NewApp creates an App with the given options and a 60fps scheduler. Use
 // RunStandalone for the common case of also starting the server and client.
 func NewApp(opts AppOptions) *App {
@@ -266,6 +274,11 @@ func RunStandalone(opts AppOptions, buildUI func(ctx *Context) fg.Widget) {
 
 	log.Println("[fugo] starting app")
 	app.Run(buildUI)
+}
+
+// RunComponent is RunStandalone for a Component: it renders c.Render.
+func RunComponent(opts AppOptions, c Component) {
+	RunStandalone(opts, c.Render)
 }
 
 // enableAuthToken generates a per-run token when FUGO_AUTH=1 so the transport
