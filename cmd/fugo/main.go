@@ -268,7 +268,7 @@ func runCmd() *cli.Command {
 
 func buildAndRun(ctx context.Context, addr, flutter string) error {
 	fmt.Println("Building...")
-	build := exec.CommandContext(ctx, "go", "build", "-o", "bin/app.exe", ".")
+	build := exec.CommandContext(ctx, "go", "build", "-o", appBinary(), ".")
 	build.Stdout = os.Stdout
 	build.Stderr = os.Stderr
 	if err := build.Run(); err != nil {
@@ -350,7 +350,7 @@ func snapshotEq(a, b map[string]time.Time) bool {
 }
 
 func runApp(ctx context.Context, addr, flutter string) error {
-	run := exec.CommandContext(ctx, "bin/app.exe")
+	run := exec.CommandContext(ctx, appBinary())
 	run.Stdout = os.Stdout
 	run.Stderr = os.Stderr
 	run.Env = append(os.Environ(), "FUGO_ADDR="+addr)
@@ -391,14 +391,14 @@ func buildCmd() *cli.Command {
 			}
 
 			fmt.Println("Building...")
-			build := exec.CommandContext(ctx, "go", "build", "-o", "bin/app", ".")
+			build := exec.CommandContext(ctx, "go", "build", "-o", appBinary(), ".")
 			build.Stdout = os.Stdout
 			build.Stderr = os.Stderr
 			if err := build.Run(); err != nil {
 				return fmt.Errorf("build failed: %w", err)
 			}
 
-			fmt.Println("Build complete: bin/app")
+			fmt.Println("Build complete: " + appBinary())
 			fmt.Println("Flutter client must be built separately: cd flutter_client && flutter build windows")
 
 			return nil
@@ -409,6 +409,16 @@ func buildCmd() *cli.Command {
 func hasMainGo() bool {
 	_, err := os.Stat("main.go")
 	return err == nil
+}
+
+// appBinary returns the build output path for the current OS so that
+// `fugo build` and `fugo run` always agree on the binary name.
+func appBinary() string {
+	if runtime.GOOS == "windows" {
+		return "bin/app.exe"
+	}
+
+	return "bin/app"
 }
 
 func doctorCmd() *cli.Command {
