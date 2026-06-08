@@ -10,7 +10,7 @@
 [![Go Version](https://img.shields.io/badge/Go-1.26.3-blue?logo=go)](https://go.dev)
 [![Flutter](https://img.shields.io/badge/Flutter-3.24+-blue?logo=flutter)](https://flutter.dev)
 [![gRPC](https://img.shields.io/badge/gRPC-bidirectional-purple)](https://grpc.io)
-[![FlatBuffers](https://img.shields.io/badge/FlatBuffers-zero--copy-orange)](https://flatbuffers.dev)
+[![Protobuf](https://img.shields.io/badge/Protobuf-typed-orange)](https://protobuf.dev)
 [![UDS](https://img.shields.io/badge/UDS-5%E2%80%9310%C2%B5s-brightgreen)](#)
 [![License](https://img.shields.io/badge/license-MIT-green)](#)
 [![Version](https://img.shields.io/badge/version-0.1.0--alpha-yellow)](VERSION)
@@ -19,15 +19,15 @@
 
 ## What is Fugo?
 
-Fugo is a **local Server-Driven UI (SDUI)** framework that lets you build native desktop applications writing **exclusively in Go**. Business logic, state management, and routing live entirely in a Go process, while a precompiled Flutter engine acts as a pure rendering terminal — communicating over **Unix Domain Sockets** via **gRPC** + **FlatBuffers**.
+Fugo is a **local Server-Driven UI (SDUI)** framework that lets you build native desktop applications writing **exclusively in Go**. Business logic, state management, and routing live entirely in a Go process, while a precompiled Flutter engine acts as a pure rendering terminal — communicating over **Unix Domain Sockets** (TCP on Windows) via **gRPC** with **Protocol Buffers**.
 
 ```
-┌──────────────────────┐     IPC (UDS)       ┌──────────────────────┐
+┌──────────────────────┐     IPC (UDS/TCP)   ┌──────────────────────┐
 │      Go Process      │◄══════════════════►│   Flutter Process     │
-│                      │  gRPC + FlatBuffers │                      │
+│                      │   gRPC + Protobuf   │                      │
 │  ┌────────────────┐  │                      │  ┌────────────────┐  │
 │  │ Business Logic   │  │   Widget Tree Diff  │  │ Widget Registry│  │
-│  │ Virtual DOM     │──┼────────────────────►│  │ Render Pipeline│  │
+│  │ Retained Tree   │──┼────────────────────►│  │ Render Pipeline│  │
 │  │ Diffing Engine  │  │                     │  │ Event Debouncer│  │
 │  │ gRPC Server     │  │   User Events       │  │ gRPC Client    │  │
 │  └────────────────┘  │◄─────────────────────│  └────────────────┘  │
@@ -46,7 +46,7 @@ Fugo is a **local Server-Driven UI (SDUI)** framework that lets you build native
 | Go GUI libraries (Fyne, Gio) lack widget ecosystem | Flutter's world-class typography, layout, animations |
 | Flutter forces you into Dart for everything | Write all logic in Go, use any Go library |
 | Remote SDUI suffers 50-200ms network latency | Local IPC via UDS: **5-10µs** round-trip |
-| JSON parsing kills frame budgets | FlatBuffers **zero-copy** serialization |
+| JSON parsing kills frame budgets | Compact **Protobuf** framing; only diffs cross the wire |
 
 ---
 
@@ -56,48 +56,69 @@ Fugo is a **local Server-Driven UI (SDUI)** framework that lets you build native
 package main
 
 import (
-    "fmt"
-    "github.com/sazardev/fugo"
-    "github.com/sazardev/fugo/ui"
-    "github.com/sazardev/fugo/style"
+	"strconv"
+
+	"github.com/sazardev/fugo"
+	"github.com/sazardev/fugo/fg"
 )
 
 func main() {
-    app := fugo.NewApp(fugo.AppOptions{
-        Title:  "Fugo Desktop",
-        Width:  800,
-        Height: 600,
-    })
+	fugo.RunStandalone(fugo.AppOptions{
+		Title:  "Fugo Desktop",
+		Width:  800,
+		Height: 600,
+	}, buildUI)
+}
 
-    darkTheme := style.New(
-        style.BgColor("#121212"),
-        style.TextColor("#FFFFFF"),
-    )
+func buildUI(ctx *fugo.Context) fg.Widget {
+	counter := 0
+	counterText := fg.Text("0").FontSize(48)
 
-    app.Run(func(ctx *fugo.Context) ui.Widget {
-        counter := 0
+	incBtn := fg.Button("+").
+		BgColor(fg.Hex("#10B981")).
+		FontSize(20).
+		OnClick(func(_ fg.Event) {
+			counter++
+			counterText.SetText(strconv.Itoa(counter))
+			ctx.Update() // mark dirty → diff → patch streamed to Flutter
+		})
 
-        counterText := ui.Text("0").
-            FontSize(48).
-            Style(darkTheme)
-
-        incrementBtn := ui.Button("Increment").
-            OnClick(func(e ui.Event) {
-                counter++
-                counterText.SetText(fmt.Sprint(counter))
-                ctx.Update()
-            }).
-            Padding(16).
-            BorderRadius(4)
-
-        return ui.Container(
-            ui.Center(
-                ui.Column(counterText, incrementBtn).WithGap(24),
-            ),
-        ).Style(darkTheme).Fill()
-    })
+	return fg.Container(
+		fg.Column(
+			counterText,
+			fg.SizedBox(0, 16),
+			incBtn,
+		),
+	).BgColor(fg.Hex("#1A1A2E")).Pad(fg.EdgeAll(24))
 }
 ```
+
+The widget tree is **built once and retained**. Event handlers are Go closures that mutate
+widget fields in place (e.g. `counterText.SetText(...)`) and call `ctx.Update()`; the scheduler
+re-walks the same tree each frame, diffs it, and streams only the patches.
+
+> Constructors are **prefix-free**: `fg.Text(...)`, `fg.Button(...)`, `fg.Container(...)` —
+> not `NewText`. Each returns a concrete `*fg.TextWidget` / `*fg.ButtonWidget` / … with
+> chainable setters.
+
+---
+
+## Theming
+
+Fugo ships opinionated dark/light themes. The active theme feeds widget defaults (text color,
+button color, radii, sizes); per-widget setters always override it.
+
+```go
+fg.UseTheme(fg.LightTheme()) // fg.DarkTheme() is active by default
+
+t := fg.CurrentTheme()
+fg.Text("Title").FontSize(t.Typography.Heading)
+fg.Button("Save").BgColor(t.Colors.Success)
+fg.SizedBox(0, t.Spacing.LG)
+```
+
+Tokens live under `Colors` (Primary, Surface, OnSurface, Muted, Border, …), `Typography`
+(Heading/Body/Caption), `Spacing` (XS→XL), and `Radius` (SM/MD/LG).
 
 ---
 
@@ -109,8 +130,8 @@ func main() {
 | **Rendering** | Flutter 3.24+ / Impeller | 60/120 fps native, world-class layout engine |
 | **IPC Transport** | Unix Domain Sockets (TCP fallback on Windows) | 5-10µs latency, kernel-level throughput |
 | **RPC** | gRPC bidirectional streaming | Typed contracts, health checking, keepalive |
-| **Serialization** | FlatBuffers | Zero-copy reads in Dart, no heap allocations per frame |
-| **gRPC Codec** | vtprotobuf | Zero-alloc marshal/unmarshal in Go |
+| **Serialization** | Protocol Buffers (`google.golang.org/protobuf`) | Per-widget props marshaled as nested protobuf inside each node |
+| **Wire updates** | Keyed tree diff | Only changed nodes stream as patches, never the full tree |
 | **Process Mgmt** | `os/exec` + signals | Subprocess lifecycle, zombie prevention |
 | **Window Mgmt** | `window_manager` | Cross-platform frameless windows, custom chrome |
 
@@ -118,27 +139,28 @@ func main() {
 
 ## Current Status
 
-**Version 0.1.0 — Infrastructure phase complete.**
+**Version 0.1.0 — engine + widget API + transport + CLI + Flutter client are implemented and run end-to-end.**
 
-- [x] CI pipeline (lint, vet, build, test, format)
-- [x] Git hooks via Lefthook (pre-commit, pre-push)
-- [x] Go module skeleton (`github.com/sazardev/fugo`)
-- [x] `.golangci.yml` with 80+ linters
+- [x] Diffing engine, reconciler, 60 fps scheduler
+- [x] gRPC transport (UDS / TCP on Windows), health check, keepalive
+- [x] 24 widgets in `fg/` with a fluent, prefix-free API + a `Theme` system
+- [x] Flutter render client (background gRPC isolate, widget registry, auto-reconnect)
+- [x] CLI: `fugo init` / `run` (`--watch`) / `build` / `doctor`
 
-Upcoming: Transport layer → Core SDK → Flutter client → Public API.
-
-See [ROADMAP](./ROADMAP/) and [SPEC.md](./SPEC.md) for the full plan.
+See [ROADMAP](./ROADMAP/) and [SPEC.md](./SPEC.md) for the full design vision. **Note:** the
+roadmap/spec describe a FlatBuffers transport; the shipped implementation uses standard
+**Protocol Buffers** instead.
 
 ---
 
 ## Packages
 
 ```
-fugo/                   # App, Context, lifecycle
-├── ui/                 # Declarative widgets (Container, Text, Button, ...)
-├── style/              # Styling primitives (Font, Color, Border, ...)
-├── engine/             # Virtual DOM, Diffing engine, Reconciler, Scheduler
-├── transport/          # gRPC server, FlatBuffers codec
+fugo/                   # App, Context, lifecycle (RunStandalone, scheduler)
+├── fg/                 # Declarative widgets (fg.Container, fg.Text, fg.Button, ...) + Theme
+├── style/              # Styling primitives (Color, EdgeInsets, TextStyle, Border, ...)
+├── engine/             # Diffing engine, Reconciler, Scheduler (16ms tick)
+├── transport/          # gRPC server (UDS/TCP), health, keepalive
 ├── supervisor/         # Flutter subprocess lifecycle, signals
 └── flutter_client/     # Precompiled Flutter rendering client
 ```
@@ -148,11 +170,11 @@ fugo/                   # App, Context, lifecycle
 ## CLI
 
 ```bash
-fugo init <name>     # Scaffold a new project
-fugo run             # Start Go server + Flutter engine
-fugo build           # Package into a single executable
-fugo doctor          # Verify development environment
-fugo version         # Print version information
+fugo init <name>     # Scaffold a new project (main.go + go.mod)
+fugo run             # Build Go server + spawn Flutter engine (add --watch to rebuild on change)
+fugo build           # Build the app binary
+fugo doctor          # Verify development environment (Go, Flutter, protoc, gofumpt)
+fugo --version       # Print version information
 ```
 
 ---
@@ -161,8 +183,8 @@ fugo version         # Print version information
 
 - **Go is the source of truth** — all logic, state, and routing in Go
 - **No shared memory** — strict message passing via gRPC
-- **Zero-copy wherever possible** — FlatBuffers for the widget tree
-- **Opinionated on state, unopinionated on visuals** — one state model, any design system
+- **Stream only diffs** — keyed tree diffing, patches over gRPC, never full re-renders
+- **Opinionated on state, themed by default, unopinionated on design system**
 - **Performance is a requirement, not an afterthought**
 - **Terminal-native DX** — `fugo init` → `fugo run` → `fugo build`
 

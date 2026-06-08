@@ -35,10 +35,18 @@ Cada archivo aborda una dimensión del proyecto. Se recomienda leer en orden num
 
 ## Estado actual del proyecto
 
-- **Versión**: 0.1.0 (infraestructura: CI, linting, estructura del repo)
+- **Versión**: 0.1.0 — el motor (diff/reconciler/scheduler), la API de widgets (`fg/`), el
+  transporte gRPC, el supervisor, la CLI y el cliente Flutter están **implementados y funcionan
+  end-to-end**.
 - **Módulo Go**: `github.com/sazardev/fugo` (Go 1.26.3)
-- **Documentación base**: `SPEC.md` + `docs/` (4 anexos técnicos)
-- **Lo que NO existe aún**: código del SDK, cliente Flutter, CLI, ni capa de transporte
+- **Documentación base**: `CLAUDE.md` es la guía canónica y actualizada; `SPEC.md` + `docs/` son diseño.
+
+> **El código difiere de este roadmap en dos puntos deliberados:**
+> 1. **Serialización**: el roadmap describe **FlatBuffers** (ver `05_TRANSPORTE.md`); la
+>    implementación usa **Protocol Buffers estándar** (`google.golang.org/protobuf`), con los
+>    props de cada widget marshaled como protobuf anidado dentro de `WidgetNode.props`.
+> 2. **API de widgets**: el paquete es `fg/` (no `ui/`) y los constructores no llevan prefijo
+>    `New` — `fg.Text(...)`, `fg.Button(...)`, `fg.Container(...)`, devolviendo `*fg.XxxWidget`.
 
 ## Filosofía del roadmap
 
