@@ -1,3 +1,4 @@
+version: "2"
 linters:
   enable:
     - asasalint
@@ -27,11 +28,9 @@ linters:
     - gocritic
     - gocyclo
     - godot
-    - gofumpt
     - goheader
-    - goimports
     - gomoddirectives
-    - gomodguard
+    - gomodguard_v2
     - goprintffuncname
     - gosec
     - gosmopolitan
@@ -72,7 +71,6 @@ linters:
     - spancheck
     - sqlclosecheck
     - staticcheck
-    - stylecheck
     - tagalign
     - tagliatelle
     - testableexamples
@@ -86,15 +84,20 @@ linters:
     - usestdlibvars
     - wastedassign
     - whitespace
-    - wsl
+    - wsl_v5
     - zerologlint
   disable:
     - exhaustruct
     - wrapcheck
 
+formatters:
+  enable:
+    - gofumpt
+  settings:
+    gofumpt:
+      extra-rules: true
+
 linters-settings:
-  gofumpt:
-    extra-rules: true
   govet:
     enable:
       - fieldalignment
@@ -169,6 +172,7 @@ issues:
 
 output:
   formats:
-    - format: colored-line-number
+    colored-line-number:
+      path: stdout
 run:
   timeout: 5m

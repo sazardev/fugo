@@ -185,3 +185,57 @@ func TestDiff_CreateDeleteUpdate(t *testing.T) {
 		t.Error("expected REORDER for node 1")
 	}
 }
+
+func TestDiff_KeyBasedMatch(t *testing.T) {
+	oldTree := &fugov1.WidgetTree{
+		Root: 1,
+		Nodes: []*fugov1.WidgetNode{
+			{Id: 1, Type: fugov1.WidgetType_COLUMN, Key: "list", Children: []uint32{2, 3}},
+			{Id: 2, Type: fugov1.WidgetType_TEXT, Key: "item_a", Props: []byte("hello")},
+			{Id: 3, Type: fugov1.WidgetType_TEXT, Key: "item_b", Props: []byte("world")},
+		},
+	}
+
+	newTree := &fugov1.WidgetTree{
+		Root: 5,
+		Nodes: []*fugov1.WidgetNode{
+			{Id: 5, Type: fugov1.WidgetType_COLUMN, Key: "list", Children: []uint32{6, 7}},
+			{Id: 6, Type: fugov1.WidgetType_TEXT, Key: "item_b", Props: []byte("updated")},
+			{Id: 7, Type: fugov1.WidgetType_TEXT, Key: "item_a", Props: []byte("hello")},
+		},
+	}
+
+	patches := engine.Diff(oldTree, newTree)
+
+	for _, p := range patches {
+		switch p.Op {
+		case fugov1.PatchOp_PATCH_DELETE:
+			t.Errorf("unexpected DELETE for node %d (key-based match should prevent it)", p.NodeID)
+		case fugov1.PatchOp_PATCH_CREATE:
+			t.Errorf("unexpected CREATE (key-based match should detect existing keys)")
+		case fugov1.PatchOp_PATCH_REPLACE:
+			t.Errorf("unexpected REPLACE (types haven't changed)")
+		}
+	}
+
+	foundUpdate := false
+	foundReorder := false
+
+	for _, p := range patches {
+		if p.Op == fugov1.PatchOp_PATCH_UPDATE {
+			foundUpdate = true
+		}
+
+		if p.Op == fugov1.PatchOp_PATCH_REORDER {
+			foundReorder = true
+		}
+	}
+
+	if !foundUpdate {
+		t.Error("expected UPDATE for key-matched node with changed props")
+	}
+
+	if !foundReorder {
+		t.Error("expected REORDER for parent whose children changed order")
+	}
+}

@@ -14,7 +14,8 @@ type Patch struct {
 }
 
 type diffState struct {
-	oldMap map[uint32]*fugov1.WidgetNode
+	oldMap   map[uint32]*fugov1.WidgetNode
+	oldKeyed map[string]*fugov1.WidgetNode
 }
 
 func Diff(oldTree, newTree *fugov1.WidgetTree) []Patch {
@@ -26,10 +27,12 @@ func Diff(oldTree, newTree *fugov1.WidgetTree) []Patch {
 		oldMap: indexByID(oldTree.GetNodes()),
 	}
 
+	s.oldKeyed = indexByKey(oldTree.GetNodes())
+
 	var patches []Patch
 
 	for _, newNode := range newTree.GetNodes() {
-		oldNode := s.oldMap[newNode.GetId()]
+		oldNode := s.lookup(newNode)
 
 		switch {
 		case oldNode == nil:
@@ -64,6 +67,13 @@ func Diff(oldTree, newTree *fugov1.WidgetTree) []Patch {
 			}
 		}
 
+		if oldNode != nil {
+			delete(s.oldMap, oldNode.GetId())
+			if oldNode.GetKey() != "" {
+				delete(s.oldKeyed, oldNode.GetKey())
+			}
+		}
+
 		delete(s.oldMap, newNode.GetId())
 	}
 
@@ -77,8 +87,20 @@ func Diff(oldTree, newTree *fugov1.WidgetTree) []Patch {
 	return patches
 }
 
+func (s *diffState) lookup(newNode *fugov1.WidgetNode) *fugov1.WidgetNode {
+	if old, ok := s.oldMap[newNode.GetId()]; ok {
+		return old
+	}
+
+	if key := newNode.GetKey(); key != "" {
+		return s.oldKeyed[key]
+	}
+
+	return nil
+}
+
 func fullCreate(tree *fugov1.WidgetTree) []Patch {
-	var patches []Patch
+	patches := make([]Patch, 0, len(tree.GetNodes()))
 	for _, node := range tree.GetNodes() {
 		patches = append(patches, Patch{
 			Op:     fugov1.PatchOp_PATCH_CREATE,
@@ -94,6 +116,17 @@ func indexByID(nodes []*fugov1.WidgetNode) map[uint32]*fugov1.WidgetNode {
 	m := make(map[uint32]*fugov1.WidgetNode, len(nodes))
 	for _, n := range nodes {
 		m[n.GetId()] = n
+	}
+
+	return m
+}
+
+func indexByKey(nodes []*fugov1.WidgetNode) map[string]*fugov1.WidgetNode {
+	m := make(map[string]*fugov1.WidgetNode)
+	for _, n := range nodes {
+		if key := n.GetKey(); key != "" {
+			m[key] = n
+		}
 	}
 
 	return m

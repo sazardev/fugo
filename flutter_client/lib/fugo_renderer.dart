@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'generated/fugo/v1/fugo.pb.dart';
-import 'events.dart';
 import 'registry.dart';
 
 class FugoApp extends StatelessWidget {
@@ -99,12 +98,21 @@ class FugoRendererState extends State<FugoRenderer> {
 
   Widget _buildNode(int id) {
     final node = _widgetMap[id];
-    if (node == null) return const SizedBox.shrink();
+    if (node == null) {
+      print('[fugo] _buildNode: node $id not found in map');
+      return const SizedBox.shrink();
+    }
 
     final children = node.children
         .map((childId) => _buildNode(childId))
         .toList();
 
-    return _registry.build(node, children);
+    try {
+      return _registry.build(node, children);
+    } catch (e, stack) {
+      print('[fugo] _buildNode error for id=$id type=${node.type}: $e');
+
+      return const SizedBox.shrink();
+    }
   }
 }

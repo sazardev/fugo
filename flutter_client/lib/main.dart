@@ -1,13 +1,13 @@
-import 'dart:io' show Platform;
+import 'dart:isolate';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:grpc/grpc.dart';
 import 'package:window_manager/window_manager.dart';
 
-import 'generated/fugo/v1/fugo.pbgrpc.dart';
 import 'generated/fugo/v1/fugo.pb.dart';
 import 'events.dart';
 import 'fugo_renderer.dart';
+import 'grpc_isolate.dart';
 
 final _fugoRendererKey = GlobalKey<FugoRendererState>();
 
@@ -26,37 +26,35 @@ void main() async {
     await windowManager.focus();
   });
 
-  final addr = Platform.environment['FUGO_ADDR'] ?? '127.0.0.1:9510';
-  final parts = addr.split(':');
-  final host = parts[0];
-  final port = int.parse(parts[1]);
+  final receivePort = ReceivePort();
+  await Isolate.spawn(grpcIsolateEntry, receivePort.sendPort);
 
-  final channel = ClientChannel(
-    host,
-    port: port,
-    options: const ChannelOptions(
-      credentials: ChannelCredentials.insecure(),
-    ),
-  );
+  var firstMessage = true;
 
-  final client = FugoRenderClient(channel);
+  receivePort.listen((message) {
+    if (firstMessage) {
+      firstMessage = false;
+      setEventSendPort(message as SendPort);
+      runApp(FugoApp(rendererKey: _fugoRendererKey));
 
-  runApp(FugoApp(rendererKey: _fugoRendererKey));
+      return;
+    }
 
-  final responseStream = client.renderStream(eventStream);
+    if (message is List<int>) {
+      try {
+        final payload = RenderPayload.fromBuffer(Uint8List.fromList(message));
+        final state = _fugoRendererKey.currentState;
+        if (state == null) return;
 
-  try {
-    await for (final payload in responseStream) {
-      final state = _fugoRendererKey.currentState;
-      if (state == null) continue;
-
-      if (payload.hasFullTree()) {
-        state.applyFullTree(payload.fullTree);
-      } else if (payload.hasPatches()) {
-        state.applyPatches(payload.patches);
+        if (payload.hasFullTree()) {
+          state.applyFullTree(payload.fullTree);
+        } else if (payload.hasPatches()) {
+          state.applyPatches(payload.patches);
+        }
+      } catch (e, stack) {
+        print('[fugo] error in message handler: $e');
+        print('[fugo] stack: $stack');
       }
     }
-  } catch (e) {
-    debugPrint('[fugo] stream closed: $e');
-  }
+  });
 }

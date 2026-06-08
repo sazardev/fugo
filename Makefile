@@ -2,10 +2,10 @@ SHELL := /bin/bash
 VERSION := $(shell cat VERSION 2>/dev/null || echo "0.0.0")
 BINARY := fugo
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-BUILD_DATE := $(shell date -u '+%Y-%m-%d_%H:%M:%S')
+BUILD_DATE := $(shell git log -1 --format=%cd --date=format:'%Y-%m-%d_%H:%M:%S' 2>/dev/null || echo "unknown")
 LDFLAGS := -ldflags="-X main.version=$(VERSION) -X main.commit=$(GIT_COMMIT) -X main.date=$(BUILD_DATE)"
 
-.PHONY: help test build clean lint version changelog release install push pr pr-merge pr-list pr-update proto flutter-build spike run-spike
+.PHONY: help test build clean lint version changelog release install push pr pr-merge pr-list pr-update proto flutter-build spike run-spike cli cli-test install-cli
 
 help:
 	@grep -E '^[a-zA-Z/_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -164,3 +164,16 @@ run-spike: spike ## Run spike (starts Go server + Flutter client)
 		exit 1; \
 	fi
 	./bin/fugo-spike
+
+cli: ## Build fugo CLI binary
+	go build -o bin/fugo.exe ./cmd/fugo/
+	go build -o bin/fugo-spike.exe ./cmd/fugo-spike/
+
+install-cli: ## Install fugo globally (go install → GOPATH/bin)
+	go install ./cmd/fugo/
+	@echo "=== fugo installed! Run: fugo --help ==="
+
+cli-test: cli ## Build CLI + create test project (init -> build)
+	cmd /c "if exist testapp rmdir /s /q testapp"
+	.\bin\fugo.exe init testapp
+	cd testapp && go build -o bin\app.exe .
