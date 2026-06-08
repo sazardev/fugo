@@ -5,7 +5,18 @@ GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_DATE := $(shell git log -1 --format=%cd --date=format:'%Y-%m-%d_%H:%M:%S' 2>/dev/null || echo "unknown")
 LDFLAGS := -ldflags="-X main.version=$(VERSION) -X main.commit=$(GIT_COMMIT) -X main.date=$(BUILD_DATE)"
 
-.PHONY: help test build clean lint version changelog release install push pr pr-merge pr-list pr-update proto flutter-build spike run-spike cli cli-test install-cli
+# --- OS-specific settings (Windows vs Unix) ---
+ifeq ($(OS),Windows_NT)
+	FLUTTER_BUILD_ARGS := windows
+	FLUTTER_BINARY     := flutter_client/build/windows/x64/runner/Release/fugo_flutter_client.exe
+	SPIKE_BIN          := bin/fugo-spike.exe
+else
+	FLUTTER_BUILD_ARGS := linux --debug
+	FLUTTER_BINARY     := flutter_client/build/linux/x64/debug/bundle/fugo_flutter_client
+	SPIKE_BIN          := bin/fugo-spike
+endif
+
+.PHONY: help test build clean lint vet version changelog release install install-tools push pr pr-merge pr-list pr-update proto flutter-build spike run run-spike cli cli-test install-cli
 
 help:
 	@grep -E '^[a-zA-Z/_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -63,6 +74,12 @@ release: ## Create release: make release TYPE=patch|minor|major MSG="description
 
 install: ## Install lefthook hooks
 	go tool lefthook install
+
+install-tools: ## Install dev tools (gofumpt, staticcheck, golangci-lint) built with local Go
+	go install mvdan.cc/gofumpt@latest
+	go install honnef.co/go/tools/cmd/staticcheck@latest
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	@echo "=== Tools installed to $$(go env GOPATH)/bin (built with $$(go version)) ==="
 
 push: ## Push commits and tags
 	@echo "Pushing commits and tags..."
@@ -148,22 +165,24 @@ proto: ## Generate protobuf code (Go + Dart)
 		fugo/v1/fugo.proto
 	@echo "=== Proto generation complete ==="
 
-flutter-build: ## Build Flutter client for Linux
-	@echo "=== Building Flutter client ==="
-	cd flutter_client && flutter build linux --debug
+flutter-build: ## Build Flutter client for the current OS
+	@echo "=== Building Flutter client ($(FLUTTER_BUILD_ARGS)) ==="
+	cd flutter_client && flutter build $(FLUTTER_BUILD_ARGS)
 	@echo "=== Flutter build complete ==="
 
 spike: ## Build spike binary
 	@mkdir -p bin
-	go build -o bin/fugo-spike ./cmd/fugo-spike/
-	@echo "=== Spike binary built: bin/fugo-spike ==="
+	go build -o $(SPIKE_BIN) ./cmd/fugo-spike/
+	@echo "=== Spike binary built: $(SPIKE_BIN) ==="
+
+run: run-spike ## Run the demo app (alias for run-spike)
 
 run-spike: spike ## Run spike (starts Go server + Flutter client)
-	@if [ ! -f flutter_client/build/linux/x64/debug/bundle/fugo_flutter_client ]; then \
+	@if [ ! -f "$(FLUTTER_BINARY)" ]; then \
 		echo "Flutter client not built. Run: make flutter-build"; \
 		exit 1; \
 	fi
-	./bin/fugo-spike
+	./$(SPIKE_BIN)
 
 cli: ## Build fugo CLI binary
 	go build -o bin/fugo.exe ./cmd/fugo/
