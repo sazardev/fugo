@@ -24,6 +24,13 @@ func (e *ExpandedWidget) Flex(v int32) *ExpandedWidget {
 	return e
 }
 
+// Spacer creates flexible empty space that pushes siblings apart along a Row or
+// Column's main axis. It is sugar for an Expanded around an empty box, so it
+// renders with the existing client without a new widget type.
+func Spacer() *ExpandedWidget {
+	return Expanded(SizedBox(0, 0))
+}
+
 func (e *ExpandedWidget) isWidget() {}
 func (e *ExpandedWidget) widgetChildren() []Widget {
 	if e.child != nil {

@@ -52,6 +52,16 @@ class WidgetRegistry {
         return _buildGridView(node, children);
       case proto.WidgetType.ANIMATEDOPACITY:
         return _buildAnimatedOpacity(node, children);
+      case proto.WidgetType.SCROLLVIEW:
+        return _buildScrollView(node, children);
+      case proto.WidgetType.GESTUREDETECTOR:
+        return _buildGestureDetector(node, children);
+      case proto.WidgetType.ALIGN:
+        return _buildAlign(node, children);
+      case proto.WidgetType.RADIO:
+        return _buildRadio(node);
+      case proto.WidgetType.DROPDOWN:
+        return _buildDropdown(node);
       default:
         return const SizedBox.shrink();
     }
@@ -400,6 +410,85 @@ class WidgetRegistry {
       opacity: props.hasOpacity() ? props.opacity : 1,
       duration: duration,
       child: child,
+    );
+  }
+
+  Widget _buildScrollView(proto.WidgetNode node, List<Widget> children) {
+    final props = proto.ScrollViewProps.fromBuffer(node.props);
+
+    return SingleChildScrollView(
+      scrollDirection: props.scrollDirection == 1
+          ? Axis.horizontal
+          : Axis.vertical,
+      child: children.isNotEmpty ? children.first : const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildGestureDetector(proto.WidgetNode node, List<Widget> children) {
+    return GestureDetector(
+      onTap: () => sendEvent(proto.ClientEvent(
+        nodeId: node.id.toString(),
+        eventType: 'onTap',
+      )),
+      child: children.isNotEmpty ? children.first : const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildAlign(proto.WidgetNode node, List<Widget> children) {
+    final props = proto.AlignProps.fromBuffer(node.props);
+
+    return Align(
+      alignment: Alignment(props.x, props.y),
+      child: children.isNotEmpty ? children.first : const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildRadio(proto.WidgetNode node) {
+    final props = proto.RadioProps.fromBuffer(node.props);
+    final selected = props.value == props.groupValue;
+
+    return GestureDetector(
+      onTap: () {
+        sendEvent(proto.ClientEvent(
+          nodeId: node.id.toString(),
+          eventType: 'onChange',
+          eventData: props.value.codeUnits,
+        ));
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            selected
+                ? Icons.radio_button_checked
+                : Icons.radio_button_unchecked,
+          ),
+          const SizedBox(width: 8),
+          Text(props.label),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropdown(proto.WidgetNode node) {
+    final props = proto.DropdownProps.fromBuffer(node.props);
+
+    return DropdownButton<String>(
+      value: (props.value.isNotEmpty && props.items.contains(props.value))
+          ? props.value
+          : null,
+      items: props.items
+          .map((i) => DropdownMenuItem<String>(value: i, child: Text(i)))
+          .toList(),
+      onChanged: (v) {
+        if (v != null) {
+          sendEvent(proto.ClientEvent(
+            nodeId: node.id.toString(),
+            eventType: 'onChange',
+            eventData: v.codeUnits,
+          ));
+        }
+      },
     );
   }
 

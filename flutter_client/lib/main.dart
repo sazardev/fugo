@@ -12,6 +12,33 @@ import 'grpc_isolate.dart';
 
 final _fugoRendererKey = GlobalKey<FugoRendererState>();
 
+// applyWindowCommand applies a runtime window-control command from Go via the
+// OS window manager (driven by WindowController on the Go side).
+Future<void> applyWindowCommand(WindowCommand cmd) async {
+  switch (cmd.op) {
+    case WindowOp.WINDOW_SET_TITLE:
+      await windowManager.setTitle(cmd.title);
+      break;
+    case WindowOp.WINDOW_SET_SIZE:
+      await windowManager.setSize(Size(cmd.width, cmd.height));
+      break;
+    case WindowOp.WINDOW_MINIMIZE:
+      await windowManager.minimize();
+      break;
+    case WindowOp.WINDOW_MAXIMIZE:
+      await windowManager.maximize();
+      break;
+    case WindowOp.WINDOW_CENTER:
+      await windowManager.center();
+      break;
+    case WindowOp.WINDOW_FULLSCREEN:
+      await windowManager.setFullScreen(cmd.flag);
+      break;
+    default:
+      break;
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
@@ -48,6 +75,12 @@ void main() async {
     if (message is List<int>) {
       try {
         final payload = RenderPayload.fromBuffer(Uint8List.fromList(message));
+
+        if (payload.hasWindow()) {
+          applyWindowCommand(payload.window);
+          return;
+        }
+
         final state = _fugoRendererKey.currentState;
         if (state == null) return;
 

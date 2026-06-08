@@ -10,10 +10,12 @@ ifeq ($(OS),Windows_NT)
 	FLUTTER_BUILD_ARGS := windows
 	FLUTTER_BINARY     := flutter_client/build/windows/x64/runner/Release/fugo_flutter_client.exe
 	SPIKE_BIN          := bin/fugo-spike.exe
+	DART_PROTOC_PLUGIN := $(LOCALAPPDATA)/Pub/Cache/bin/protoc-gen-dart.bat
 else
 	FLUTTER_BUILD_ARGS := linux --debug
 	FLUTTER_BINARY     := flutter_client/build/linux/x64/debug/bundle/fugo_flutter_client
 	SPIKE_BIN          := bin/fugo-spike
+	DART_PROTOC_PLUGIN := $(HOME)/.pub-cache/bin/protoc-gen-dart
 endif
 
 .PHONY: help test build clean lint vet version changelog release install install-tools push pr pr-merge pr-list pr-update proto flutter-build spike run run-spike cli cli-test install-cli
@@ -161,7 +163,7 @@ proto: ## Generate protobuf code (Go + Dart)
 	@mkdir -p flutter_client/lib/generated
 	protoc --proto_path=flutter_client/proto \
 		--dart_out=grpc:flutter_client/lib/generated \
-		--plugin=protoc-gen-dart=$(HOME)/.pub-cache/bin/protoc-gen-dart \
+		--plugin=protoc-gen-dart=$(DART_PROTOC_PLUGIN) \
 		fugo/v1/fugo.proto
 	@echo "=== Proto generation complete ==="
 

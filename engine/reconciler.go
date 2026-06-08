@@ -92,6 +92,14 @@ func (r *Reconciler) SendPatches(patches []Patch) {
 	r.send(payload)
 }
 
+// SendWindowCommand sends an out-of-band window-control command (set title or
+// size, minimize, maximize, center, fullscreen) to the client.
+func (r *Reconciler) SendWindowCommand(cmd *fugov1.WindowCommand) {
+	r.send(&fugov1.RenderPayload{
+		Payload: &fugov1.RenderPayload_Window{Window: cmd},
+	})
+}
+
 func (r *Reconciler) send(payload *fugov1.RenderPayload) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

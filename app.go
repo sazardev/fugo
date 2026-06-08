@@ -69,6 +69,54 @@ func (c *Context) Update() {
 	c.app.scheduler.Enqueue()
 }
 
+// Window returns a controller for the client's OS window.
+func (c *Context) Window() *WindowController {
+	return &WindowController{app: c.app}
+}
+
+// WindowController drives the client's OS window at runtime. Obtain one via
+// Context.Window. Commands are streamed to the Flutter client, which applies
+// them through its window manager.
+type WindowController struct {
+	app *App
+}
+
+func (w *WindowController) send(cmd *fugov1.WindowCommand) {
+	if w.app.reconciler != nil {
+		w.app.reconciler.SendWindowCommand(cmd)
+	}
+}
+
+// SetTitle changes the window title.
+func (w *WindowController) SetTitle(title string) {
+	w.send(&fugov1.WindowCommand{Op: fugov1.WindowOp_WINDOW_SET_TITLE, Title: title})
+}
+
+// SetSize resizes the window to width x height logical pixels.
+func (w *WindowController) SetSize(width, height float64) {
+	w.send(&fugov1.WindowCommand{Op: fugov1.WindowOp_WINDOW_SET_SIZE, Width: width, Height: height})
+}
+
+// Minimize minimizes the window to the taskbar.
+func (w *WindowController) Minimize() {
+	w.send(&fugov1.WindowCommand{Op: fugov1.WindowOp_WINDOW_MINIMIZE})
+}
+
+// Maximize maximizes the window.
+func (w *WindowController) Maximize() {
+	w.send(&fugov1.WindowCommand{Op: fugov1.WindowOp_WINDOW_MAXIMIZE})
+}
+
+// Center centers the window on the current screen.
+func (w *WindowController) Center() {
+	w.send(&fugov1.WindowCommand{Op: fugov1.WindowOp_WINDOW_CENTER})
+}
+
+// SetFullScreen enables or disables fullscreen mode.
+func (w *WindowController) SetFullScreen(on bool) {
+	w.send(&fugov1.WindowCommand{Op: fugov1.WindowOp_WINDOW_FULLSCREEN, Flag: on})
+}
+
 // NewApp creates an App with the given options and a 60fps scheduler. Use
 // RunStandalone for the common case of also starting the server and client.
 func NewApp(opts AppOptions) *App {
@@ -125,7 +173,7 @@ func (a *App) flush() {
 
 	patches := engine.Diff(a.oldTree, tree)
 	if len(patches) > 0 {
-		log.Printf("[fugo] flush: %d patches, %d nodes, %d handlers", len(patches), len(tree.Nodes), len(a.handlers))
+		log.Printf("[fugo] flush: %d patches, %d nodes, %d handlers", len(patches), len(tree.GetNodes()), len(a.handlers))
 		a.reconciler.SendPatches(patches)
 	}
 
@@ -311,7 +359,7 @@ func searchUpForFugo(start string) string {
 	dir := start
 	for {
 		goMod := filepath.Join(dir, "go.mod")
-		if data, err := os.ReadFile(goMod); err == nil && strings.Contains(string(data), "github.com/sazardev/fugo") {
+		if data, err := os.ReadFile(goMod); err == nil && strings.Contains(string(data), "github.com/sazardev/fugo") { //nolint:gosec // path derived from os.Getwd walk, not external input
 			return dir
 		}
 
@@ -329,7 +377,7 @@ func checkFugoFlutterDir(fugoRoot string) string {
 		filepath.Join(fugoRoot, "flutter_client", "build", "linux", "x64", "debug", "bundle", "fugo_flutter_client"),
 	}
 	for _, path := range candidates {
-		if _, err := os.Stat(path); err == nil {
+		if _, err := os.Stat(path); err == nil { //nolint:gosec // path built from fugoRoot via filepath.Join, not external input
 			return path
 		}
 	}
