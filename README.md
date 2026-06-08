@@ -172,7 +172,7 @@ fugo/                   # App, Context, lifecycle (RunStandalone, scheduler)
 ```bash
 fugo init <name>     # Scaffold a new project (main.go + go.mod)
 fugo run             # Build Go server + spawn Flutter engine (add --watch to rebuild on change)
-fugo build           # Build the app binary
+fugo build           # Build + bundle the Flutter client into a self-contained dist/
 fugo doctor          # Verify development environment (Go, Flutter, protoc, gofumpt)
 fugo --version       # Print version information
 ```

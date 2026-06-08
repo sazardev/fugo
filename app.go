@@ -219,6 +219,21 @@ func findFlutterBinary() string {
 		return path
 	}
 
+	// A packaged app (produced by `fugo build`) ships the Flutter client in a
+	// flutter/ folder next to the executable. Prefer that — it makes the app
+	// self-contained and independent of the fugo source tree.
+	if exe, err := os.Executable(); err == nil {
+		exeDir := filepath.Dir(exe)
+		for _, p := range []string{
+			filepath.Join(exeDir, "flutter", "fugo_flutter_client.exe"),
+			filepath.Join(exeDir, "flutter", "fugo_flutter_client"),
+		} {
+			if _, statErr := os.Stat(p); statErr == nil {
+				return p
+			}
+		}
+	}
+
 	// Search from CWD upward for fugo repo, then check flutter_client/
 	dir, _ := os.Getwd()
 	if fugoRoot := searchUpForFugo(dir); fugoRoot != "" {

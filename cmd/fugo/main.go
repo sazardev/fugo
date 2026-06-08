@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -384,26 +386,134 @@ func runApp(ctx context.Context, addr, flutter string) error {
 func buildCmd() *cli.Command {
 	return &cli.Command{
 		Name:  "build",
-		Usage: "Build the Fugo app",
+		Usage: "Build the app and bundle the Flutter client into dist/",
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if !hasMainGo() {
 				return fmt.Errorf("no main.go found in current directory. Run 'fugo init <name>' first")
 			}
 
-			fmt.Println("Building...")
-			build := exec.CommandContext(ctx, "go", "build", "-o", appBinary(), ".")
+			outDir := "dist"
+			appOut := filepath.Join(outDir, projectName()+exeSuffix())
+
+			fmt.Println("Building app (release)...")
+			build := exec.CommandContext(ctx, "go", "build", "-ldflags=-s -w", "-o", appOut, ".")
 			build.Stdout = os.Stdout
 			build.Stderr = os.Stderr
 			if err := build.Run(); err != nil {
 				return fmt.Errorf("build failed: %w", err)
 			}
 
-			fmt.Println("Build complete: " + appBinary())
-			fmt.Println("Flutter client must be built separately: cd flutter_client && flutter build windows")
+			src := flutterBundleDir(ctx)
+			if src == "" {
+				fmt.Println("  ! Flutter client bundle not found — built the Go binary only.")
+				fmt.Println("    Build the client first: cd <fugo>/flutter_client && flutter build windows")
+				fmt.Printf("\nBuild complete (app only): %s\n", appOut)
+
+				return nil
+			}
+
+			fmt.Println("Bundling Flutter client...")
+			if err := copyDir(src, filepath.Join(outDir, "flutter")); err != nil {
+				return fmt.Errorf("bundle flutter client: %w", err)
+			}
+
+			fmt.Printf("\nBuild complete: %s/\n", outDir)
+			fmt.Printf("  %s — your app\n", filepath.Base(appOut))
+			fmt.Printf("  flutter/      — bundled render client\n")
+			fmt.Printf("\nShip the whole %s/ folder; run it with: %s\n", outDir, appOut)
 
 			return nil
 		},
 	}
+}
+
+// projectName returns the current directory's base name, used as the app binary name.
+func projectName() string {
+	dir, err := os.Getwd()
+	if err != nil || dir == "" {
+		return "app"
+	}
+
+	return filepath.Base(dir)
+}
+
+// exeSuffix is the executable extension for the host OS.
+func exeSuffix() string {
+	if runtime.GOOS == "windows" {
+		return ".exe"
+	}
+
+	return ""
+}
+
+// flutterBundleDir locates the precompiled Flutter client bundle inside the
+// fugo module — resolved via `go list -m` so it honors a replace directive —
+// or "" if fugo is not a local checkout or the client has not been built yet.
+func flutterBundleDir(ctx context.Context) string {
+	out, err := exec.CommandContext(ctx, "go", "list", "-m", "-f", "{{.Dir}}", "github.com/sazardev/fugo").Output()
+	if err != nil {
+		return ""
+	}
+
+	repo := strings.TrimSpace(string(out))
+	if repo == "" {
+		return ""
+	}
+
+	for _, c := range []string{
+		filepath.Join(repo, "flutter_client", "build", "windows", "x64", "runner", "Release"),
+		filepath.Join(repo, "flutter_client", "build", "linux", "x64", "release", "bundle"),
+		filepath.Join(repo, "flutter_client", "build", "linux", "x64", "debug", "bundle"),
+	} {
+		if fi, err := os.Stat(c); err == nil && fi.IsDir() {
+			return c
+		}
+	}
+
+	return ""
+}
+
+// copyDir recursively copies the contents of src into dst.
+func copyDir(src, dst string) error {
+	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		rel, relErr := filepath.Rel(src, path)
+		if relErr != nil {
+			return relErr
+		}
+
+		target := filepath.Join(dst, rel)
+		if d.IsDir() {
+			return os.MkdirAll(target, 0o755)
+		}
+
+		return copyFile(path, target)
+	})
+}
+
+// copyFile copies a single file from src to dst (dst's parent must exist).
+func copyFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = in.Close() }()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+
+	if _, err := io.Copy(out, in); err != nil {
+		_ = out.Close()
+
+		return err
+	}
+
+	return out.Close()
 }
 
 func hasMainGo() bool {

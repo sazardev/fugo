@@ -91,10 +91,12 @@ linters:
     - wrapcheck
   exclusions:
     rules:
-      # A CLI legitimately writes to stdout/stderr.
+      # A CLI legitimately writes to stdout/stderr and does file I/O on
+      # user-supplied paths (scaffolding, packaging).
       - path: cmd/
         linters:
           - forbidigo
+          - gosec
 
 formatters:
   enable:
