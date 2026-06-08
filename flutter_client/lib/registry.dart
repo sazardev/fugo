@@ -4,10 +4,10 @@ import 'generated/fugo/v1/fugo.pb.dart' as proto;
 import 'events.dart';
 
 class WidgetRegistry {
-  Widget build(proto.WidgetNode node, List<Widget> children) {
+  Widget build(BuildContext context, proto.WidgetNode node, List<Widget> children) {
     switch (node.type) {
       case proto.WidgetType.TEXT:
-        return _buildText(node);
+        return _buildText(context, node);
       case proto.WidgetType.CONTAINER:
         return _buildContainer(node, children);
       case proto.WidgetType.COLUMN:
@@ -15,7 +15,7 @@ class WidgetRegistry {
       case proto.WidgetType.CENTER:
         return _buildCenter(children);
       case proto.WidgetType.BUTTON:
-        return _buildButton(node);
+        return _buildButton(context, node);
       case proto.WidgetType.ROW:
         return _buildRow(node, children);
       case proto.WidgetType.STACK:
@@ -59,7 +59,7 @@ class WidgetRegistry {
       case proto.WidgetType.ALIGN:
         return _buildAlign(node, children);
       case proto.WidgetType.RADIO:
-        return _buildRadio(node);
+        return _buildRadio(context, node);
       case proto.WidgetType.DROPDOWN:
         return _buildDropdown(node);
       default:
@@ -67,55 +67,49 @@ class WidgetRegistry {
     }
   }
 
-  Widget _buildText(proto.WidgetNode node) {
+  Widget _buildText(BuildContext context, proto.WidgetNode node) {
     final props = proto.TextProps.fromBuffer(node.props);
+    final base = Theme.of(context).textTheme.bodyMedium ?? const TextStyle();
     return Text(
       props.value,
-      style: TextStyle(
-        fontSize: props.hasFontSize() ? props.fontSize : 14,
-        color: props.hasColor() ? hexToColor(props.color) : Colors.white,
+      style: base.copyWith(
+        fontSize: props.hasFontSize() ? props.fontSize : null,
+        color: props.hasColor() ? hexToColor(props.color) : null,
       ),
     );
   }
 
-  Widget _buildButton(proto.WidgetNode node) {
+  Widget _buildButton(BuildContext context, proto.WidgetNode node) {
     final props = proto.ButtonProps.fromBuffer(node.props);
-
-    return GestureDetector(
-      onTap: () {
-        sendEvent(proto.ClientEvent(
-          nodeId: node.id.toString(),
-          eventType: 'onClick',
-        ));
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        decoration: BoxDecoration(
-          color: props.hasBgColor() ? hexToColor(props.bgColor) : const Color(0xFF3B82F6),
-          borderRadius: BorderRadius.circular(
-            props.hasBorderRadius() ? props.borderRadius : 8,
-          ),
-        ),
-        child: Text(
-          props.label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+    final radius = props.hasBorderRadius() ? props.borderRadius : 12.0;
+    return FilledButton(
+      style: FilledButton.styleFrom(
+        backgroundColor: props.hasBgColor() ? hexToColor(props.bgColor) : null,
+        textStyle: props.hasFontSize() ? TextStyle(fontSize: props.fontSize) : null,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
       ),
+      onPressed: () => sendEvent(proto.ClientEvent(
+        nodeId: node.id.toString(),
+        eventType: 'onClick',
+      )),
+      child: Text(props.label),
     );
   }
 
   Widget _buildContainer(proto.WidgetNode node, List<Widget> children) {
     final props = proto.ContainerProps.fromBuffer(node.props);
     final child = children.isNotEmpty ? children.first : const SizedBox.shrink();
-
+    final color = props.hasBgColor() ? hexToColor(props.bgColor) : null;
+    final radius = props.hasBorderRadius() ? props.borderRadius : 0.0;
+    final decorated = color != null || radius > 0;
     return Container(
-      color: props.hasBgColor() ? hexToColor(props.bgColor) : null,
-      padding: props.hasPadding()
-          ? EdgeInsets.all(props.padding)
+      padding: props.hasPadding() ? EdgeInsets.all(props.padding) : null,
+      decoration: decorated
+          ? BoxDecoration(
+              color: color,
+              borderRadius:
+                  radius > 0 ? BorderRadius.circular(radius) : null,
+            )
           : null,
       child: child,
     );
@@ -198,33 +192,19 @@ class WidgetRegistry {
 
   Widget _buildTextField(proto.WidgetNode node) {
     final props = proto.TextFieldProps.fromBuffer(node.props);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: TextField(
-        obscureText: props.obscure,
-        style: TextStyle(
-          fontSize: props.hasFontSize() ? props.fontSize : 14,
-          color: Colors.white,
-        ),
-        decoration: InputDecoration(
-          hintText: props.placeholder,
-          hintStyle: const TextStyle(color: Colors.grey),
-          filled: true,
-          fillColor: const Color(0xFF2A2A2A),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide.none,
-          ),
-        ),
-        onChanged: (value) {
-          sendEvent(proto.ClientEvent(
-            nodeId: node.id.toString(),
-            eventType: 'onChange',
-            eventData: value.codeUnits,
-          ));
-        },
+    return TextField(
+      obscureText: props.obscure,
+      style: props.hasFontSize() ? TextStyle(fontSize: props.fontSize) : null,
+      decoration: InputDecoration(
+        hintText: props.placeholder,
+        filled: true,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
+      onChanged: (value) => sendEvent(proto.ClientEvent(
+        nodeId: node.id.toString(),
+        eventType: 'onChange',
+        eventData: value.codeUnits,
+      )),
     );
   }
 
@@ -308,17 +288,15 @@ class WidgetRegistry {
     final props = proto.AnimatedContainerProps.fromBuffer(node.props);
     final child = children.isNotEmpty ? children.first : const SizedBox.shrink();
     final duration = Duration(milliseconds: props.hasDurationMs() ? props.durationMs : 200);
-
+    final radius = props.hasBorderRadius() ? props.borderRadius : 0.0;
     return AnimatedContainer(
       duration: duration,
       curve: props.hasCurve() ? _mapCurve(props.curve) : Curves.ease,
-      color: props.hasBgColor() ? hexToColor(props.bgColor) : null,
       padding: props.hasPadding() ? EdgeInsets.all(props.padding) : null,
-      decoration: props.hasBorderRadius()
-          ? BoxDecoration(
-              borderRadius: BorderRadius.circular(props.borderRadius),
-            )
-          : null,
+      decoration: BoxDecoration(
+        color: props.hasBgColor() ? hexToColor(props.bgColor) : null,
+        borderRadius: radius > 0 ? BorderRadius.circular(radius) : null,
+      ),
       child: child,
     );
   }
@@ -443,7 +421,7 @@ class WidgetRegistry {
     );
   }
 
-  Widget _buildRadio(proto.WidgetNode node) {
+  Widget _buildRadio(BuildContext context, proto.WidgetNode node) {
     final props = proto.RadioProps.fromBuffer(node.props);
     final selected = props.value == props.groupValue;
 
@@ -462,6 +440,7 @@ class WidgetRegistry {
             selected
                 ? Icons.radio_button_checked
                 : Icons.radio_button_unchecked,
+            color: selected ? Theme.of(context).colorScheme.primary : null,
           ),
           const SizedBox(width: 8),
           Text(props.label),

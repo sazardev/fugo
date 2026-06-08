@@ -10,11 +10,31 @@ class FugoApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const scheme = ColorScheme.dark(
+      primary: Color(0xFF3B82F6),
+      onPrimary: Colors.white,
+      secondary: Color(0xFF8B5CF6),
+      onSecondary: Colors.white,
+      surface: Color(0xFF16213E),
+      onSurface: Color(0xFFE5E7EB),
+      error: Color(0xFFEF4444),
+      onError: Colors.white,
+      outline: Color(0xFF6B7280),
+    );
+
+    final theme = ThemeData(
+      useMaterial3: true,
+      colorScheme: scheme,
+      scaffoldBackgroundColor: const Color(0xFF1A1A2E),
+      visualDensity: VisualDensity.standard,
+    );
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: theme,
       home: Scaffold(
-        backgroundColor: const Color(0xFF1E1E1E),
-        body: FugoRenderer(key: rendererKey),
+        backgroundColor: const Color(0xFF1A1A2E),
+        body: SafeArea(child: FugoRenderer(key: rendererKey)),
       ),
     );
   }
@@ -108,7 +128,7 @@ class FugoRendererState extends State<FugoRenderer> {
         .toList();
 
     try {
-      return _registry.build(node, children);
+      return _registry.build(context, node, children);
     } catch (e, stack) {
       print('[fugo] _buildNode error for id=$id type=${node.type}: $e');
 
