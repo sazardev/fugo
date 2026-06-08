@@ -1,6 +1,9 @@
 SHELL := /bin/bash
 VERSION := $(shell cat VERSION 2>/dev/null || echo "0.0.0")
 BINARY := fugo
+# Pin the Dart protoc plugin to the version that matches the pubspec protobuf
+# runtime (protobuf ^3.1.0). A mismatched global plugin breaks `flutter build`.
+PROTOC_DART_VERSION := 21.1.0
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_DATE := $(shell git log -1 --format=%cd --date=format:'%Y-%m-%d_%H:%M:%S' 2>/dev/null || echo "unknown")
 LDFLAGS := -ldflags="-X main.version=$(VERSION) -X main.commit=$(GIT_COMMIT) -X main.date=$(BUILD_DATE)"
@@ -18,7 +21,7 @@ else
 	DART_PROTOC_PLUGIN := $(HOME)/.pub-cache/bin/protoc-gen-dart
 endif
 
-.PHONY: help test bench build clean lint vet version changelog release install install-tools push pr pr-merge pr-list pr-update proto flutter-build spike run run-spike cli cli-test install-cli
+.PHONY: help test bench build clean lint vet version changelog release install install-tools push pr pr-merge pr-list pr-update proto proto-tools flutter-build spike run run-spike cli cli-test install-cli
 
 help:
 	@grep -E '^[a-zA-Z/_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -154,7 +157,10 @@ pr-update: ## Update current branch with main
 	git rebase origin/main && \
 	echo "=== Branch updated ==="
 
-proto: ## Generate protobuf code (Go + Dart)
+proto-tools: ## Pin the Dart protoc plugin to match the pubspec protobuf runtime
+	dart pub global activate protoc_plugin $(PROTOC_DART_VERSION)
+
+proto: proto-tools ## Generate protobuf code (Go + Dart)
 	@echo "=== Generating Go protobuf code ==="
 	protoc --proto_path=. --go_out=. --go_opt=paths=source_relative \
 		--go-grpc_out=. --go-grpc_opt=paths=source_relative \

@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/urfave/cli/v3"
@@ -541,9 +540,7 @@ func runApp(ctx context.Context, addr, flutter string) error {
 	if flutter != "" {
 		run.Env = append(run.Env, "FUGO_FLUTTER_BINARY="+flutter)
 	}
-	run.SysProcAttr = &syscall.SysProcAttr{
-		CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
-	}
+	setNewProcessGroup(run)
 
 	if err := run.Start(); err != nil {
 		return fmt.Errorf("start app: %w", err)

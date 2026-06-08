@@ -1,6 +1,10 @@
 package fg
 
-import "testing"
+import (
+	"testing"
+
+	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
+)
 
 func newTestRouter() *RouterWidget {
 	return Router(map[string]func() Widget{
@@ -48,6 +52,19 @@ func TestRouterGoBack(t *testing.T) {
 	}
 	if r.GoBack() {
 		t.Error("GoBack with empty history should return false")
+	}
+}
+
+func TestRouterUnmatchedRouteRendersPlaceholder(t *testing.T) {
+	r := Router(map[string]func() Widget{
+		"/": func() Widget { return Text("home") },
+	}, "/missing")
+
+	var counter uint32
+	nodes := r.walkNodes(&counter)
+
+	if len(nodes) != 1 || nodes[0].GetType() != fugov1.WidgetType_CONTAINER {
+		t.Errorf("an unmatched route should render a single placeholder container, got %d nodes", len(nodes))
 	}
 }
 
