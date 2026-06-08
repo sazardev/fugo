@@ -51,6 +51,23 @@ func TestRouterGoBack(t *testing.T) {
 	}
 }
 
+func TestRouterParams(t *testing.T) {
+	r := Router(map[string]func() Widget{
+		"/":         func() Widget { return Text("home") },
+		"/user/:id": func() Widget { return Text("user") },
+	}, "/")
+
+	if !r.NavigateTo("/user/42") {
+		t.Fatal("NavigateTo(/user/42) should match /user/:id")
+	}
+	if got := r.Param("id"); got != "42" {
+		t.Errorf("Param(id) = %q, want 42", got)
+	}
+	if r.CurrentRoute() != "/user/42" {
+		t.Errorf("CurrentRoute = %q, want /user/42", r.CurrentRoute())
+	}
+}
+
 func TestRouterWalkNodesRendersCurrent(t *testing.T) {
 	r := newTestRouter()
 

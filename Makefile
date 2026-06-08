@@ -18,7 +18,7 @@ else
 	DART_PROTOC_PLUGIN := $(HOME)/.pub-cache/bin/protoc-gen-dart
 endif
 
-.PHONY: help test build clean lint vet version changelog release install install-tools push pr pr-merge pr-list pr-update proto flutter-build spike run run-spike cli cli-test install-cli
+.PHONY: help test bench build clean lint vet version changelog release install install-tools push pr pr-merge pr-list pr-update proto flutter-build spike run run-spike cli cli-test install-cli
 
 help:
 	@grep -E '^[a-zA-Z/_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -29,6 +29,9 @@ version: ## Show current version
 
 test: ## Run tests with race detector
 	go test ./... -count=1 -race -shuffle=on -v
+
+bench: ## Run engine benchmarks
+	go test ./engine/ -bench=. -benchmem -run='^$$'
 
 build: ## Build binary
 	@mkdir -p bin

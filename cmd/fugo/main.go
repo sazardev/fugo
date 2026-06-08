@@ -24,7 +24,10 @@ var (
 	date    = "unknown"
 )
 
-const osWindows = "windows"
+const (
+	osWindows   = "windows"
+	subcmdBuild = "build"
+)
 
 func main() {
 	cmd := &cli.Command{
@@ -371,7 +374,7 @@ func runCmd() *cli.Command {
 
 func buildAndRun(ctx context.Context, addr, flutter string) error {
 	fmt.Println("Building...")
-	build := exec.CommandContext(ctx, "go", "build", "-o", appBinary(), ".")
+	build := exec.CommandContext(ctx, "go", subcmdBuild, "-o", appBinary(), ".")
 	build.Stdout = os.Stdout
 	build.Stderr = os.Stderr
 	if err := build.Run(); err != nil {
@@ -497,7 +500,7 @@ func buildCmd() *cli.Command {
 			appOut := filepath.Join(outDir, projectName()+exeSuffix())
 
 			fmt.Println("Building app (release)...")
-			build := exec.CommandContext(ctx, "go", "build", "-ldflags=-s -w", "-o", appOut, ".")
+			build := exec.CommandContext(ctx, "go", subcmdBuild, "-ldflags=-s -w", "-o", appOut, ".")
 			build.Stdout = os.Stdout
 			build.Stderr = os.Stderr
 			if err := build.Run(); err != nil {
@@ -608,9 +611,9 @@ func ensureFlutterClient(ctx context.Context) {
 
 	fmt.Println("Flutter client not built yet — building it once (this can take a few minutes)...")
 
-	args := []string{"build", "windows"}
+	args := []string{subcmdBuild, "windows"}
 	if runtime.GOOS != osWindows {
-		args = []string{"build", "linux", "--debug"}
+		args = []string{subcmdBuild, "linux", "--debug"}
 	}
 
 	cmd := exec.CommandContext(ctx, "flutter", args...)

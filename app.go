@@ -69,6 +69,17 @@ func (c *Context) Update() {
 	c.app.scheduler.Enqueue()
 }
 
+// Param returns the value captured for a :param in the active route (e.g. "id"
+// for a route registered as "/user/:id"), or "" if there is no router or no
+// such parameter.
+func (c *Context) Param(name string) string {
+	if c.router != nil {
+		return c.router.Param(name)
+	}
+
+	return ""
+}
+
 // Window returns a controller for the client's OS window.
 func (c *Context) Window() *WindowController {
 	return &WindowController{app: c.app}
