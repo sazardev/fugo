@@ -131,7 +131,7 @@ Tokens live under `Colors` (Primary, Surface, OnSurface, Muted, Border, …), `T
 | **IPC Transport** | Unix Domain Sockets (TCP fallback on Windows) | 5-10µs latency, kernel-level throughput |
 | **RPC** | gRPC bidirectional streaming | Typed contracts, health checking, keepalive |
 | **Serialization** | Protocol Buffers (`google.golang.org/protobuf`) | Per-widget props marshaled as nested protobuf inside each node |
-| **Wire updates** | Keyed tree diff | Only changed nodes stream as patches, never the full tree |
+| **Wire updates** | Tree diff (ID/positional) | Only changed nodes stream as patches, never the full tree |
 | **Process Mgmt** | `os/exec` + signals | Subprocess lifecycle, zombie prevention |
 | **Window Mgmt** | `window_manager` | Cross-platform frameless windows, custom chrome |
 
@@ -191,7 +191,7 @@ the value to `fugo.RunComponent`. **Routing** supports `:params` (e.g. `/user/:i
 
 - **Go is the source of truth** — all logic, state, and routing in Go
 - **No shared memory** — strict message passing via gRPC
-- **Stream only diffs** — keyed tree diffing, patches over gRPC, never full re-renders
+- **Stream only diffs** — ID/positional tree diffing, patches over gRPC, never full re-renders
 - **Opinionated on state, themed by default, unopinionated on design system**
 - **Performance is a requirement, not an afterthought**
 - **Terminal-native DX** — `fugo init` → `fugo run` → `fugo build`

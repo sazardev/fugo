@@ -9,6 +9,8 @@ import (
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
 )
 
+const clickEvent = "click"
+
 // TestHandleEventDispatch verifies a ClientEvent is routed to the handler of
 // the widget whose node id matches.
 func TestHandleEventDispatch(t *testing.T) {
@@ -29,7 +31,7 @@ func TestHandleEventDispatch(t *testing.T) {
 		id = k
 	}
 
-	app.HandleEvent(&fugov1.ClientEvent{NodeId: strconv.FormatUint(uint64(id), 10), EventType: "click"})
+	app.HandleEvent(&fugov1.ClientEvent{NodeId: strconv.FormatUint(uint64(id), 10), EventType: clickEvent})
 
 	if !clicked {
 		t.Error("expected button handler to fire for matching node id")
@@ -47,7 +49,7 @@ func TestHandleEventUnknownNode(t *testing.T) {
 	_, m := fg.BuildTree(fg.Column(btn))
 	app.collectHandlers(m)
 
-	app.HandleEvent(&fugov1.ClientEvent{NodeId: "9999", EventType: "click"})
+	app.HandleEvent(&fugov1.ClientEvent{NodeId: "9999", EventType: clickEvent})
 
 	if clicked {
 		t.Error("handler must not fire for an unknown node id")
@@ -81,5 +83,48 @@ func TestUpdateCycleNoChangeNoPatch(t *testing.T) {
 
 	if patches := engine.Diff(oldTree, newTree); len(patches) != 0 {
 		t.Errorf("expected no patches for an unchanged tree, got %d", len(patches))
+	}
+}
+
+// TestHandlersConcurrentAccess dispatches events while the handler registry is
+// being re-collected (the scheduler's flush path), so `go test -race` catches
+// any unguarded concurrent access to App.handlers.
+func TestHandlersConcurrentAccess(t *testing.T) {
+	app := NewApp(AppOptions{})
+
+	btn := fg.Button("x").OnClick(func(_ fg.Event) {})
+	_, m := fg.BuildTree(fg.Column(btn))
+	app.collectHandlers(m)
+
+	var id uint32
+	for k := range app.handlers {
+		id = k
+	}
+
+	ev := &fugov1.ClientEvent{NodeId: strconv.FormatUint(uint64(id), 10), EventType: clickEvent}
+
+	const iterations = 2000
+
+	done := make(chan struct{})
+	go func() {
+		for range iterations {
+			app.collectHandlers(m) // writer: mimics flush re-collecting handlers
+		}
+		close(done)
+	}()
+
+	for range iterations {
+		app.HandleEvent(ev) // reader: mimics the transport goroutine
+	}
+
+	<-done
+
+	// Sanity: the handler is still resolvable after the concurrent storm.
+	app.handlersMu.RLock()
+	_, ok := app.handlers[id]
+	app.handlersMu.RUnlock()
+
+	if !ok {
+		t.Fatalf("handler for node %d went missing after concurrent access", id)
 	}
 }

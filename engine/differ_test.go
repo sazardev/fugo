@@ -186,58 +186,99 @@ func TestDiff_CreateDeleteUpdate(t *testing.T) {
 	}
 }
 
-func TestDiff_KeyBasedMatch(t *testing.T) {
-	oldTree := &fugov1.WidgetTree{
-		Root: 1,
-		Nodes: []*fugov1.WidgetNode{
-			{Id: 1, Type: fugov1.WidgetType_COLUMN, Key: "list", Children: []uint32{2, 3}},
-			{Id: 2, Type: fugov1.WidgetType_TEXT, Key: "item_a", Props: []byte("hello")},
-			{Id: 3, Type: fugov1.WidgetType_TEXT, Key: "item_b", Props: []byte("world")},
-		},
-	}
+// applyPatches simulates the Flutter client: it seeds a flat id→node set from
+// the old tree and replays patches in order, mirroring fugo_renderer.dart. It
+// fails the test if any UPDATE/REORDER/DELETE targets an id the client does not
+// hold — the invariant the diff must never violate. (A key-matched node whose
+// depth-first id had shifted used to emit patches for ids the client never
+// received, silently desyncing the tree.)
+func applyPatches(t *testing.T, before *fugov1.WidgetTree, patches []engine.Patch) map[uint32]bool {
+	t.Helper()
 
-	newTree := &fugov1.WidgetTree{
-		Root: 5,
-		Nodes: []*fugov1.WidgetNode{
-			{Id: 5, Type: fugov1.WidgetType_COLUMN, Key: "list", Children: []uint32{6, 7}},
-			{Id: 6, Type: fugov1.WidgetType_TEXT, Key: "item_b", Props: []byte("updated")},
-			{Id: 7, Type: fugov1.WidgetType_TEXT, Key: "item_a", Props: []byte("hello")},
-		},
-	}
-
-	patches := engine.Diff(oldTree, newTree)
+	client := idSet(before)
 
 	for _, p := range patches {
 		switch p.Op {
-		case fugov1.PatchOp_PATCH_DELETE:
-			t.Errorf("unexpected DELETE for node %d (key-based match should prevent it)", p.NodeID)
-		case fugov1.PatchOp_PATCH_CREATE:
-			t.Errorf("unexpected CREATE (key-based match should detect existing keys)")
-		case fugov1.PatchOp_PATCH_REPLACE:
-			t.Errorf("unexpected REPLACE (types haven't changed)")
+		case fugov1.PatchOp_PATCH_CREATE, fugov1.PatchOp_PATCH_REPLACE:
+			client[p.NodeID] = true
 		case fugov1.PatchOp_PATCH_UPDATE, fugov1.PatchOp_PATCH_REORDER:
-			// expected for a keyed update + reorder; asserted below
+			if !client[p.NodeID] {
+				t.Fatalf("%v targets node %d the client does not hold", p.Op, p.NodeID)
+			}
+		case fugov1.PatchOp_PATCH_DELETE:
+			if !client[p.NodeID] {
+				t.Fatalf("DELETE targets node %d the client does not hold", p.NodeID)
+			}
+
+			delete(client, p.NodeID)
 		}
 	}
 
-	foundUpdate := false
-	foundReorder := false
+	return client
+}
 
-	for _, p := range patches {
-		if p.Op == fugov1.PatchOp_PATCH_UPDATE {
-			foundUpdate = true
-		}
-
-		if p.Op == fugov1.PatchOp_PATCH_REORDER {
-			foundReorder = true
-		}
+func idSet(tree *fugov1.WidgetTree) map[uint32]bool {
+	s := make(map[uint32]bool, len(tree.GetNodes()))
+	for _, n := range tree.GetNodes() {
+		s[n.GetId()] = true
 	}
 
-	if !foundUpdate {
-		t.Error("expected UPDATE for key-matched node with changed props")
+	return s
+}
+
+// TestDiff_PatchesAlwaysApplicable is the regression guard for the removed
+// keyed-match path: across reorders and inserts (where depth-first ids shift),
+// every patch must reference an id the client can resolve, and replaying the
+// patch stream must leave the client holding exactly the new tree's id set.
+func TestDiff_PatchesAlwaysApplicable(t *testing.T) {
+	cases := []struct {
+		name          string
+		before, after *fugov1.WidgetTree
+	}{
+		{
+			name: "reorder with shifted ids",
+			before: &fugov1.WidgetTree{Root: 1, Nodes: []*fugov1.WidgetNode{
+				{Id: 1, Type: fugov1.WidgetType_COLUMN, Key: "list", Children: []uint32{2, 3}},
+				{Id: 2, Type: fugov1.WidgetType_TEXT, Key: "item_a", Props: []byte("hello")},
+				{Id: 3, Type: fugov1.WidgetType_TEXT, Key: "item_b", Props: []byte("world")},
+			}},
+			after: &fugov1.WidgetTree{Root: 5, Nodes: []*fugov1.WidgetNode{
+				{Id: 5, Type: fugov1.WidgetType_COLUMN, Key: "list", Children: []uint32{6, 7}},
+				{Id: 6, Type: fugov1.WidgetType_TEXT, Key: "item_b", Props: []byte("updated")},
+				{Id: 7, Type: fugov1.WidgetType_TEXT, Key: "item_a", Props: []byte("hello")},
+			}},
+		},
+		{
+			name: "insert into list",
+			before: &fugov1.WidgetTree{Root: 1, Nodes: []*fugov1.WidgetNode{
+				{Id: 1, Type: fugov1.WidgetType_COLUMN, Children: []uint32{2, 3}},
+				{Id: 2, Type: fugov1.WidgetType_TEXT, Props: []byte("a")},
+				{Id: 3, Type: fugov1.WidgetType_TEXT, Props: []byte("b")},
+			}},
+			after: &fugov1.WidgetTree{Root: 1, Nodes: []*fugov1.WidgetNode{
+				{Id: 1, Type: fugov1.WidgetType_COLUMN, Children: []uint32{2, 3, 4}},
+				{Id: 2, Type: fugov1.WidgetType_TEXT, Props: []byte("a")},
+				{Id: 3, Type: fugov1.WidgetType_TEXT, Props: []byte("x")},
+				{Id: 4, Type: fugov1.WidgetType_TEXT, Props: []byte("b")},
+			}},
+		},
 	}
 
-	if !foundReorder {
-		t.Error("expected REORDER for parent whose children changed order")
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			patches := engine.Diff(tc.before, tc.after)
+			client := applyPatches(t, tc.before, patches)
+
+			want := idSet(tc.after)
+			if len(client) != len(want) {
+				t.Fatalf("after applying patches client holds %d nodes, want %d", len(client), len(want))
+			}
+
+			for id := range want {
+				if !client[id] {
+					t.Errorf("client missing new node %d after applying patches", id)
+				}
+			}
+		})
 	}
 }

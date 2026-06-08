@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
@@ -40,6 +41,10 @@ type App struct {
 	oldTree    *fugov1.WidgetTree
 	done       chan struct{}
 	opts       AppOptions
+	// handlersMu guards handlers: the scheduler goroutine writes it from
+	// flush→collectHandlers while the transport goroutine reads it in
+	// HandleEvent.
+	handlersMu sync.RWMutex
 }
 
 // Context is passed to buildUI and to event handlers. It exposes navigation
@@ -209,9 +214,13 @@ func (a *App) Shutdown() {
 func (a *App) HandleEvent(ev *fugov1.ClientEvent) {
 	nodeID := parseNodeID(ev.GetNodeId())
 
+	a.handlersMu.RLock()
 	w, ok := a.handlers[nodeID]
+	registered := len(a.handlers)
+	a.handlersMu.RUnlock()
+
 	if !ok {
-		log.Printf("[fugo] event: node %d not in handlers (%d registered, type=%s)", nodeID, len(a.handlers), ev.GetEventType())
+		log.Printf("[fugo] event: node %d not in handlers (%d registered, type=%s)", nodeID, registered, ev.GetEventType())
 
 		return
 	}
@@ -229,6 +238,9 @@ func (a *App) HandleEvent(ev *fugov1.ClientEvent) {
 }
 
 func (a *App) collectHandlers(m map[uint32]fg.Widget) {
+	a.handlersMu.Lock()
+	defer a.handlersMu.Unlock()
+
 	for id, w := range m {
 		if w.HasHandler() {
 			a.handlers[id] = w

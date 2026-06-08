@@ -116,6 +116,8 @@ message TextProps {
   string value = 1;
   double font_size = 2;
   string color = 3;
+  int32 font_weight = 4; // numeric weight 100..900 (400 = normal, 700 = bold)
+  int32 text_align = 5;  // 0 = left, 1 = center, 2 = right
 }
 
 message ButtonProps {
@@ -127,8 +129,13 @@ message ButtonProps {
 
 message ContainerProps {
   string bg_color = 1;
-  double padding = 2;
   double border_radius = 3;
+  // Padding per edge in logical pixels (field 2 was previously a single
+  // all-edges value; it now carries the top edge).
+  double pad_top = 2;
+  double pad_right = 4;
+  double pad_bottom = 5;
+  double pad_left = 6;
 }
 
 message RowProps {

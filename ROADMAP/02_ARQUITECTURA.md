@@ -1,5 +1,7 @@
 # 02 — Arquitectura del Sistema
 
+> **⚠️ Actualización de implementación — el código diverge de este diseño.** El transporte implementado **no usa FlatBuffers ni vtprotobuf**: usa **Protocol Buffers estándar** (`google.golang.org/protobuf`), con las props de cada nodo como mensaje protobuf anidado en un campo `bytes`, serializado con `proto.Marshal`. No hay lecturas zero-copy ni códecs zero-alloc. Trata las menciones a FlatBuffers/vtprotobuf/zero-copy de abajo como el diseño original (no realizado), no como el estado del código.
+
 ## Visión general
 
 Fugo es un sistema de dos procesos que se comunican localmente mediante IPC. La arquitectura se divide en **3 capas lógicas** distribuidas en **2 procesos del sistema operativo**:

@@ -72,9 +72,12 @@ class WidgetRegistry {
     final base = Theme.of(context).textTheme.bodyMedium ?? const TextStyle();
     return Text(
       props.value,
+      textAlign: props.hasTextAlign() ? _mapTextAlign(props.textAlign) : null,
       style: base.copyWith(
         fontSize: props.hasFontSize() ? props.fontSize : null,
         color: props.hasColor() ? hexToColor(props.color) : null,
+        fontWeight:
+            props.hasFontWeight() ? _mapFontWeight(props.fontWeight) : null,
       ),
     );
   }
@@ -102,8 +105,19 @@ class WidgetRegistry {
     final color = props.hasBgColor() ? hexToColor(props.bgColor) : null;
     final radius = props.hasBorderRadius() ? props.borderRadius : 0.0;
     final decorated = color != null || radius > 0;
+    final hasPadding = props.padTop != 0 ||
+        props.padRight != 0 ||
+        props.padBottom != 0 ||
+        props.padLeft != 0;
     return Container(
-      padding: props.hasPadding() ? EdgeInsets.all(props.padding) : null,
+      padding: hasPadding
+          ? EdgeInsets.fromLTRB(
+              props.padLeft,
+              props.padTop,
+              props.padRight,
+              props.padBottom,
+            )
+          : null,
       decoration: decorated
           ? BoxDecoration(
               color: color,
@@ -333,6 +347,24 @@ class WidgetRegistry {
         return CrossAxisAlignment.stretch;
       default:
         return CrossAxisAlignment.start;
+    }
+  }
+
+  // _mapFontWeight maps the numeric 100..900 weight to Flutter's FontWeight
+  // (whose values run w100..w900 at indices 0..8).
+  FontWeight _mapFontWeight(int weight) {
+    final index = ((weight ~/ 100) - 1).clamp(0, 8);
+    return FontWeight.values[index];
+  }
+
+  TextAlign _mapTextAlign(int align) {
+    switch (align) {
+      case 1:
+        return TextAlign.center;
+      case 2:
+        return TextAlign.right;
+      default:
+        return TextAlign.left;
     }
   }
 

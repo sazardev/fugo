@@ -63,9 +63,11 @@ func (t *TextWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	t.id = *counter
 
 	props, _ := proto.Marshal(&fugov1.TextProps{
-		Value:    t.Value,
-		FontSize: t.Style.FontSize,
-		Color:    t.Style.Color.String(),
+		Value:      t.Value,
+		FontSize:   t.Style.FontSize,
+		Color:      t.Style.Color.String(),
+		FontWeight: int32(t.Style.Weight), //nolint:gosec // bounded weight (100..900)
+		TextAlign:  int32(t.Style.Align),  //nolint:gosec // bounded align (0..2)
 	})
 
 	return []*fugov1.WidgetNode{{

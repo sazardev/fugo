@@ -47,18 +47,20 @@ cd myapp && fugo run           # go build → launch app → spawn Flutter; add 
 
 `transport/proto/fugo/v1/fugo.proto` is the single source. `make proto` runs `protoc` to generate Go (`*.pb.go`, `*_grpc.pb.go`) **and** copies the proto into `flutter_client/proto/` to regenerate the Dart bindings under `flutter_client/lib/generated/`. After editing the proto you must run `make proto` and keep both sides in sync. Requires `protoc`, `protoc-gen-go`, `protoc-gen-go-grpc`, and `protoc-gen-dart` on PATH.
 
+The generated `*.pb.go` / `*.pb.dart` are **gitignored and not committed** — a clean checkout cannot `go build` until the Go bindings are generated. CI regenerates them itself via the `./.github/actions/gen-proto` composite action (used in the lint/vet/build/test/bench jobs); the `format` job intentionally skips it so `gofumpt` never scans generated code.
+
 ## Architecture & data flow
 
 The render loop spans the Go process (`app.go` + packages below) and the Flutter client (`flutter_client/lib/`).
 
 ```
-buildUI(ctx) ──> ui.Widget tree (built ONCE, retained)
+buildUI(ctx) ──> fg.Widget tree (built ONCE, retained)
                       │
    event handlers mutate widget structs in place, then call ctx.Update()
                       │  marks scheduler dirty
    engine.Scheduler (16ms tick / 60fps) ── if dirty ──> App.flush()
                       │
-   ui.BuildTreeWithMerge: re-walk retained tree -> WidgetTree (proto)
+   fg.BuildTreeWithMerge: re-walk retained tree -> WidgetTree (proto)
                       │
    engine.Diff(oldTree, newTree) -> []Patch   (CREATE/UPDATE/DELETE/REPLACE/REORDER)
                       │
@@ -76,9 +78,9 @@ buildUI(ctx) ──> ui.Widget tree (built ONCE, retained)
 | Package | Role |
 |---|---|
 | `fugo` (root, `app.go`) | `App`, `Context`, lifecycle. `Run` builds the tree + starts scheduler; `RunStandalone` also starts the gRPC server and spawns Flutter. Owns the `handlers` map (nodeID → Widget) and routes `ClientEvent`s. |
-| `ui/` | The declarative widget API (`NewText`, `NewContainer`, `NewButton`, `NewRouter`, ...). **This is the active package** — imported by `app.go` and both `cmd/`s. Each widget implements `Widget`; `walkNodes` assigns IDs depth-first and marshals its `*Props` proto into `WidgetNode.Props`. |
-| `style/` | Styling primitives: `Color` (`style.Hex(...)`), `TextStyle`, `EdgeInsets` (`style.EdgeAll`), `Border`, font weights. |
-| `engine/` | `Diff` (keyed/ID diff → patches), `Reconciler` (wraps the gRPC stream, buffers payloads until a client connects), `Scheduler` (dirty-flag + ticker coalescing updates to one flush per frame). |
+| `fg/` | The declarative widget API — **prefix-free** constructors (`fg.Text`, `fg.Container`, `fg.Button`, `fg.Router`, ...), **not** `NewText`. Each returns a concrete `*fg.TextWidget` / `*fg.ButtonWidget` / … with chainable setters. **This is the active (and only) widget package** — imported by `app.go` and both `cmd/`s. It also re-exports the `style`/theme helpers (`fg.Hex`, `fg.EdgeAll`, `fg.DarkTheme`, `fg.CurrentTheme`, ...). Each widget implements `Widget`; `walkNodes` assigns IDs depth-first and marshals its `*Props` proto into `WidgetNode.Props`. |
+| `style/` | Styling primitives: `Color` (`style.Hex(...)`), `TextStyle`, `EdgeInsets` (`style.EdgeAll`), `Border`, font weights. (`fg` re-exports the common ones.) |
+| `engine/` | `Diff` (ID/positional diff → patches), `Reconciler` (wraps the gRPC stream, buffers payloads until a client connects), `Scheduler` (dirty-flag + ticker coalescing updates to one flush per frame). |
 | `transport/` | gRPC server (`StartServer`), health check, keepalive. UDS when addr has no `:`, TCP otherwise; adapts the stream into `engine.RenderStream`. |
 | `supervisor/` | Spawns/monitors the Flutter subprocess (`StartFlutter`), forwards `FUGO_ADDR`, handles graceful shutdown. |
 | `cmd/fugo/` | The `fugo` CLI: `init`, `run` (+`--watch`), `build`, `doctor`. |
@@ -89,7 +91,7 @@ buildUI(ctx) ──> ui.Widget tree (built ONCE, retained)
 
 `WidgetNode.props` is a `bytes` field containing a **protobuf-marshaled** per-widget props message (`TextProps`, `ButtonProps`, ...) — i.e. protobuf nested inside protobuf, marshaled with `proto.Marshal` on the Go side and decoded with `*.fromBuffer(node.props)` on the Dart side. The whole `RenderPayload` is a normal gRPC protobuf message. There is no FlatBuffers/vtprotobuf in the codebase despite README claims.
 
-When adding a widget you must touch **four places**: the proto (`WidgetType` enum + a `*Props` message), regenerate (`make proto`), add the Go widget in `ui/` (implement `walkNodes`, marshal props), and add the Dart builder in `flutter_client/lib/registry.dart`.
+When adding a widget you must touch **four places**: the proto (`WidgetType` enum + a `*Props` message), regenerate (`make proto`), add the Go widget in `fg/` (implement `walkNodes`, marshal props), and add the Dart builder in `flutter_client/lib/registry.dart`.
 
 ## Conventions & workflow
 
@@ -100,7 +102,7 @@ When adding a widget you must touch **four places**: the proto (`WidgetType` enu
 
 ## Repo quirks
 
-- **`fg/` is a dead duplicate of `ui/`.** It contains the same widget files under `package fg` and is **imported by nothing**. The live package is `ui/`. Don't edit `fg/` expecting it to take effect; treat it as abandoned (likely an in-progress rename to a shorter alias).
+- **`fg/` is the live (and only) widget package; there is no `ui/` directory.** Everything imports `github.com/sazardev/fugo/fg` (`app.go`, both `cmd/`s, the CLI scaffold templates, the README Quick Start). Constructors are **prefix-free** (`fg.Text(...)`, `fg.Button(...)`), **not** `New*`. The ROADMAP/SPEC docs (`06_CLI.md`, `07_API_GO.md`) reference a `ui` package and `ui.NewText`-style constructors — **those don't exist in the code and are aspirational**. Trust `fg/`.
 - `ROADMAP/` (12 files) and `docs/` are the real design specs and are mostly **in Spanish**. `SPEC.md` is the detailed specification.
 - Most `go.mod` dependencies are `// indirect` (pulled transitively by the Lefthook tool dependency and the CLI). Direct deps are gRPC and protobuf.
 - `bin/*.exe` and `fugo*.exe` at the repo root are committed build artifacts.

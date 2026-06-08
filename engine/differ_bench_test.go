@@ -83,6 +83,20 @@ func BenchmarkDiff_1000_WithChange(b *testing.B) {
 	}
 }
 
+func BenchmarkDiff_1000_50Changes(b *testing.B) {
+	oldTree := makeTree(1000)
+	newTree := makeTree(1000)
+
+	for i := range 50 {
+		newTree.Nodes[i*19].Props = []byte("changed")
+	}
+
+	b.ResetTimer()
+	for range b.N {
+		engine.Diff(oldTree, newTree)
+	}
+}
+
 func BenchmarkDiff_FullCreate_1000(b *testing.B) {
 	tree := makeTree(1000)
 

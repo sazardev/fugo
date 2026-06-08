@@ -1,8 +1,10 @@
 # 05 — Capa de Transporte: IPC, Serialización y Protocolo
 
+> **⚠️ Actualización de implementación — el código diverge de este diseño.** El formato de serialización implementado **no es FlatBuffers** (ni vtprotobuf): es **Protocol Buffers estándar** (`google.golang.org/protobuf`). `RenderPayload` es un mensaje gRPC normal y las props de cada `WidgetNode` van como mensaje protobuf anidado en un campo `bytes` (`proto.Marshal` en Go, `*.fromBuffer` en Dart). No hay lecturas zero-copy. Trata el `.fbs`, los códecs FlatBuffer y los argumentos de zero-copy de abajo como el diseño original (no realizado). La fuente real es `transport/proto/fugo/v1/fugo.proto`.
+
 ## Alcance
 
-Define cómo se comunican el proceso Go y el proceso Flutter: el medio de transporte (Unix Domain Sockets), el formato de serialización (FlatBuffers), la capa RPC (gRPC), y el protocolo de mensajes de aplicación.
+Define cómo se comunican el proceso Go y el proceso Flutter: el medio de transporte (Unix Domain Sockets; TCP en Windows), el formato de serialización (**en el diseño original, FlatBuffers; en el código, Protocol Buffers estándar** — ver nota arriba), la capa RPC (gRPC), y el protocolo de mensajes de aplicación.
 
 [Ver 02_ARQUITECTURA.md para el contexto general]
 [Ver 03_CORE_SDK.md para el emisor Go]

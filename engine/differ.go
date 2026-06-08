@@ -18,14 +18,22 @@ type Patch struct {
 }
 
 type diffState struct {
-	oldMap   map[uint32]*fugov1.WidgetNode
-	oldKeyed map[string]*fugov1.WidgetNode
+	oldMap map[uint32]*fugov1.WidgetNode
 }
 
 // Diff compares the previous and next widget trees and returns the minimal set
 // of patches (create/update/delete/replace/reorder) needed to bring the client
-// in sync. Nodes are matched by ID, falling back to their key when present;
-// when oldTree is nil it emits a full create for every node in newTree.
+// in sync. Nodes are matched by ID — the retained tree assigns ids
+// deterministically depth-first every frame, so identity is positional. When
+// oldTree is nil it emits a full create for every node in newTree.
+//
+// Every emitted patch references a node id the client either already holds
+// (from the previous tree) or is creating in the same batch, so the client —
+// which keys nodes by id — can always apply it. (Cross-frame matching by Key
+// was removed: when a keyed node's depth-first id shifted, it produced
+// UPDATE/REORDER patches for ids the client had never received, silently
+// desyncing the tree. A reorder/insert now emits applicable CREATE/UPDATE/
+// DELETE/REORDER patches instead.)
 func Diff(oldTree, newTree *fugov1.WidgetTree) []Patch {
 	if oldTree == nil {
 		return fullCreate(newTree)
@@ -33,7 +41,7 @@ func Diff(oldTree, newTree *fugov1.WidgetTree) []Patch {
 
 	// Fast path: the retained tree assigns ids in a stable order every frame,
 	// so an allocation-free positional compare lets the common "nothing changed"
-	// case return early without building the lookup maps.
+	// case return early without building the lookup map.
 	if treesEqual(oldTree, newTree) {
 		return nil
 	}
@@ -41,8 +49,6 @@ func Diff(oldTree, newTree *fugov1.WidgetTree) []Patch {
 	s := &diffState{
 		oldMap: indexByID(oldTree.GetNodes()),
 	}
-
-	s.oldKeyed = indexByKey(oldTree.GetNodes())
 
 	var patches []Patch
 
@@ -82,13 +88,6 @@ func Diff(oldTree, newTree *fugov1.WidgetTree) []Patch {
 			}
 		}
 
-		if oldNode != nil {
-			delete(s.oldMap, oldNode.GetId())
-			if oldNode.GetKey() != "" {
-				delete(s.oldKeyed, oldNode.GetKey())
-			}
-		}
-
 		delete(s.oldMap, newNode.GetId())
 	}
 
@@ -103,15 +102,7 @@ func Diff(oldTree, newTree *fugov1.WidgetTree) []Patch {
 }
 
 func (s *diffState) lookup(newNode *fugov1.WidgetNode) *fugov1.WidgetNode {
-	if old, ok := s.oldMap[newNode.GetId()]; ok {
-		return old
-	}
-
-	if key := newNode.GetKey(); key != "" {
-		return s.oldKeyed[key]
-	}
-
-	return nil
+	return s.oldMap[newNode.GetId()]
 }
 
 func fullCreate(tree *fugov1.WidgetTree) []Patch {
@@ -157,17 +148,6 @@ func indexByID(nodes []*fugov1.WidgetNode) map[uint32]*fugov1.WidgetNode {
 	m := make(map[uint32]*fugov1.WidgetNode, len(nodes))
 	for _, n := range nodes {
 		m[n.GetId()] = n
-	}
-
-	return m
-}
-
-func indexByKey(nodes []*fugov1.WidgetNode) map[string]*fugov1.WidgetNode {
-	m := make(map[string]*fugov1.WidgetNode)
-	for _, n := range nodes {
-		if key := n.GetKey(); key != "" {
-			m[key] = n
-		}
 	}
 
 	return m

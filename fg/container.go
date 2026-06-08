@@ -71,8 +71,11 @@ func (c *ContainerWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 
 	props, _ := proto.Marshal(&fugov1.ContainerProps{
 		BgColor:      c.bgColor.String(),
-		Padding:      c.Padding.Top,
 		BorderRadius: c.borderRadius,
+		PadTop:       c.Padding.Top,
+		PadRight:     c.Padding.Right,
+		PadBottom:    c.Padding.Bottom,
+		PadLeft:      c.Padding.Left,
 	})
 
 	self := &fugov1.WidgetNode{

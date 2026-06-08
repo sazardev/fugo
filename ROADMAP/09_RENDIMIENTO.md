@@ -1,5 +1,11 @@
 # 09 — Rendimiento y Optimización
 
+> **⚠️ Actualización de implementación — presupuestos re-basados.** Los objetivos de abajo asumían un transporte **FlatBuffers + vtprotobuf** (zero-copy / zero-alloc) que **no se implementó**: el código usa **Protocol Buffers estándar**. Por tanto esos µs originales (p. ej. diff de 1000 nodos sin cambios <10µs, con 1 cambio <50µs) **no aplican** y se re-basaron sobre mediciones reales:
+>
+> **Línea base medida (protobuf, i5-13500):** diff de 1000 nodos **sin cambios ~25µs y 0 allocaciones** (fast path posicional); **con cambios ~60–110µs** (construye el índice por ID); **full-create ~25µs**.
+>
+> El gate de CI ya no es un umbral en µs (frágil en runners compartidos): es un **gate de cero-allocaciones determinista** sobre el fast path (`TestDiffNoChangeZeroAlloc`, `engine/alloc_test.go`) más un techo anti-O(n²) de 1ms (`TestDiffPerformanceBudget`). Los benchmarks viven en `engine/differ_bench_test.go` y corren en el job `bench` de CI.
+
 ## Alcance
 
 Define las estrategias de rendimiento que garantizan que Fugo compita con aplicaciones nativas. Incluye benchmarks esperados, tuning de garbage collection, optimizaciones de diffing, estrategias de debouncing, y métricas de calidad objetivo.

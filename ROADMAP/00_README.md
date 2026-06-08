@@ -1,5 +1,11 @@
 # 00 — Índice y Navegación del Roadmap
 
+> **⚠️ Nota de estado (léeme primero).** Este roadmap describe el **diseño original**. El código implementado diverge en dos puntos importantes:
+> 1. **Serialización:** no se usa FlatBuffers ni vtprotobuf, sino **Protocol Buffers estándar** (`google.golang.org/protobuf`), con las props de cada nodo como mensaje protobuf anidado en un campo `bytes`. No hay lecturas zero-copy ni códecs zero-alloc. Los presupuestos de rendimiento (ver `09`) se **re-basaron sobre mediciones reales** (`engine/perf_test.go`, `engine/alloc_test.go`, `engine/differ_bench_test.go`).
+> 2. **API / paquete de widgets:** el paquete vivo es **`fg/`** con constructores **sin prefijo** (`fg.Text(...)`), no `fugo/ui` ni `ui.NewText(...)`.
+>
+> Cuando este documento y el código discrepen, **manda el código**.
+
 ## Propósito
 
 Este directorio contiene el plan de construcción completo para Fugo: un framework de interfaz gráfica para desktop que permite escribir aplicaciones **exclusivamente en Go**, delegando el renderizado a un motor Flutter precompilado mediante comunicación Server-Driven UI (SDUI) por IPC local.
