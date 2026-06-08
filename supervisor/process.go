@@ -11,12 +11,19 @@ import (
 	"time"
 )
 
+// FlutterProcess represents the spawned Flutter render client subprocess and
+// tracks its lifecycle, exposing channels and methods to wait for exit and to
+// shut it down gracefully.
 type FlutterProcess struct {
 	cmd    *exec.Cmd
 	addr   string
 	exited chan struct{}
 }
 
+// StartFlutter launches the Flutter render client at flutterBinary, passing the
+// gRPC address via the FUGO_ADDR environment variable and inheriting the
+// parent's stdout/stderr. The process is tied to ctx; a goroutine monitors it
+// and closes the Exited channel when it terminates.
 func StartFlutter(ctx context.Context, addr, flutterBinary string) (*FlutterProcess, error) {
 	cmd := exec.CommandContext(ctx, flutterBinary)
 
@@ -49,10 +56,13 @@ func StartFlutter(ctx context.Context, addr, flutterBinary string) (*FlutterProc
 	return fp, nil
 }
 
+// Exited returns a channel that is closed when the Flutter subprocess exits.
 func (p *FlutterProcess) Exited() <-chan struct{} {
 	return p.exited
 }
 
+// WaitForSignal blocks until an interrupt or termination signal is received,
+// then shuts the subprocess down, allowing up to timeout for a clean exit.
 func (p *FlutterProcess) WaitForSignal(timeout time.Duration) error {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
@@ -63,6 +73,8 @@ func (p *FlutterProcess) WaitForSignal(timeout time.Duration) error {
 	return p.Shutdown(timeout)
 }
 
+// Shutdown stops the Flutter subprocess by sending SIGTERM and waiting up to
+// timeout for it to exit; if it does not exit in time it is force-killed.
 func (p *FlutterProcess) Shutdown(timeout time.Duration) error {
 	log.Println("[fugo] shutting down flutter client")
 

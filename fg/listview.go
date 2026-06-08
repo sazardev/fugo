@@ -5,16 +5,19 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// ListViewWidget is a scrollable vertical list of children. Build one with ListView.
 type ListViewWidget struct {
 	items      []Widget
 	itemExtent float64
 	baseWidget
 }
 
+// ListView creates a scrollable list containing the given items.
 func ListView(items ...Widget) *ListViewWidget {
 	return &ListViewWidget{items: items}
 }
 
+// ItemExtent sets a fixed height for every item in logical pixels and returns the widget for chaining.
 func (l *ListViewWidget) ItemExtent(v float64) *ListViewWidget {
 	l.itemExtent = v
 

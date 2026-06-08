@@ -10,7 +10,7 @@ import (
 
 type testHandler struct{}
 
-func (t *testHandler) HandleEvent(ev *fugov1.ClientEvent)          {}
+func (t *testHandler) HandleEvent(ev *fugov1.ClientEvent)       {}
 func (t *testHandler) SetReconciler(stream engine.RenderStream) {}
 
 func TestResolveNetwork_TCP(t *testing.T) {

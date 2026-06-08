@@ -6,6 +6,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// AnimatedContainerWidget is a Container that animates changes to its visual properties. Build one with AnimatedContainer.
 type AnimatedContainerWidget struct {
 	child        Widget
 	bgColor      style.Color
@@ -16,6 +17,7 @@ type AnimatedContainerWidget struct {
 	baseWidget
 }
 
+// AnimatedContainer creates an animated container wrapping child, with a default 200ms ease transition.
 func AnimatedContainer(child Widget) *AnimatedContainerWidget {
 	return &AnimatedContainerWidget{
 		child:      child,
@@ -24,30 +26,35 @@ func AnimatedContainer(child Widget) *AnimatedContainerWidget {
 	}
 }
 
+// BgColor sets the target background color to animate toward and returns the widget for chaining.
 func (c *AnimatedContainerWidget) BgColor(v style.Color) *AnimatedContainerWidget {
 	c.bgColor = v
 
 	return c
 }
 
+// Pad sets the target inner padding to animate toward and returns the widget for chaining.
 func (c *AnimatedContainerWidget) Pad(v style.EdgeInsets) *AnimatedContainerWidget {
 	c.Padding = v
 
 	return c
 }
 
+// BorderRadius sets the target corner radius to animate toward and returns the widget for chaining.
 func (c *AnimatedContainerWidget) BorderRadius(v float64) *AnimatedContainerWidget {
 	c.borderRadius = v
 
 	return c
 }
 
+// DurationMs sets the animation duration in milliseconds and returns the widget for chaining.
 func (c *AnimatedContainerWidget) DurationMs(v int32) *AnimatedContainerWidget {
 	c.durationMs = v
 
 	return c
 }
 
+// Curve sets the animation easing curve by name and returns the widget for chaining.
 func (c *AnimatedContainerWidget) Curve(v string) *AnimatedContainerWidget {
 	c.curve = v
 

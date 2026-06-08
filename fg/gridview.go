@@ -5,6 +5,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// GridViewWidget arranges its children in a scrollable grid. Build one with GridView.
 type GridViewWidget struct {
 	children         []Widget
 	crossAxisCount   int32
@@ -12,6 +13,7 @@ type GridViewWidget struct {
 	baseWidget
 }
 
+// GridView creates a grid of the given children with two columns by default.
 func GridView(children ...Widget) *GridViewWidget {
 	return &GridViewWidget{
 		children:       children,
@@ -19,12 +21,14 @@ func GridView(children ...Widget) *GridViewWidget {
 	}
 }
 
+// CrossAxisCount sets the number of columns and returns the widget for chaining.
 func (g *GridViewWidget) CrossAxisCount(v int32) *GridViewWidget {
 	g.crossAxisCount = v
 
 	return g
 }
 
+// ChildAspectRatio sets the width-to-height ratio of each grid cell and returns the widget for chaining.
 func (g *GridViewWidget) ChildAspectRatio(v float64) *GridViewWidget {
 	g.childAspectRatio = v
 

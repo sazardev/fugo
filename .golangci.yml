@@ -89,6 +89,12 @@ linters:
   disable:
     - exhaustruct
     - wrapcheck
+  exclusions:
+    rules:
+      # A CLI legitimately writes to stdout/stderr.
+      - path: cmd/
+        linters:
+          - forbidigo
 
 formatters:
   enable:

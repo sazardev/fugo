@@ -6,6 +6,7 @@ import (
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
 )
 
+// RouterWidget renders one named route at a time and maintains a navigation history. Build one with Router.
 type RouterWidget struct {
 	routes        map[string]func() Widget
 	current       string
@@ -14,6 +15,7 @@ type RouterWidget struct {
 	baseWidget
 }
 
+// Router creates a router from a map of route names to widget builders, starting on initialRoute.
 func Router(routes map[string]func() Widget, initialRoute string) *RouterWidget {
 	return &RouterWidget{
 		routes:  routes,
@@ -21,6 +23,7 @@ func Router(routes map[string]func() Widget, initialRoute string) *RouterWidget 
 	}
 }
 
+// NavigateTo switches to the named route, pushing the current route onto the history. It reports false if the route is unknown.
 func (r *RouterWidget) NavigateTo(route string) bool {
 	if _, ok := r.routes[route]; !ok {
 		log.Printf("[router] route not found: %s", route)
@@ -37,6 +40,7 @@ func (r *RouterWidget) NavigateTo(route string) bool {
 	return true
 }
 
+// GoBack pops the history and returns to the previous route. It reports false if the history is empty.
 func (r *RouterWidget) GoBack() bool {
 	if len(r.history) == 0 {
 		log.Println("[router] goback: no history")
@@ -51,6 +55,7 @@ func (r *RouterWidget) GoBack() bool {
 	return true
 }
 
+// CurrentRoute returns the name of the route currently being rendered.
 func (r *RouterWidget) CurrentRoute() string {
 	return r.current
 }

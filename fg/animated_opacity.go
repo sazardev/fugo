@@ -5,6 +5,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// AnimatedOpacityWidget fades its child between opacity values over time. Build one with AnimatedOpacity.
 type AnimatedOpacityWidget struct {
 	child      Widget
 	opacity    float64
@@ -12,6 +13,7 @@ type AnimatedOpacityWidget struct {
 	baseWidget
 }
 
+// AnimatedOpacity creates a fade wrapper around child, fully opaque with a default 200ms transition.
 func AnimatedOpacity(child Widget) *AnimatedOpacityWidget {
 	return &AnimatedOpacityWidget{
 		child:      child,
@@ -20,12 +22,14 @@ func AnimatedOpacity(child Widget) *AnimatedOpacityWidget {
 	}
 }
 
+// Opacity sets the target opacity from 0 (transparent) to 1 (opaque) to animate toward, and returns the widget for chaining.
 func (o *AnimatedOpacityWidget) Opacity(v float64) *AnimatedOpacityWidget {
 	o.opacity = v
 
 	return o
 }
 
+// DurationMs sets the fade duration in milliseconds and returns the widget for chaining.
 func (o *AnimatedOpacityWidget) DurationMs(v int32) *AnimatedOpacityWidget {
 	o.durationMs = v
 

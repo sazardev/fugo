@@ -5,16 +5,19 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// ExpandedWidget makes its child fill the available space along a Row or Column's main axis. Build one with Expanded.
 type ExpandedWidget struct {
 	child Widget
 	flex  int32
 	baseWidget
 }
 
+// Expanded creates an expanding wrapper around child with a default flex factor of 1.
 func Expanded(child Widget) *ExpandedWidget {
 	return &ExpandedWidget{child: child, flex: 1}
 }
 
+// Flex sets the flex factor governing how much free space this child claims relative to its siblings, and returns the widget for chaining.
 func (e *ExpandedWidget) Flex(v int32) *ExpandedWidget {
 	e.flex = v
 

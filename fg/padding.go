@@ -5,16 +5,19 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// PaddingWidget insets its child by the given edge insets. Build one with Padding or PaddingAll.
 type PaddingWidget struct {
 	child  Widget
 	Insets EdgeInsets
 	baseWidget
 }
 
+// Padding creates a widget that surrounds child with the given insets.
 func Padding(child Widget, insets EdgeInsets) *PaddingWidget {
 	return &PaddingWidget{child: child, Insets: insets}
 }
 
+// PaddingAll creates a widget that surrounds child with equal padding on all four edges.
 func PaddingAll(child Widget, value float64) *PaddingWidget {
 	return Padding(child, EdgeAll(value))
 }

@@ -215,6 +215,8 @@ func TestDiff_KeyBasedMatch(t *testing.T) {
 			t.Errorf("unexpected CREATE (key-based match should detect existing keys)")
 		case fugov1.PatchOp_PATCH_REPLACE:
 			t.Errorf("unexpected REPLACE (types haven't changed)")
+		case fugov1.PatchOp_PATCH_UPDATE, fugov1.PatchOp_PATCH_REORDER:
+			// expected for a keyed update + reorder; asserted below
 		}
 	}
 

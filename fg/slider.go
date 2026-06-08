@@ -5,6 +5,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// SliderWidget lets the user pick a numeric value within a range by dragging. Build one with Slider.
 type SliderWidget struct {
 	handler func(Event)
 	Value   float64
@@ -13,6 +14,7 @@ type SliderWidget struct {
 	baseWidget
 }
 
+// Slider creates a slider with a default range of 0 to 100.
 func Slider() *SliderWidget {
 	return &SliderWidget{
 		Min: 0,
@@ -20,24 +22,28 @@ func Slider() *SliderWidget {
 	}
 }
 
+// OnChange registers the handler invoked as the slider value changes and returns the widget for chaining.
 func (s *SliderWidget) OnChange(handler func(Event)) *SliderWidget {
 	s.handler = handler
 
 	return s
 }
 
+// SetValue sets the current value and returns the widget for chaining.
 func (s *SliderWidget) SetValue(v float64) *SliderWidget {
 	s.Value = v
 
 	return s
 }
 
+// SetMin sets the minimum value of the range and returns the widget for chaining.
 func (s *SliderWidget) SetMin(v float64) *SliderWidget {
 	s.Min = v
 
 	return s
 }
 
+// SetMax sets the maximum value of the range and returns the widget for chaining.
 func (s *SliderWidget) SetMax(v float64) *SliderWidget {
 	s.Max = v
 
@@ -46,8 +52,11 @@ func (s *SliderWidget) SetMax(v float64) *SliderWidget {
 
 func (s *SliderWidget) isWidget()                {}
 func (s *SliderWidget) widgetChildren() []Widget { return nil }
-func (s *SliderWidget) HasHandler() bool         { return s.handler != nil }
 
+// HasHandler reports whether an OnChange handler has been registered.
+func (s *SliderWidget) HasHandler() bool { return s.handler != nil }
+
+// Handle dispatches event to the registered OnChange handler, if any.
 func (s *SliderWidget) Handle(event Event) {
 	if s.handler != nil {
 		s.handler(event)

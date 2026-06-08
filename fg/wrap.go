@@ -5,6 +5,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// WrapWidget lays out its children in a row that wraps onto new runs when space runs out. Build one with Wrap.
 type WrapWidget struct {
 	children   []Widget
 	spacing    float64
@@ -12,16 +13,19 @@ type WrapWidget struct {
 	baseWidget
 }
 
+// Wrap creates a wrapping layout containing the given children.
 func Wrap(children ...Widget) *WrapWidget {
 	return &WrapWidget{children: children}
 }
 
+// Spacing sets the gap between children within a run and returns the widget for chaining.
 func (w *WrapWidget) Spacing(v float64) *WrapWidget {
 	w.spacing = v
 
 	return w
 }
 
+// RunSpacing sets the gap between successive runs and returns the widget for chaining.
 func (w *WrapWidget) RunSpacing(v float64) *WrapWidget {
 	w.runSpacing = v
 

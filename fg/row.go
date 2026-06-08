@@ -5,6 +5,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// RowWidget arranges its children horizontally with configurable axis alignment. Build one with Row.
 type RowWidget struct {
 	items        []Widget
 	mainAxisSize fugov1.MainAxisSize
@@ -13,6 +14,7 @@ type RowWidget struct {
 	baseWidget
 }
 
+// Row creates a horizontal layout containing the given items.
 func Row(items ...Widget) *RowWidget {
 	return &RowWidget{
 		items:      items,
@@ -20,18 +22,21 @@ func Row(items ...Widget) *RowWidget {
 	}
 }
 
+// MainAlign sets how children are distributed along the horizontal axis and returns the widget for chaining.
 func (r *RowWidget) MainAlign(v fugov1.MainAxisAlignment) *RowWidget {
 	r.mainAlign = v
 
 	return r
 }
 
+// CrossAlign sets how children are aligned along the vertical axis and returns the widget for chaining.
 func (r *RowWidget) CrossAlign(v fugov1.CrossAxisAlignment) *RowWidget {
 	r.crossAlign = v
 
 	return r
 }
 
+// MainAxisSize sets whether the row shrinks to fit its children or fills the horizontal axis, and returns the widget for chaining.
 func (r *RowWidget) MainAxisSize(v fugov1.MainAxisSize) *RowWidget {
 	r.mainAxisSize = v
 

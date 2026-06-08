@@ -6,6 +6,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// ContainerWidget wraps a single child with a background, padding, and rounded corners. Build one with Container.
 type ContainerWidget struct {
 	child        Widget
 	bgColor      style.Color
@@ -14,6 +15,7 @@ type ContainerWidget struct {
 	baseWidget
 }
 
+// Container creates a container wrapping child.
 func Container(child Widget) *ContainerWidget {
 	return &ContainerWidget{
 		child:   child,
@@ -21,18 +23,21 @@ func Container(child Widget) *ContainerWidget {
 	}
 }
 
+// BgColor sets the background color and returns the widget for chaining.
 func (c *ContainerWidget) BgColor(v style.Color) *ContainerWidget {
 	c.bgColor = v
 
 	return c
 }
 
+// Pad sets the inner padding and returns the widget for chaining.
 func (c *ContainerWidget) Pad(v style.EdgeInsets) *ContainerWidget {
 	c.Padding = v
 
 	return c
 }
 
+// BorderRadius sets the corner radius in logical pixels and returns the widget for chaining.
 func (c *ContainerWidget) BorderRadius(v float64) *ContainerWidget {
 	c.borderRadius = v
 

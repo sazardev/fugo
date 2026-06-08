@@ -5,6 +5,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// ImageWidget displays an image loaded from a source URL or path. Build one with Image.
 type ImageWidget struct {
 	Src    string
 	width  float64
@@ -12,10 +13,12 @@ type ImageWidget struct {
 	baseWidget
 }
 
+// Image creates an image widget that loads from src.
 func Image(src string) *ImageWidget {
 	return &ImageWidget{Src: src}
 }
 
+// Size sets both the width and height in logical pixels and returns the widget for chaining.
 func (i *ImageWidget) Size(w, h float64) *ImageWidget {
 	i.width = w
 	i.height = h
@@ -23,12 +26,14 @@ func (i *ImageWidget) Size(w, h float64) *ImageWidget {
 	return i
 }
 
+// Width sets the image width in logical pixels and returns the widget for chaining.
 func (i *ImageWidget) Width(v float64) *ImageWidget {
 	i.width = v
 
 	return i
 }
 
+// Height sets the image height in logical pixels and returns the widget for chaining.
 func (i *ImageWidget) Height(v float64) *ImageWidget {
 	i.height = v
 

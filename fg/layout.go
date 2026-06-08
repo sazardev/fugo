@@ -2,11 +2,13 @@ package fg
 
 import fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
 
+// ColumnWidget arranges its children vertically. Build one with Column.
 type ColumnWidget struct {
 	items []Widget
 	baseWidget
 }
 
+// Column creates a vertical layout containing the given items.
 func Column(items ...Widget) *ColumnWidget {
 	return &ColumnWidget{items: items}
 }
@@ -41,11 +43,13 @@ func (c *ColumnWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	return append([]*fugov1.WidgetNode{self}, allNodes...)
 }
 
+// CenterWidget centers its single child within the available space. Build one with Center.
 type CenterWidget struct {
 	child Widget
 	baseWidget
 }
 
+// Center creates a widget that centers child.
 func Center(child Widget) *CenterWidget {
 	return &CenterWidget{child: child}
 }

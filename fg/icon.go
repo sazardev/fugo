@@ -6,6 +6,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// IconWidget displays a named icon glyph. Build one with Icon.
 type IconWidget struct {
 	Name   string
 	size   float64
@@ -13,6 +14,7 @@ type IconWidget struct {
 	baseWidget
 }
 
+// Icon creates an icon widget for the named glyph, colored from the active Theme.
 func Icon(name string) *IconWidget {
 	return &IconWidget{
 		Name:   name,
@@ -21,12 +23,14 @@ func Icon(name string) *IconWidget {
 	}
 }
 
+// Size sets the icon size in logical pixels and returns the widget for chaining.
 func (i *IconWidget) Size(v float64) *IconWidget {
 	i.size = v
 
 	return i
 }
 
+// Color sets the icon color and returns the widget for chaining.
 func (i *IconWidget) Color(c style.Color) *IconWidget {
 	i.color_ = c
 

@@ -5,6 +5,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// SizedBoxWidget is a box with a fixed width and height, optionally wrapping a child. Build one with SizedBox.
 type SizedBoxWidget struct {
 	child  Widget
 	width  float64
@@ -12,22 +13,26 @@ type SizedBoxWidget struct {
 	baseWidget
 }
 
+// SizedBox creates a box of the given width and height in logical pixels.
 func SizedBox(width, height float64) *SizedBoxWidget {
 	return &SizedBoxWidget{width: width, height: height}
 }
 
+// Child sets the widget placed inside the box and returns the widget for chaining.
 func (s *SizedBoxWidget) Child(child Widget) *SizedBoxWidget {
 	s.child = child
 
 	return s
 }
 
+// Width sets the box width in logical pixels and returns the widget for chaining.
 func (s *SizedBoxWidget) Width(v float64) *SizedBoxWidget {
 	s.width = v
 
 	return s
 }
 
+// Height sets the box height in logical pixels and returns the widget for chaining.
 func (s *SizedBoxWidget) Height(v float64) *SizedBoxWidget {
 	s.height = v
 

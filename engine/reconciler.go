@@ -7,10 +7,16 @@ import (
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
 )
 
+// RenderStream is the outbound channel to the client. It is satisfied by the
+// gRPC render stream adapter and lets the Reconciler push render payloads
+// without depending on the transport package.
 type RenderStream interface {
 	Send(payload *fugov1.RenderPayload) error
 }
 
+// Reconciler serializes render output to the client. It holds the current
+// RenderStream and buffers payloads while no client is connected, replaying
+// them once a stream is attached. All methods are safe for concurrent use.
 type Reconciler struct {
 	stream  RenderStream
 	pending []*fugov1.RenderPayload
@@ -18,10 +24,14 @@ type Reconciler struct {
 	mu      sync.Mutex
 }
 
+// NewReconciler returns a Reconciler with no stream attached; payloads sent
+// before a stream is set are buffered until SetStream is called.
 func NewReconciler() *Reconciler {
 	return &Reconciler{}
 }
 
+// SetStream attaches the given stream and immediately flushes any payloads that
+// were buffered while no client was connected.
 func (r *Reconciler) SetStream(stream RenderStream) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -36,12 +46,16 @@ func (r *Reconciler) SetStream(stream RenderStream) {
 	r.pending = nil
 }
 
+// ClearStream detaches the current stream, typically after the client
+// disconnects; subsequent payloads are buffered until a new stream is set.
 func (r *Reconciler) ClearStream() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.stream = nil
 }
 
+// SendFullTree sends the entire widget tree to the client, used for the initial
+// render or a full resync rather than an incremental patch set.
 func (r *Reconciler) SendFullTree(tree *fugov1.WidgetTree) {
 	r.seq++
 	payload := &fugov1.RenderPayload{
@@ -50,6 +64,8 @@ func (r *Reconciler) SendFullTree(tree *fugov1.WidgetTree) {
 	r.send(payload)
 }
 
+// SendPatches converts the diff patches into their protobuf form, tags them
+// with a monotonically increasing sequence number, and sends them to the client.
 func (r *Reconciler) SendPatches(patches []Patch) {
 	r.seq++
 

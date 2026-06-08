@@ -4,6 +4,10 @@ import (
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
 )
 
+// Patch describes a single mutation to apply to the client's widget tree:
+// creating, updating, deleting, replacing, or reordering a node. The fields
+// that are populated depend on Op (e.g. Props for an update, Children for a
+// reorder, Node for a create/replace).
 type Patch struct {
 	Node     *fugov1.WidgetNode
 	Props    []byte
@@ -18,6 +22,10 @@ type diffState struct {
 	oldKeyed map[string]*fugov1.WidgetNode
 }
 
+// Diff compares the previous and next widget trees and returns the minimal set
+// of patches (create/update/delete/replace/reorder) needed to bring the client
+// in sync. Nodes are matched by ID, falling back to their key when present;
+// when oldTree is nil it emits a full create for every node in newTree.
 func Diff(oldTree, newTree *fugov1.WidgetTree) []Patch {
 	if oldTree == nil {
 		return fullCreate(newTree)

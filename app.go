@@ -19,12 +19,15 @@ import (
 
 const schedulerInterval = 16 * time.Millisecond
 
+// AppOptions configures the window the Flutter client opens.
 type AppOptions struct {
 	Title  string
 	Width  int
 	Height int
 }
 
+// App owns the retained widget tree, the event-handler registry, and the
+// render loop (scheduler → diff → reconciler) that drives the client.
 type App struct {
 	uiRoot     fg.Widget
 	ctx        *Context
@@ -36,27 +39,35 @@ type App struct {
 	opts       AppOptions
 }
 
+// Context is passed to buildUI and to event handlers. It exposes navigation
+// and Update, the call that schedules a re-render after mutating widgets.
 type Context struct {
 	app    *App
 	router *fg.RouterWidget
 }
 
+// NavigateTo asks the active router to switch to route and re-renders.
 func (c *Context) NavigateTo(route string) {
 	if c.router != nil && c.router.NavigateTo(route) {
 		c.Update()
 	}
 }
 
+// GoBack pops the router history and re-renders if a previous route exists.
 func (c *Context) GoBack() {
 	if c.router != nil && c.router.GoBack() {
 		c.Update()
 	}
 }
 
+// Update marks the UI dirty so the scheduler diffs and flushes on the next
+// frame. Call it after mutating widgets in an event handler.
 func (c *Context) Update() {
 	c.app.scheduler.Enqueue()
 }
 
+// NewApp creates an App with the given options and a 60fps scheduler. Use
+// RunStandalone for the common case of also starting the server and client.
 func NewApp(opts AppOptions) *App {
 	return &App{
 		opts:      opts,
@@ -66,6 +77,8 @@ func NewApp(opts AppOptions) *App {
 	}
 }
 
+// SetReconciler binds the app's reconciler to a render stream (called by the
+// transport when a client connects).
 func (a *App) SetReconciler(stream engine.RenderStream) {
 	if a.reconciler == nil {
 		a.reconciler = engine.NewReconciler()
@@ -74,6 +87,8 @@ func (a *App) SetReconciler(stream engine.RenderStream) {
 	a.reconciler.SetStream(stream)
 }
 
+// Run builds the retained widget tree once via buildUI, sends the initial
+// tree, then starts the scheduler and blocks until Shutdown.
 func (a *App) Run(buildUI func(ctx *Context) fg.Widget) {
 	a.ctx = &Context{app: a}
 
@@ -114,10 +129,13 @@ func (a *App) flush() {
 	a.oldTree = tree
 }
 
+// Shutdown stops the render loop and unblocks Run.
 func (a *App) Shutdown() {
 	close(a.done)
 }
 
+// HandleEvent routes a client event to the handler of the widget whose node id
+// matches. It implements the transport's app handler.
 func (a *App) HandleEvent(ev *fugov1.ClientEvent) {
 	nodeID := parseNodeID(ev.GetNodeId())
 
@@ -157,6 +175,8 @@ func parseNodeID(s string) uint32 {
 	return id
 }
 
+// RunStandalone is the one-call entry point: it starts the gRPC server, spawns
+// the Flutter client, builds the UI, and runs until the window closes.
 func RunStandalone(opts AppOptions, buildUI func(ctx *Context) fg.Widget) {
 	app := NewApp(opts)
 

@@ -2,11 +2,13 @@ package fg
 
 import fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
 
+// StackWidget overlays its children on top of one another. Build one with Stack.
 type StackWidget struct {
 	items []Widget
 	baseWidget
 }
 
+// Stack creates a layout that stacks the given items, later items drawn on top.
 func Stack(items ...Widget) *StackWidget {
 	return &StackWidget{items: items}
 }

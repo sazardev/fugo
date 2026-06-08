@@ -6,12 +6,14 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// DividerWidget is a thin horizontal rule used to separate content. Build one with Divider.
 type DividerWidget struct {
 	thickness float64
 	color_    style.Color
 	baseWidget
 }
 
+// Divider creates a 1px horizontal divider, colored from the active Theme.
 func Divider() *DividerWidget {
 	return &DividerWidget{
 		thickness: 1,
@@ -19,12 +21,14 @@ func Divider() *DividerWidget {
 	}
 }
 
+// Thickness sets the divider line thickness in logical pixels and returns the widget for chaining.
 func (d *DividerWidget) Thickness(v float64) *DividerWidget {
 	d.thickness = v
 
 	return d
 }
 
+// Color sets the divider color and returns the widget for chaining.
 func (d *DividerWidget) Color(c style.Color) *DividerWidget {
 	d.color_ = c
 

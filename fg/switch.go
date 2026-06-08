@@ -5,22 +5,26 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// SwitchWidget is an on/off toggle switch. Build one with Switch.
 type SwitchWidget struct {
 	handler func(Event)
 	Value   bool
 	baseWidget
 }
 
+// Switch creates a toggle switch that is off by default.
 func Switch() *SwitchWidget {
 	return &SwitchWidget{}
 }
 
+// OnChange registers the handler invoked when the switch is toggled and returns the widget for chaining.
 func (s *SwitchWidget) OnChange(handler func(Event)) *SwitchWidget {
 	s.handler = handler
 
 	return s
 }
 
+// SetValue sets the on/off state and returns the widget for chaining.
 func (s *SwitchWidget) SetValue(v bool) *SwitchWidget {
 	s.Value = v
 
@@ -29,8 +33,11 @@ func (s *SwitchWidget) SetValue(v bool) *SwitchWidget {
 
 func (s *SwitchWidget) isWidget()                {}
 func (s *SwitchWidget) widgetChildren() []Widget { return nil }
-func (s *SwitchWidget) HasHandler() bool         { return s.handler != nil }
 
+// HasHandler reports whether an OnChange handler has been registered.
+func (s *SwitchWidget) HasHandler() bool { return s.handler != nil }
+
+// Handle dispatches event to the registered OnChange handler, if any.
 func (s *SwitchWidget) Handle(event Event) {
 	if s.handler != nil {
 		s.handler(event)
