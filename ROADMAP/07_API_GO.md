@@ -1,5 +1,17 @@
 # 07 — API Go: Superficie Pública
 
+> **⚠️ Documento aspiracional — manda el código.** Este archivo describe el
+> diseño original con un paquete `fugo/ui` y constructores `ui.NewText(...)`.
+> **Ese paquete no existe.** La API real vive en **`fg/`** con constructores
+> **sin prefijo**: `fg.Text(...)`, `fg.Button(...)`, `fg.Container(...)`,
+> devolviendo `*fg.XxxWidget` con setters encadenables. La inicialización es
+> `fugo.RunStandalone(opts, buildUI)` (no `fugo.NewApp(...).Run(...)`). Servicios
+> añadidos desde entonces y no descritos abajo: control de ventana en runtime
+> (`Context.Window()`), portapapeles (`Context.Clipboard()`), diálogos de archivo
+> nativos (`Context.Files()`), prioridad de actualización (`Context.UpdateNow()`),
+> y los widgets `fg.WindowDragArea` y `fg.AnimatedPositioned`. Para la API vigente,
+> ver el código en `fg/`, el `README.md` y `CLAUDE.md`.
+
 ## Alcance
 
 Define la API pública que el desarrollador Go usa para construir aplicaciones Fugo. Es la única superficie que el desarrollador toca. Comprende:

@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-09
+
+### Added
+- **Installable via `go install`**: `go install github.com/sazardev/fugo/cmd/fugo@latest` now works. The generated protobuf Go bindings are committed, so a clean module-proxy fetch (or fresh clone) builds the CLI without `protoc` or any code-gen step. Added a README **Installation** section documenting the CLI install and the Flutter rendering prerequisite.
+- OS host services: clipboard (`Context.Clipboard()`) and native file dialogs (`Context.Files().Open/Save`), answered asynchronously by the Flutter client and dispatched on the event goroutine.
+- Runtime window control via `Context.Window()` (`window_manager`-backed): set title/size, minimize, maximize, center, fullscreen.
+- New widgets: `fg.AnimatedPositioned` (animate a child between positions inside a `Stack`) and `fg.WindowDragArea` (make a region drag a frameless window).
+- Scheduler immediate-priority path: `Context.UpdateNow()` wakes the render loop without waiting for the next 16ms tick.
+
+### Changed
+- Generated Go protobuf bindings (`transport/proto/fugo/v1/*.pb.go`) are **no longer gitignored** — they are committed and kept gofumpt-clean by `make proto` (which now runs `gofumpt -w` on the generated Go). The CI `format` job validates the committed bindings; lint/vet/build/test/bench still regenerate them via the `gen-proto` action to catch proto drift.
+- Performance: object-pooled diff lookup map, GC tuning (`FUGO_GOGC` / `FUGO_GOMEMLIMIT`), and Go + Dart benchmarks behind a CI perf-regression gate.
+
+## [0.2.0] - 2026-06-08
+
+### Added
+- CLI DX overhaul: leveled verbose and quiet logging, animated steps, rich help, a widgets catalog, and a FUGO_LOG runtime logger
+
+### Fixed
+- Data race on `App.handlers` between the scheduler and transport goroutines (now mutex-guarded).
+- Keyed diff desync: cross-frame `Key` matching emitted patches for node ids the client never received; node identity is now positional by id, so every patch is client-applicable.
+- Text (font weight, alignment) and Container (per-edge padding) properties that were settable but never reached the wire.
+
+### Changed
+- Corrected the `CLAUDE.md` `ui`↔`fg` / `NewText` inversion and added FlatBuffers→Protobuf correction banners across the ROADMAP.
+- Re-baselined performance budgets on standard protobuf with a deterministic zero-alloc diff gate; CI now regenerates the gitignored Go protobuf bindings via a composite action.
+- Promoted `golang.org/x/term` and `golang.org/x/sys` to direct dependencies.
+
 ## [0.1.0] - 2026-06-07
 
 ### Added

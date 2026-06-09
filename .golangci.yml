@@ -1,3 +1,4 @@
+version: "2"
 linters:
   enable:
     - asasalint
@@ -20,18 +21,15 @@ linters:
     - fatcontext
     - forbidigo
     - gocheckcompilerdirectives
-    - gochecknoglobals
     - gochecknoinits
     - gocognit
     - goconst
     - gocritic
     - gocyclo
     - godot
-    - gofumpt
     - goheader
-    - goimports
     - gomoddirectives
-    - gomodguard
+    - gomodguard_v2
     - goprintffuncname
     - gosec
     - gosmopolitan
@@ -43,13 +41,10 @@ linters:
     - ineffassign
     - interfacebloat
     - intrange
-    - ireturn
-    - lll
     - loggercheck
     - maintidx
     - mirror
     - misspell
-    - mnd
     - musttag
     - nakedret
     - nestif
@@ -72,13 +67,11 @@ linters:
     - spancheck
     - sqlclosecheck
     - staticcheck
-    - stylecheck
     - tagalign
     - tagliatelle
     - testableexamples
     - testifylint
     - usetesting
-    - testpackage
     - thelper
     - tparallel
     - unconvert
@@ -86,15 +79,37 @@ linters:
     - usestdlibvars
     - wastedassign
     - whitespace
-    - wsl
     - zerologlint
   disable:
-    - exhaustruct
-    - wrapcheck
+    # Disabled deliberately — these conflict with idiomatic framework code:
+    - exhaustruct       # widget structs are partially initialized by design
+    - wrapcheck         # not every error needs wrapping in this codebase
+    - mnd               # UI sizes, durations and color literals are meaningful
+    - gochecknoglobals  # the style aliases and the active theme are intentional package state
+    - ireturn           # the widget API returns the fg.Widget interface by design
+    - testpackage       # internal _test packages intentionally exercise unexported behavior
+    - lll               # line length is handled by gofumpt, not gated here
+    - wsl_v5            # whitespace-between-statements is too pedantic here
+  exclusions:
+    paths:
+      # Gitignored scratch directory for leetcode practice — not shipped code.
+      - leetcode
+    rules:
+      # A CLI legitimately writes to stdout/stderr and does file I/O on
+      # user-supplied paths (scaffolding, packaging).
+      - path: cmd/
+        linters:
+          - forbidigo
+          - gosec
+
+formatters:
+  enable:
+    - gofumpt
+  settings:
+    gofumpt:
+      extra-rules: true
 
 linters-settings:
-  gofumpt:
-    extra-rules: true
   govet:
     enable:
       - fieldalignment
@@ -169,6 +184,7 @@ issues:
 
 output:
   formats:
-    - format: colored-line-number
+    colored-line-number:
+      path: stdout
 run:
   timeout: 5m

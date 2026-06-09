@@ -17,8 +17,9 @@ pre-commit:
 
     - name: gofumpt
       glob: "*.go"
-      run: test -z "$(gofumpt -l {staged_files})"
-      fail_text: "Files not formatted with gofumpt. Run 'gofumpt -w .'"
+      run: gofumpt -w {staged_files}
+      stage_fixed: true
+      fail_text: "gofumpt failed to format staged files."
 
     - name: go-mod-tidy
       glob: "go.mod"

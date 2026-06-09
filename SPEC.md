@@ -1,5 +1,12 @@
 # SPEC.md: Fugo Framework
 
+> **Status note.** This is the original design specification. Two things diverge
+> from the shipped code, on purpose: the transport uses standard **Protocol
+> Buffers** (not FlatBuffers), and the widget package is **`fg/`** with
+> prefix-free constructors (`fg.Text(...)`, not `ui.NewText(...)`). The code
+> example in §5 below reflects the real API. `CLAUDE.md` is the canonical,
+> up-to-date guide; when this document and the code disagree, the code wins.
+
 ## 1. Overview
 
 **Fugo** is a high-performance Server-Driven UI (SDUI) framework for desktop application development. Its primary purpose is to allow developers to build complex and fluid user interfaces by writing **exclusively in Go**, delegating graphical rendering to a precompiled Flutter engine that remains invisible to the end user.
@@ -68,58 +75,49 @@ The Go API design will adopt a declarative, functional, and strongly typed patte
 package main
 
 import (
-	"fmt"
-	"github.com/fugo-ui/fugo"
-	"github.com/fugo-ui/fugo/ui"
-	"github.com/fugo-ui/fugo/style"
+	"strconv"
+
+	"github.com/sazardev/fugo"
+	"github.com/sazardev/fugo/fg"
 )
 
 func main() {
-	// Framework initialization
-	app := fugo.NewApp(fugo.AppOptions{
+	// One call starts the gRPC server, spawns the Flutter client, builds the UI
+	// once, and runs until the window closes.
+	fugo.RunStandalone(fugo.AppOptions{
 		Title:  "Fugo Desktop",
 		Width:  800,
 		Height: 600,
-	})
-
-	// Custom styles declaration
-	baseFont := style.Font("Inter", style.WeightBold)
-	darkTheme := style.New(
-		style.BgColor("#121212"),
-		style.TextColor("#FFFFFF"),
-	)
-
-	// UI tree and business logic
-	app.Run(func(ctx *fugo.Context) ui.Widget {
-		counter := 0
-
-		// Reactive nodes
-		counterText := ui.Text("0").
-			FontSize(48).
-			Font(baseFont).
-			Style(darkTheme)
-
-		incrementBtn := ui.Button("Increment").
-			OnClick(func(e ui.Event) {
-				counter++
-				counterText.SetText(fmt.Sprint(counter))
-				ctx.Update() // Triggers the diff tree dispatch via gRPC
-			}).
-			Padding(16).
-			BorderRadius(4)
-
-		// Layout Composition
-		return ui.Container(
-			ui.Center(
-				ui.Column(
-					counterText,
-					incrementBtn,
-				).WithGap(24),
-			),
-		).Style(darkTheme).Fill()
-	})
+	}, buildUI)
 }
 
+func buildUI(ctx *fugo.Context) fg.Widget {
+	counter := 0
+
+	// Reactive node: the handler mutates this in place, then calls ctx.Update.
+	counterText := fg.Text("0").FontSize(48)
+
+	incrementBtn := fg.Button("Increment").
+		BgColor(fg.Hex("#10B981")).
+		BorderRadius(4).
+		OnClick(func(_ fg.Event) {
+			counter++
+			counterText.SetText(strconv.Itoa(counter))
+			ctx.Update() // mark dirty → diff → patch streamed to Flutter
+		})
+
+	// Layout composition. Constructors are prefix-free and return concrete
+	// widget types with chainable setters.
+	return fg.Container(
+		fg.Center(
+			fg.Column(
+				counterText,
+				fg.SizedBox(0, 24),
+				incrementBtn,
+			),
+		),
+	).BgColor(fg.Hex("#121212"))
+}
 ```
 
 ---

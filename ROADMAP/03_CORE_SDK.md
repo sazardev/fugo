@@ -1,5 +1,7 @@
 # 03 — Core SDK: Motor Go
 
+> **⚠️ Actualización de implementación — el código diverge de este diseño.** La serialización implementada **no usa FlatBuffers ni vtprotobuf**: usa **Protocol Buffers estándar** (`google.golang.org/protobuf`), con las props de cada nodo como mensaje protobuf anidado en un campo `bytes`. No hay códecs zero-alloc. El diffing real vive en `engine/differ.go` y casa nodos **por ID posicional** (el matching cross-frame por `Key` se eliminó por producir patches inaplicables). Los presupuestos se re-basaron — ver `engine/perf_test.go` y `engine/alloc_test.go`.
+
 ## Alcance
 
 El Core SDK es el corazón de Fugo ejecutándose en el proceso Go. Contiene el Virtual DOM, el algoritmo de diffing, el reconciliador que coordina las actualizaciones, y el scheduler que controla el ritmo de envío al cliente Flutter.

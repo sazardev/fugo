@@ -1,0 +1,312 @@
+syntax = "proto3";
+
+package fugo.v1;
+
+option go_package = "github.com/sazardev/fugo/transport/proto/fugo/v1;fugov1";
+
+service FugoRender {
+  rpc RenderStream(stream ClientEvent) returns (stream RenderPayload);
+}
+
+message RenderPayload {
+  oneof payload {
+    WidgetTree full_tree = 1;
+    PatchList patches = 2;
+    WindowCommand window = 3;
+    HostCommand host = 4;
+  }
+}
+
+message PatchList {
+  repeated Patch patches = 1;
+  uint64 seq_num = 2;
+}
+
+message Patch {
+  PatchOp op = 1;
+  uint32 node_id = 2;
+  WidgetNode node = 3;
+  bytes props = 4;
+  repeated uint32 children = 5;
+  uint32 parent_id = 6;
+}
+
+enum PatchOp {
+  PATCH_CREATE = 0;
+  PATCH_UPDATE = 1;
+  PATCH_DELETE = 2;
+  PATCH_REPLACE = 3;
+  PATCH_REORDER = 4;
+}
+
+message WidgetTree {
+  repeated WidgetNode nodes = 1;
+  uint32 root = 2;
+}
+
+message WidgetNode {
+  uint32 id = 1;
+  WidgetType type = 2;
+  bytes props = 3;
+  repeated uint32 children = 4;
+  string key = 5;
+}
+
+enum WidgetType {
+  TEXT = 0;
+  CONTAINER = 1;
+  COLUMN = 2;
+  CENTER = 3;
+  BUTTON = 4;
+  ROW = 5;
+  STACK = 6;
+  EXPANDED = 7;
+  PADDING = 8;
+  SIZEDBOX = 9;
+  IMAGE = 10;
+  TEXTFIELD = 11;
+  POSITIONED = 12;
+  CHECKBOX = 13;
+  SWITCH_WIDGET = 14;
+  SLIDER = 15;
+  LISTVIEW = 16;
+  ANIMATEDCONTAINER = 17;
+  ICON = 18;
+  DIVIDER = 19;
+  WRAP = 20;
+  GRIDVIEW = 21;
+  ANIMATEDOPACITY = 22;
+  SCROLLVIEW = 23;
+  GESTUREDETECTOR = 24;
+  ALIGN = 25;
+  RADIO = 26;
+  DROPDOWN = 27;
+  ANIMATEDPOSITIONED = 28;
+  WINDOWDRAGAREA = 29;
+}
+
+enum WindowOp {
+  WINDOW_SET_TITLE = 0;
+  WINDOW_SET_SIZE = 1;
+  WINDOW_MINIMIZE = 2;
+  WINDOW_MAXIMIZE = 3;
+  WINDOW_CENTER = 4;
+  WINDOW_FULLSCREEN = 5;
+}
+
+// HostOp identifies an out-of-band request to the host OS that the Flutter
+// client fulfills on Go's behalf (clipboard access, native file dialogs).
+enum HostOp {
+  HOST_CLIPBOARD_WRITE = 0;
+  HOST_CLIPBOARD_READ = 1;
+  HOST_FILE_OPEN = 2;
+  HOST_FILE_SAVE = 3;
+}
+
+enum MainAxisSize {
+  MAIN_MIN = 0;
+  MAIN_MAX = 1;
+}
+
+enum MainAxisAlignment {
+  MAIN_START = 0;
+  MAIN_END = 1;
+  MAIN_CENTER = 2;
+  MAIN_SPACE_BETWEEN = 3;
+  MAIN_SPACE_AROUND = 4;
+  MAIN_SPACE_EVENLY = 5;
+}
+
+enum CrossAxisAlignment {
+  CROSS_START = 0;
+  CROSS_END = 1;
+  CROSS_CENTER = 2;
+  CROSS_STRETCH = 3;
+}
+
+message TextProps {
+  string value = 1;
+  double font_size = 2;
+  string color = 3;
+  int32 font_weight = 4; // numeric weight 100..900 (400 = normal, 700 = bold)
+  int32 text_align = 5;  // 0 = left, 1 = center, 2 = right
+}
+
+message ButtonProps {
+  string label = 1;
+  string bg_color = 2;
+  double font_size = 3;
+  double border_radius = 4;
+}
+
+message ContainerProps {
+  string bg_color = 1;
+  double border_radius = 3;
+  // Padding per edge in logical pixels (field 2 was previously a single
+  // all-edges value; it now carries the top edge).
+  double pad_top = 2;
+  double pad_right = 4;
+  double pad_bottom = 5;
+  double pad_left = 6;
+}
+
+message RowProps {
+  MainAxisSize main_axis_size = 1;
+  MainAxisAlignment main_alignment = 2;
+  CrossAxisAlignment cross_alignment = 3;
+}
+
+message StackProps {
+  int32 fit = 1;
+}
+
+message ExpandedProps {
+  int32 flex = 1;
+}
+
+message PaddingProps {
+  double top = 1;
+  double right = 2;
+  double bottom = 3;
+  double left = 4;
+}
+
+message SizedBoxProps {
+  double width = 1;
+  double height = 2;
+}
+
+message ImageProps {
+  string src = 1;
+  double width = 2;
+  double height = 3;
+  int32 fit = 4;
+}
+
+message TextFieldProps {
+  string value = 1;
+  string placeholder = 2;
+  double font_size = 3;
+  bool obscure = 4;
+}
+
+message PositionedProps {
+  double left = 1;
+  double top = 2;
+  double right = 3;
+  double bottom = 4;
+  double width = 5;
+  double height = 6;
+}
+
+message CheckboxProps {
+  bool checked = 1;
+  string label = 2;
+}
+
+message SwitchProps {
+  bool value = 1;
+}
+
+message SliderProps {
+  double value = 1;
+  double min = 2;
+  double max = 3;
+}
+
+message ListViewProps {
+  double item_extent = 1;
+  int32 scroll_direction = 2;
+}
+
+message AnimatedContainerProps {
+  string bg_color = 1;
+  double padding = 2;
+  double border_radius = 3;
+  int32 duration_ms = 4;
+  string curve = 5;
+}
+
+message IconProps {
+  string name = 1;
+  double size = 2;
+  string color = 3;
+}
+
+message DividerProps {
+  double thickness = 1;
+  string color = 2;
+}
+
+message WrapProps {
+  double spacing = 1;
+  double run_spacing = 2;
+}
+
+message GridViewProps {
+  int32 cross_axis_count = 1;
+  double child_aspect_ratio = 2;
+}
+
+message AnimatedOpacityProps {
+  double opacity = 1;
+  int32 duration_ms = 2;
+}
+
+message AnimatedPositionedProps {
+  double left = 1;
+  double top = 2;
+  double right = 3;
+  double bottom = 4;
+  double width = 5;
+  double height = 6;
+  int32 duration_ms = 7;
+  string curve = 8;
+}
+
+message ScrollViewProps {
+  int32 scroll_direction = 1; // 0 = vertical, 1 = horizontal
+}
+
+message AlignProps {
+  double x = 1; // -1.0 (start) .. 1.0 (end), horizontal
+  double y = 2; // -1.0 (top) .. 1.0 (bottom), vertical
+}
+
+message RadioProps {
+  string value = 1;
+  string group_value = 2;
+  string label = 3;
+}
+
+message DropdownProps {
+  repeated string items = 1;
+  string value = 2;
+}
+
+message WindowCommand {
+  WindowOp op = 1;
+  string title = 2;
+  double width = 3;
+  double height = 4;
+  bool flag = 5; // generic boolean (e.g. fullscreen on/off)
+}
+
+// HostCommand is an out-of-band request from Go to the client to use an OS
+// service. Requests that expect a reply carry a non-zero request_id; the client
+// answers with a ClientEvent whose event_type is "host" and whose node_id is
+// the request_id rendered as a decimal string, with the result in event_data.
+message HostCommand {
+  HostOp op = 1;
+  uint64 request_id = 2; // correlates the reply; 0 = fire-and-forget (no reply)
+  string text = 3;       // clipboard payload (write) or dialog title (file ops)
+  string default_name = 4; // suggested file name for save dialogs
+  repeated string extensions = 5; // allowed extensions for file dialogs, no dot (e.g. "txt")
+}
+
+message ClientEvent {
+  string node_id = 1;
+  string event_type = 2;
+  bytes event_data = 3;
+  uint64 timestamp = 4;
+}
