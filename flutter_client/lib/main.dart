@@ -15,6 +15,8 @@ import 'grpc_isolate.dart';
 import 'registry.dart' show hexToColor;
 
 final _fugoRendererKey = GlobalKey<FugoRendererState>();
+final _messengerKey = GlobalKey<ScaffoldMessengerState>();
+final _navigatorKey = GlobalKey<NavigatorState>();
 
 // applyWindowCommand applies a runtime window-control command from Go via the
 // OS window manager (driven by WindowController on the Go side).
@@ -89,6 +91,38 @@ void _replyHost(int requestId, String result) {
   ));
 }
 
+// applyOverlayCommand shows a transient overlay (snackbar or dialog) requested
+// by Go, using the app-level messenger/navigator keys so it works without a
+// widget build context.
+void applyOverlayCommand(OverlayCommand cmd) {
+  switch (cmd.op) {
+    case OverlayOp.OVERLAY_SNACKBAR:
+      _messengerKey.currentState
+          ?.showSnackBar(SnackBar(content: Text(cmd.message)));
+      break;
+    case OverlayOp.OVERLAY_DIALOG:
+      final ctx = _navigatorKey.currentContext;
+      if (ctx != null) {
+        showDialog<void>(
+          context: ctx,
+          builder: (c) => AlertDialog(
+            title: cmd.title.isNotEmpty ? Text(cmd.title) : null,
+            content: cmd.message.isNotEmpty ? Text(cmd.message) : null,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(c).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+      break;
+    default:
+      break;
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
@@ -127,6 +161,8 @@ void main() async {
       setEventSendPort(message as SendPort);
       runApp(FugoApp(
         rendererKey: _fugoRendererKey,
+        messengerKey: _messengerKey,
+        navigatorKey: _navigatorKey,
         seedColor: seedColor,
         brightness: brightness,
       ));
@@ -145,6 +181,11 @@ void main() async {
 
         if (payload.hasHost()) {
           applyHostCommand(payload.host);
+          return;
+        }
+
+        if (payload.hasOverlay()) {
+          applyOverlayCommand(payload.overlay);
           return;
         }
 

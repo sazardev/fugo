@@ -407,6 +407,54 @@ func (HostOp) EnumDescriptor() ([]byte, []int) {
 	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{4}
 }
 
+// OverlayOp identifies a transient UI overlay the client shows imperatively
+// (Flutter's showSnackBar / showDialog), driven from Go via Context.
+type OverlayOp int32
+
+const (
+	OverlayOp_OVERLAY_SNACKBAR OverlayOp = 0
+	OverlayOp_OVERLAY_DIALOG   OverlayOp = 1
+)
+
+// Enum value maps for OverlayOp.
+var (
+	OverlayOp_name = map[int32]string{
+		0: "OVERLAY_SNACKBAR",
+		1: "OVERLAY_DIALOG",
+	}
+	OverlayOp_value = map[string]int32{
+		"OVERLAY_SNACKBAR": 0,
+		"OVERLAY_DIALOG":   1,
+	}
+)
+
+func (x OverlayOp) Enum() *OverlayOp {
+	p := new(OverlayOp)
+	*p = x
+	return p
+}
+
+func (x OverlayOp) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (OverlayOp) Descriptor() protoreflect.EnumDescriptor {
+	return file_transport_proto_fugo_v1_fugo_proto_enumTypes[5].Descriptor()
+}
+
+func (OverlayOp) Type() protoreflect.EnumType {
+	return &file_transport_proto_fugo_v1_fugo_proto_enumTypes[5]
+}
+
+func (x OverlayOp) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use OverlayOp.Descriptor instead.
+func (OverlayOp) EnumDescriptor() ([]byte, []int) {
+	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{5}
+}
+
 type MainAxisSize int32
 
 const (
@@ -437,11 +485,11 @@ func (x MainAxisSize) String() string {
 }
 
 func (MainAxisSize) Descriptor() protoreflect.EnumDescriptor {
-	return file_transport_proto_fugo_v1_fugo_proto_enumTypes[5].Descriptor()
+	return file_transport_proto_fugo_v1_fugo_proto_enumTypes[6].Descriptor()
 }
 
 func (MainAxisSize) Type() protoreflect.EnumType {
-	return &file_transport_proto_fugo_v1_fugo_proto_enumTypes[5]
+	return &file_transport_proto_fugo_v1_fugo_proto_enumTypes[6]
 }
 
 func (x MainAxisSize) Number() protoreflect.EnumNumber {
@@ -450,7 +498,7 @@ func (x MainAxisSize) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MainAxisSize.Descriptor instead.
 func (MainAxisSize) EnumDescriptor() ([]byte, []int) {
-	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{5}
+	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{6}
 }
 
 type MainAxisAlignment int32
@@ -495,11 +543,11 @@ func (x MainAxisAlignment) String() string {
 }
 
 func (MainAxisAlignment) Descriptor() protoreflect.EnumDescriptor {
-	return file_transport_proto_fugo_v1_fugo_proto_enumTypes[6].Descriptor()
+	return file_transport_proto_fugo_v1_fugo_proto_enumTypes[7].Descriptor()
 }
 
 func (MainAxisAlignment) Type() protoreflect.EnumType {
-	return &file_transport_proto_fugo_v1_fugo_proto_enumTypes[6]
+	return &file_transport_proto_fugo_v1_fugo_proto_enumTypes[7]
 }
 
 func (x MainAxisAlignment) Number() protoreflect.EnumNumber {
@@ -508,7 +556,7 @@ func (x MainAxisAlignment) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MainAxisAlignment.Descriptor instead.
 func (MainAxisAlignment) EnumDescriptor() ([]byte, []int) {
-	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{6}
+	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{7}
 }
 
 type CrossAxisAlignment int32
@@ -547,11 +595,11 @@ func (x CrossAxisAlignment) String() string {
 }
 
 func (CrossAxisAlignment) Descriptor() protoreflect.EnumDescriptor {
-	return file_transport_proto_fugo_v1_fugo_proto_enumTypes[7].Descriptor()
+	return file_transport_proto_fugo_v1_fugo_proto_enumTypes[8].Descriptor()
 }
 
 func (CrossAxisAlignment) Type() protoreflect.EnumType {
-	return &file_transport_proto_fugo_v1_fugo_proto_enumTypes[7]
+	return &file_transport_proto_fugo_v1_fugo_proto_enumTypes[8]
 }
 
 func (x CrossAxisAlignment) Number() protoreflect.EnumNumber {
@@ -560,7 +608,7 @@ func (x CrossAxisAlignment) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use CrossAxisAlignment.Descriptor instead.
 func (CrossAxisAlignment) EnumDescriptor() ([]byte, []int) {
-	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{7}
+	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{8}
 }
 
 type RenderPayload struct {
@@ -571,6 +619,7 @@ type RenderPayload struct {
 	//	*RenderPayload_Patches
 	//	*RenderPayload_Window
 	//	*RenderPayload_Host
+	//	*RenderPayload_Overlay
 	Payload       isRenderPayload_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -649,6 +698,15 @@ func (x *RenderPayload) GetHost() *HostCommand {
 	return nil
 }
 
+func (x *RenderPayload) GetOverlay() *OverlayCommand {
+	if x != nil {
+		if x, ok := x.Payload.(*RenderPayload_Overlay); ok {
+			return x.Overlay
+		}
+	}
+	return nil
+}
+
 type isRenderPayload_Payload interface {
 	isRenderPayload_Payload()
 }
@@ -669,6 +727,10 @@ type RenderPayload_Host struct {
 	Host *HostCommand `protobuf:"bytes,4,opt,name=host,proto3,oneof"`
 }
 
+type RenderPayload_Overlay struct {
+	Overlay *OverlayCommand `protobuf:"bytes,5,opt,name=overlay,proto3,oneof"`
+}
+
 func (*RenderPayload_FullTree) isRenderPayload_Payload() {}
 
 func (*RenderPayload_Patches) isRenderPayload_Payload() {}
@@ -676,6 +738,8 @@ func (*RenderPayload_Patches) isRenderPayload_Payload() {}
 func (*RenderPayload_Window) isRenderPayload_Payload() {}
 
 func (*RenderPayload_Host) isRenderPayload_Payload() {}
+
+func (*RenderPayload_Overlay) isRenderPayload_Payload() {}
 
 type PatchList struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -3161,6 +3225,68 @@ func (x *ProgressProps) GetValue() float64 {
 	return 0
 }
 
+// OverlayCommand asks the client to show a transient overlay: a SnackBar
+// (message only) or an AlertDialog (title + message, dismissed with OK).
+type OverlayCommand struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Op            OverlayOp              `protobuf:"varint,1,opt,name=op,proto3,enum=fugo.v1.OverlayOp" json:"op,omitempty"`
+	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OverlayCommand) Reset() {
+	*x = OverlayCommand{}
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OverlayCommand) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OverlayCommand) ProtoMessage() {}
+
+func (x *OverlayCommand) ProtoReflect() protoreflect.Message {
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OverlayCommand.ProtoReflect.Descriptor instead.
+func (*OverlayCommand) Descriptor() ([]byte, []int) {
+	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *OverlayCommand) GetOp() OverlayOp {
+	if x != nil {
+		return x.Op
+	}
+	return OverlayOp_OVERLAY_SNACKBAR
+}
+
+func (x *OverlayCommand) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *OverlayCommand) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
 type WindowCommand struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Op            WindowOp               `protobuf:"varint,1,opt,name=op,proto3,enum=fugo.v1.WindowOp" json:"op,omitempty"`
@@ -3174,7 +3300,7 @@ type WindowCommand struct {
 
 func (x *WindowCommand) Reset() {
 	*x = WindowCommand{}
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[41]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3186,7 +3312,7 @@ func (x *WindowCommand) String() string {
 func (*WindowCommand) ProtoMessage() {}
 
 func (x *WindowCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[41]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3199,7 +3325,7 @@ func (x *WindowCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WindowCommand.ProtoReflect.Descriptor instead.
 func (*WindowCommand) Descriptor() ([]byte, []int) {
-	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{41}
+	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *WindowCommand) GetOp() WindowOp {
@@ -3254,7 +3380,7 @@ type HostCommand struct {
 
 func (x *HostCommand) Reset() {
 	*x = HostCommand{}
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[42]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3266,7 +3392,7 @@ func (x *HostCommand) String() string {
 func (*HostCommand) ProtoMessage() {}
 
 func (x *HostCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[42]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3279,7 +3405,7 @@ func (x *HostCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HostCommand.ProtoReflect.Descriptor instead.
 func (*HostCommand) Descriptor() ([]byte, []int) {
-	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{42}
+	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *HostCommand) GetOp() HostOp {
@@ -3329,7 +3455,7 @@ type ClientEvent struct {
 
 func (x *ClientEvent) Reset() {
 	*x = ClientEvent{}
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[43]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3341,7 +3467,7 @@ func (x *ClientEvent) String() string {
 func (*ClientEvent) ProtoMessage() {}
 
 func (x *ClientEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[43]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3354,7 +3480,7 @@ func (x *ClientEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClientEvent.ProtoReflect.Descriptor instead.
 func (*ClientEvent) Descriptor() ([]byte, []int) {
-	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{43}
+	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *ClientEvent) GetNodeId() string {
@@ -3389,12 +3515,13 @@ var File_transport_proto_fugo_v1_fugo_proto protoreflect.FileDescriptor
 
 const file_transport_proto_fugo_v1_fugo_proto_rawDesc = "" +
 	"\n" +
-	"\"transport/proto/fugo/v1/fugo.proto\x12\afugo.v1\"\xdc\x01\n" +
+	"\"transport/proto/fugo/v1/fugo.proto\x12\afugo.v1\"\x91\x02\n" +
 	"\rRenderPayload\x122\n" +
 	"\tfull_tree\x18\x01 \x01(\v2\x13.fugo.v1.WidgetTreeH\x00R\bfullTree\x12.\n" +
 	"\apatches\x18\x02 \x01(\v2\x12.fugo.v1.PatchListH\x00R\apatches\x120\n" +
 	"\x06window\x18\x03 \x01(\v2\x16.fugo.v1.WindowCommandH\x00R\x06window\x12*\n" +
-	"\x04host\x18\x04 \x01(\v2\x14.fugo.v1.HostCommandH\x00R\x04hostB\t\n" +
+	"\x04host\x18\x04 \x01(\v2\x14.fugo.v1.HostCommandH\x00R\x04host\x123\n" +
+	"\aoverlay\x18\x05 \x01(\v2\x17.fugo.v1.OverlayCommandH\x00R\aoverlayB\t\n" +
 	"\apayload\"N\n" +
 	"\tPatchList\x12(\n" +
 	"\apatches\x18\x01 \x03(\v2\x0e.fugo.v1.PatchR\apatches\x12\x17\n" +
@@ -3581,7 +3708,11 @@ const file_transport_proto_fugo_v1_fugo_proto_rawDesc = "" +
 	"\tdeletable\x18\x03 \x01(\bR\tdeletable\"=\n" +
 	"\rProgressProps\x12\x16\n" +
 	"\x06linear\x18\x01 \x01(\bR\x06linear\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x01R\x05value\"\x8a\x01\n" +
+	"\x05value\x18\x02 \x01(\x01R\x05value\"d\n" +
+	"\x0eOverlayCommand\x12\"\n" +
+	"\x02op\x18\x01 \x01(\x0e2\x12.fugo.v1.OverlayOpR\x02op\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\"\x8a\x01\n" +
 	"\rWindowCommand\x12!\n" +
 	"\x02op\x18\x01 \x01(\x0e2\x11.fugo.v1.WindowOpR\x02op\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x14\n" +
@@ -3677,7 +3808,10 @@ const file_transport_proto_fugo_v1_fugo_proto_rawDesc = "" +
 	"\x14HOST_CLIPBOARD_WRITE\x10\x00\x12\x17\n" +
 	"\x13HOST_CLIPBOARD_READ\x10\x01\x12\x12\n" +
 	"\x0eHOST_FILE_OPEN\x10\x02\x12\x12\n" +
-	"\x0eHOST_FILE_SAVE\x10\x03**\n" +
+	"\x0eHOST_FILE_SAVE\x10\x03*5\n" +
+	"\tOverlayOp\x12\x14\n" +
+	"\x10OVERLAY_SNACKBAR\x10\x00\x12\x12\n" +
+	"\x0eOVERLAY_DIALOG\x10\x01**\n" +
 	"\fMainAxisSize\x12\f\n" +
 	"\bMAIN_MIN\x10\x00\x12\f\n" +
 	"\bMAIN_MAX\x10\x01*\x88\x01\n" +
@@ -3711,89 +3845,93 @@ func file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP() []byte {
 }
 
 var (
-	file_transport_proto_fugo_v1_fugo_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
-	file_transport_proto_fugo_v1_fugo_proto_msgTypes  = make([]protoimpl.MessageInfo, 44)
+	file_transport_proto_fugo_v1_fugo_proto_enumTypes = make([]protoimpl.EnumInfo, 9)
+	file_transport_proto_fugo_v1_fugo_proto_msgTypes  = make([]protoimpl.MessageInfo, 45)
 	file_transport_proto_fugo_v1_fugo_proto_goTypes   = []any{
 		PatchOp(0),                      // 0: fugo.v1.PatchOp
 		WidgetType(0),                   // 1: fugo.v1.WidgetType
 		ButtonVariant(0),                // 2: fugo.v1.ButtonVariant
 		WindowOp(0),                     // 3: fugo.v1.WindowOp
 		HostOp(0),                       // 4: fugo.v1.HostOp
-		MainAxisSize(0),                 // 5: fugo.v1.MainAxisSize
-		MainAxisAlignment(0),            // 6: fugo.v1.MainAxisAlignment
-		CrossAxisAlignment(0),           // 7: fugo.v1.CrossAxisAlignment
-		(*RenderPayload)(nil),           // 8: fugo.v1.RenderPayload
-		(*PatchList)(nil),               // 9: fugo.v1.PatchList
-		(*Patch)(nil),                   // 10: fugo.v1.Patch
-		(*WidgetTree)(nil),              // 11: fugo.v1.WidgetTree
-		(*WidgetNode)(nil),              // 12: fugo.v1.WidgetNode
-		(*TextProps)(nil),               // 13: fugo.v1.TextProps
-		(*ButtonProps)(nil),             // 14: fugo.v1.ButtonProps
-		(*ContainerProps)(nil),          // 15: fugo.v1.ContainerProps
-		(*RowProps)(nil),                // 16: fugo.v1.RowProps
-		(*ColumnProps)(nil),             // 17: fugo.v1.ColumnProps
-		(*StackProps)(nil),              // 18: fugo.v1.StackProps
-		(*ExpandedProps)(nil),           // 19: fugo.v1.ExpandedProps
-		(*PaddingProps)(nil),            // 20: fugo.v1.PaddingProps
-		(*SizedBoxProps)(nil),           // 21: fugo.v1.SizedBoxProps
-		(*ImageProps)(nil),              // 22: fugo.v1.ImageProps
-		(*TextFieldProps)(nil),          // 23: fugo.v1.TextFieldProps
-		(*PositionedProps)(nil),         // 24: fugo.v1.PositionedProps
-		(*CheckboxProps)(nil),           // 25: fugo.v1.CheckboxProps
-		(*SwitchProps)(nil),             // 26: fugo.v1.SwitchProps
-		(*SliderProps)(nil),             // 27: fugo.v1.SliderProps
-		(*ListViewProps)(nil),           // 28: fugo.v1.ListViewProps
-		(*AnimatedContainerProps)(nil),  // 29: fugo.v1.AnimatedContainerProps
-		(*IconProps)(nil),               // 30: fugo.v1.IconProps
-		(*DividerProps)(nil),            // 31: fugo.v1.DividerProps
-		(*WrapProps)(nil),               // 32: fugo.v1.WrapProps
-		(*GridViewProps)(nil),           // 33: fugo.v1.GridViewProps
-		(*AnimatedOpacityProps)(nil),    // 34: fugo.v1.AnimatedOpacityProps
-		(*AnimatedPositionedProps)(nil), // 35: fugo.v1.AnimatedPositionedProps
-		(*ScrollViewProps)(nil),         // 36: fugo.v1.ScrollViewProps
-		(*AlignProps)(nil),              // 37: fugo.v1.AlignProps
-		(*RadioProps)(nil),              // 38: fugo.v1.RadioProps
-		(*DropdownProps)(nil),           // 39: fugo.v1.DropdownProps
-		(*CardProps)(nil),               // 40: fugo.v1.CardProps
-		(*ScaffoldProps)(nil),           // 41: fugo.v1.ScaffoldProps
-		(*NavigationBarProps)(nil),      // 42: fugo.v1.NavigationBarProps
-		(*TabsProps)(nil),               // 43: fugo.v1.TabsProps
-		(*AppBarProps)(nil),             // 44: fugo.v1.AppBarProps
-		(*FabProps)(nil),                // 45: fugo.v1.FabProps
-		(*ListTileProps)(nil),           // 46: fugo.v1.ListTileProps
-		(*ChipProps)(nil),               // 47: fugo.v1.ChipProps
-		(*ProgressProps)(nil),           // 48: fugo.v1.ProgressProps
-		(*WindowCommand)(nil),           // 49: fugo.v1.WindowCommand
-		(*HostCommand)(nil),             // 50: fugo.v1.HostCommand
-		(*ClientEvent)(nil),             // 51: fugo.v1.ClientEvent
+		OverlayOp(0),                    // 5: fugo.v1.OverlayOp
+		MainAxisSize(0),                 // 6: fugo.v1.MainAxisSize
+		MainAxisAlignment(0),            // 7: fugo.v1.MainAxisAlignment
+		CrossAxisAlignment(0),           // 8: fugo.v1.CrossAxisAlignment
+		(*RenderPayload)(nil),           // 9: fugo.v1.RenderPayload
+		(*PatchList)(nil),               // 10: fugo.v1.PatchList
+		(*Patch)(nil),                   // 11: fugo.v1.Patch
+		(*WidgetTree)(nil),              // 12: fugo.v1.WidgetTree
+		(*WidgetNode)(nil),              // 13: fugo.v1.WidgetNode
+		(*TextProps)(nil),               // 14: fugo.v1.TextProps
+		(*ButtonProps)(nil),             // 15: fugo.v1.ButtonProps
+		(*ContainerProps)(nil),          // 16: fugo.v1.ContainerProps
+		(*RowProps)(nil),                // 17: fugo.v1.RowProps
+		(*ColumnProps)(nil),             // 18: fugo.v1.ColumnProps
+		(*StackProps)(nil),              // 19: fugo.v1.StackProps
+		(*ExpandedProps)(nil),           // 20: fugo.v1.ExpandedProps
+		(*PaddingProps)(nil),            // 21: fugo.v1.PaddingProps
+		(*SizedBoxProps)(nil),           // 22: fugo.v1.SizedBoxProps
+		(*ImageProps)(nil),              // 23: fugo.v1.ImageProps
+		(*TextFieldProps)(nil),          // 24: fugo.v1.TextFieldProps
+		(*PositionedProps)(nil),         // 25: fugo.v1.PositionedProps
+		(*CheckboxProps)(nil),           // 26: fugo.v1.CheckboxProps
+		(*SwitchProps)(nil),             // 27: fugo.v1.SwitchProps
+		(*SliderProps)(nil),             // 28: fugo.v1.SliderProps
+		(*ListViewProps)(nil),           // 29: fugo.v1.ListViewProps
+		(*AnimatedContainerProps)(nil),  // 30: fugo.v1.AnimatedContainerProps
+		(*IconProps)(nil),               // 31: fugo.v1.IconProps
+		(*DividerProps)(nil),            // 32: fugo.v1.DividerProps
+		(*WrapProps)(nil),               // 33: fugo.v1.WrapProps
+		(*GridViewProps)(nil),           // 34: fugo.v1.GridViewProps
+		(*AnimatedOpacityProps)(nil),    // 35: fugo.v1.AnimatedOpacityProps
+		(*AnimatedPositionedProps)(nil), // 36: fugo.v1.AnimatedPositionedProps
+		(*ScrollViewProps)(nil),         // 37: fugo.v1.ScrollViewProps
+		(*AlignProps)(nil),              // 38: fugo.v1.AlignProps
+		(*RadioProps)(nil),              // 39: fugo.v1.RadioProps
+		(*DropdownProps)(nil),           // 40: fugo.v1.DropdownProps
+		(*CardProps)(nil),               // 41: fugo.v1.CardProps
+		(*ScaffoldProps)(nil),           // 42: fugo.v1.ScaffoldProps
+		(*NavigationBarProps)(nil),      // 43: fugo.v1.NavigationBarProps
+		(*TabsProps)(nil),               // 44: fugo.v1.TabsProps
+		(*AppBarProps)(nil),             // 45: fugo.v1.AppBarProps
+		(*FabProps)(nil),                // 46: fugo.v1.FabProps
+		(*ListTileProps)(nil),           // 47: fugo.v1.ListTileProps
+		(*ChipProps)(nil),               // 48: fugo.v1.ChipProps
+		(*ProgressProps)(nil),           // 49: fugo.v1.ProgressProps
+		(*OverlayCommand)(nil),          // 50: fugo.v1.OverlayCommand
+		(*WindowCommand)(nil),           // 51: fugo.v1.WindowCommand
+		(*HostCommand)(nil),             // 52: fugo.v1.HostCommand
+		(*ClientEvent)(nil),             // 53: fugo.v1.ClientEvent
 	}
 )
 var file_transport_proto_fugo_v1_fugo_proto_depIdxs = []int32{
-	11, // 0: fugo.v1.RenderPayload.full_tree:type_name -> fugo.v1.WidgetTree
-	9,  // 1: fugo.v1.RenderPayload.patches:type_name -> fugo.v1.PatchList
-	49, // 2: fugo.v1.RenderPayload.window:type_name -> fugo.v1.WindowCommand
-	50, // 3: fugo.v1.RenderPayload.host:type_name -> fugo.v1.HostCommand
-	10, // 4: fugo.v1.PatchList.patches:type_name -> fugo.v1.Patch
-	0,  // 5: fugo.v1.Patch.op:type_name -> fugo.v1.PatchOp
-	12, // 6: fugo.v1.Patch.node:type_name -> fugo.v1.WidgetNode
-	12, // 7: fugo.v1.WidgetTree.nodes:type_name -> fugo.v1.WidgetNode
-	1,  // 8: fugo.v1.WidgetNode.type:type_name -> fugo.v1.WidgetType
-	2,  // 9: fugo.v1.ButtonProps.variant:type_name -> fugo.v1.ButtonVariant
-	5,  // 10: fugo.v1.RowProps.main_axis_size:type_name -> fugo.v1.MainAxisSize
-	6,  // 11: fugo.v1.RowProps.main_alignment:type_name -> fugo.v1.MainAxisAlignment
-	7,  // 12: fugo.v1.RowProps.cross_alignment:type_name -> fugo.v1.CrossAxisAlignment
-	5,  // 13: fugo.v1.ColumnProps.main_axis_size:type_name -> fugo.v1.MainAxisSize
-	6,  // 14: fugo.v1.ColumnProps.main_alignment:type_name -> fugo.v1.MainAxisAlignment
-	7,  // 15: fugo.v1.ColumnProps.cross_alignment:type_name -> fugo.v1.CrossAxisAlignment
-	3,  // 16: fugo.v1.WindowCommand.op:type_name -> fugo.v1.WindowOp
-	4,  // 17: fugo.v1.HostCommand.op:type_name -> fugo.v1.HostOp
-	51, // 18: fugo.v1.FugoRender.RenderStream:input_type -> fugo.v1.ClientEvent
-	8,  // 19: fugo.v1.FugoRender.RenderStream:output_type -> fugo.v1.RenderPayload
-	19, // [19:20] is the sub-list for method output_type
-	18, // [18:19] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	12, // 0: fugo.v1.RenderPayload.full_tree:type_name -> fugo.v1.WidgetTree
+	10, // 1: fugo.v1.RenderPayload.patches:type_name -> fugo.v1.PatchList
+	51, // 2: fugo.v1.RenderPayload.window:type_name -> fugo.v1.WindowCommand
+	52, // 3: fugo.v1.RenderPayload.host:type_name -> fugo.v1.HostCommand
+	50, // 4: fugo.v1.RenderPayload.overlay:type_name -> fugo.v1.OverlayCommand
+	11, // 5: fugo.v1.PatchList.patches:type_name -> fugo.v1.Patch
+	0,  // 6: fugo.v1.Patch.op:type_name -> fugo.v1.PatchOp
+	13, // 7: fugo.v1.Patch.node:type_name -> fugo.v1.WidgetNode
+	13, // 8: fugo.v1.WidgetTree.nodes:type_name -> fugo.v1.WidgetNode
+	1,  // 9: fugo.v1.WidgetNode.type:type_name -> fugo.v1.WidgetType
+	2,  // 10: fugo.v1.ButtonProps.variant:type_name -> fugo.v1.ButtonVariant
+	6,  // 11: fugo.v1.RowProps.main_axis_size:type_name -> fugo.v1.MainAxisSize
+	7,  // 12: fugo.v1.RowProps.main_alignment:type_name -> fugo.v1.MainAxisAlignment
+	8,  // 13: fugo.v1.RowProps.cross_alignment:type_name -> fugo.v1.CrossAxisAlignment
+	6,  // 14: fugo.v1.ColumnProps.main_axis_size:type_name -> fugo.v1.MainAxisSize
+	7,  // 15: fugo.v1.ColumnProps.main_alignment:type_name -> fugo.v1.MainAxisAlignment
+	8,  // 16: fugo.v1.ColumnProps.cross_alignment:type_name -> fugo.v1.CrossAxisAlignment
+	5,  // 17: fugo.v1.OverlayCommand.op:type_name -> fugo.v1.OverlayOp
+	3,  // 18: fugo.v1.WindowCommand.op:type_name -> fugo.v1.WindowOp
+	4,  // 19: fugo.v1.HostCommand.op:type_name -> fugo.v1.HostOp
+	53, // 20: fugo.v1.FugoRender.RenderStream:input_type -> fugo.v1.ClientEvent
+	9,  // 21: fugo.v1.FugoRender.RenderStream:output_type -> fugo.v1.RenderPayload
+	21, // [21:22] is the sub-list for method output_type
+	20, // [20:21] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_transport_proto_fugo_v1_fugo_proto_init() }
@@ -3806,14 +3944,15 @@ func file_transport_proto_fugo_v1_fugo_proto_init() {
 		(*RenderPayload_Patches)(nil),
 		(*RenderPayload_Window)(nil),
 		(*RenderPayload_Host)(nil),
+		(*RenderPayload_Overlay)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_transport_proto_fugo_v1_fugo_proto_rawDesc), len(file_transport_proto_fugo_v1_fugo_proto_rawDesc)),
-			NumEnums:      8,
-			NumMessages:   44,
+			NumEnums:      9,
+			NumMessages:   45,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-06-09
+
+### Added
+- Imperative overlays driven from Go over the out-of-band command channel (alongside window/host services): `ctx.ShowSnackBar(text)` shows a Material snackbar and `ctx.ShowDialog(title, message)` shows an alert dialog (dismissed with OK). (Pedido A wave 4 — completes the navigation/overlay series: AppBar, Drawer/NavigationBar, Tabs, Dialog/SnackBar.)
+
 ## [0.9.0] - 2026-06-09
 
 ### Added

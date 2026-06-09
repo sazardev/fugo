@@ -5,12 +5,16 @@ import 'registry.dart';
 
 class FugoApp extends StatelessWidget {
   final GlobalKey<FugoRendererState> rendererKey;
+  final GlobalKey<ScaffoldMessengerState> messengerKey;
+  final GlobalKey<NavigatorState> navigatorKey;
   final Color seedColor;
   final Brightness brightness;
 
   const FugoApp({
     super.key,
     required this.rendererKey,
+    required this.messengerKey,
+    required this.navigatorKey,
     required this.seedColor,
     required this.brightness,
   });
@@ -45,6 +49,8 @@ class FugoApp extends StatelessWidget {
     // gets a Material ancestor (for ink/buttons) and the themed background.
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      scaffoldMessengerKey: messengerKey,
+      navigatorKey: navigatorKey,
       theme: theme,
       home: Material(
         color: background,
