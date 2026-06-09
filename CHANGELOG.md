@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-06-09
+
+### Added
+- `fugo init` now scaffolds a recommended project structure instead of a lone `main.go`: a thin `main.go` entrypoint, a `ui` package for your screens (`ui.Build`), a `fugo.toml` config, a `README.md`, a `.gitignore`, and `logs/` (with `bin/`/`dist/` reserved for build output). It also runs `git init` and makes an initial commit (skip with `--no-git`).
+- `fugo.toml` — declarative project config read by the CLI **and** the app: `[window] title/width/height` and `[server] addr`. Generated `main.go` loads it via the new `fugo.ConfigOptions("fugo.toml")`; `fugo run` uses `[server] addr` as the default address (still overridable with `--addr`), and `fugo build` ships `fugo.toml` into `dist/`.
+- New dependency-free `config` package (`github.com/sazardev/fugo/config`) that loads `fugo.toml` (a small, fixed TOML subset), shared by the runtime and the CLI.
+- `fugo run` now tees the app's runtime logs to `logs/run.log` (still streamed to the console).
+
+### Changed
+- The `app` and `showcase` starter templates now live in the generated `ui` package (`ui.Build`); the theme is set in `main.go` before `RunStandalone`.
+
 ## [0.14.0] - 2026-06-09
 
 ### Added
