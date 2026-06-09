@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-06-09
+
+### Added
+- `LICENSE` file (MIT). The repository had no license file, so the module was non-redistributable and **pkg.go.dev hid the rendered documentation** ("License: None detected"). Adding the standard MIT text restores documentation on pkg.go.dev and matches the README's stated license.
+
 ## [0.3.1] - 2026-06-09
 
 ### Fixed
