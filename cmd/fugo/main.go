@@ -142,7 +142,7 @@ func buildUI(ctx *fugo.Context) fg.Widget {
 
 	return fg.Scaffold(
 		fg.Center(display),
-	).AppBar("Fugo").FAB(
+	).AppBar(fg.AppBar("Fugo")).FAB(
 		fg.Row(
 			fg.FloatingActionButton("remove").OnClick(func(_ fg.Event) {
 				count--

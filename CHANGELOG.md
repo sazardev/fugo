@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-06-09
+
+### Added
+- `fg.AppBar` — a full Material app bar: a title plus an optional `.Leading` widget (e.g. a menu icon button), trailing `.Actions(...)`, `.CenterTitle`, and `.BgColor`. (First of the navigation/layout wave: AppBar → Drawer/NavigationBar → Tabs → Dialog/SnackBar.)
+
+### Changed
+- **Breaking:** `Scaffold.AppBar` now takes an `*fg.AppBar` widget instead of a title string, matching Flutter's `Scaffold(appBar: AppBar(...))`. Migrate `fg.Scaffold(body).AppBar("X")` → `fg.Scaffold(body).AppBar(fg.AppBar("X"))`.
+
 ## [0.6.0] - 2026-06-09
 
 ### Added

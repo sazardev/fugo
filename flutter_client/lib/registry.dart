@@ -72,6 +72,8 @@ class WidgetRegistry {
         return _buildCard(node, children);
       case proto.WidgetType.SCAFFOLD:
         return _buildScaffold(node, children);
+      case proto.WidgetType.APPBAR:
+        return _buildAppBar(node, children);
       case proto.WidgetType.FLOATINGACTIONBUTTON:
         return _buildFab(node);
       case proto.WidgetType.LISTTILE:
@@ -623,13 +625,45 @@ class WidgetRegistry {
 
   Widget _buildScaffold(proto.WidgetNode node, List<Widget> children) {
     final props = proto.ScaffoldProps.fromBuffer(node.props);
-    final body = children.isNotEmpty ? children.first : null;
-    final fab = (props.hasFab && children.length > 1) ? children.last : null;
+
+    // Children arrive in order: body, then the app bar (if has_app_bar), then
+    // the FAB (if has_fab).
+    var i = 0;
+    final body = i < children.length ? children[i++] : null;
+
+    PreferredSizeWidget? appBar;
+    if (props.hasAppBar && i < children.length) {
+      final w = children[i++];
+      appBar = w is PreferredSizeWidget ? w : null;
+    }
+
+    final fab = (props.hasFab && i < children.length) ? children[i] : null;
 
     return Scaffold(
-      appBar: props.hasAppBar ? AppBar(title: Text(props.appBarTitle)) : null,
+      appBar: appBar,
       body: body,
       floatingActionButton: fab,
+    );
+  }
+
+  Widget _buildAppBar(proto.WidgetNode node, List<Widget> children) {
+    final props = proto.AppBarProps.fromBuffer(node.props);
+
+    // The leading widget (when has_leading) comes first, then the actions.
+    var i = 0;
+    Widget? leading;
+    if (props.hasLeading && i < children.length) {
+      leading = children[i++];
+    }
+    final actions = children.sublist(i);
+
+    return AppBar(
+      title: Text(props.title),
+      centerTitle: props.centerTitle,
+      leading: leading,
+      actions: actions.isEmpty ? null : actions,
+      backgroundColor:
+          props.bgColor.isNotEmpty ? hexToColor(props.bgColor) : null,
     );
   }
 

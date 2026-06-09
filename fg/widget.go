@@ -44,6 +44,7 @@ const (
 	WidgetListTile           = fugov1.WidgetType_LISTTILE
 	WidgetChip               = fugov1.WidgetType_CHIP
 	WidgetProgress           = fugov1.WidgetType_PROGRESS
+	WidgetAppBar             = fugov1.WidgetType_APPBAR
 )
 
 // Event is a user interaction forwarded from the client to a widget's handler.

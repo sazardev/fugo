@@ -89,6 +89,7 @@ enum WidgetType {
   LISTTILE = 33;
   CHIP = 34;
   PROGRESS = 35;
+  APPBAR = 36;
 }
 
 // ButtonVariant selects which Material 3 button widget renders. The Flutter
@@ -317,12 +318,21 @@ message CardProps {
   double border_radius = 3; // 0 = M3 default shape
 }
 
-// ScaffoldProps backs a Material Scaffold. Children are: the body (first child)
-// and, when has_fab is set, the floating action button (last child).
+// ScaffoldProps backs a Material Scaffold. Children are, in order: the body
+// (always present), then the app bar when has_app_bar is set, then the floating
+// action button when has_fab is set.
 message ScaffoldProps {
-  string app_bar_title = 1;
   bool has_app_bar = 2;
   bool has_fab = 3;
+}
+
+// AppBarProps backs a Material AppBar. Children are the leading widget (first,
+// when has_leading is set) followed by the action widgets.
+message AppBarProps {
+  string title = 1;
+  bool center_title = 2;
+  bool has_leading = 3;
+  string bg_color = 4; // empty = the M3 default surface
 }
 
 message FabProps {

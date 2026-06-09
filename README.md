@@ -149,9 +149,17 @@ fg.SizedBox(0, t.Spacing.LG)
 
 **Buttons** mirror Material 3 — `fg.FilledButton`, `fg.FilledTonalButton`, `fg.OutlinedButton`,
 `fg.TextButton`, `fg.ElevatedButton`, `fg.IconButton` (and `fg.Button`, an alias of
-`FilledButton`). Other native Material widgets: `fg.Card`, `fg.Scaffold` (with `.AppBar` / `.FAB`),
-`fg.FloatingActionButton`, `fg.ListTile`, `fg.Chip`, and `fg.ProgressCircular` /
-`fg.ProgressLinear`.
+`FilledButton`). Other native Material widgets: `fg.Card`, `fg.Scaffold`, `fg.AppBar`
+(title + `.Leading` / `.Actions`), `fg.FloatingActionButton`, `fg.ListTile`, `fg.Chip`, and
+`fg.ProgressCircular` / `fg.ProgressLinear`. A scaffold composes them:
+
+```go
+fg.Scaffold(body).
+    AppBar(fg.AppBar("Inbox").
+        Leading(fg.IconButton(fg.Icons.Menu)).
+        Actions(fg.IconButton(fg.Icons.Search), fg.IconButton(fg.Icons.MoreVert))).
+    FAB(fg.FloatingActionButton(fg.Icons.Add))
+```
 
 A bare `fg.Column` (or any intrinsically-sized root) auto-centers in the window; wrap a region in
 `fg.Scaffold`/`fg.Container` to fill it instead. Tokens live under `Colors` (Primary, Surface,
