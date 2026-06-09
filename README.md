@@ -213,6 +213,7 @@ fg.Text("Title").FontSize(fg.TextSize.HeadlineMedium)  // the M3 type scale: .Di
 - [x] CLI: `fugo init` (templates) / `run` (`--watch`) / `build` / `doctor` / `widgets` / `upgrade` (self-update)
 - [x] Runtime window control (`Context.Window()`), `window_manager`-backed
 - [x] OS host services: clipboard (`Context.Clipboard()`), native file dialogs (`Context.Files()`)
+- [x] Imperative overlays: `ctx.ShowSnackBar(...)`, `ctx.ShowDialog(...)`
 - [x] Performance: object-pooled diff, GC tuning (`FUGO_GOGC` / `FUGO_GOMEMLIMIT`), Go + Dart benchmarks with a CI perf gate
 
 See [ROADMAP](./ROADMAP/) and [SPEC.md](./SPEC.md) for the full design vision. **Note:** the
@@ -260,6 +261,9 @@ the value to `fugo.RunComponent`. **Routing** supports `:params` (e.g. `/user/:i
 event goroutine, so mutate widgets and call `ctx.Update()` from it like any handler. For frameless
 windows, wrap a region in **`fg.WindowDragArea(...)`** to make it drag the window, and use
 **`fg.AnimatedPositioned(...)`** inside a `Stack` to animate a child between positions.
+
+**Overlays** are imperative, driven from Go over the same command channel: `ctx.ShowSnackBar("Saved")`
+shows a Material snackbar and `ctx.ShowDialog("Title", "Message")` shows an alert dialog.
 
 ---
 

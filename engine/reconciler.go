@@ -109,6 +109,14 @@ func (r *Reconciler) SendHostCommand(cmd *fugov1.HostCommand) {
 	})
 }
 
+// SendOverlayCommand sends an out-of-band overlay command (show a snackbar or a
+// dialog) to the client.
+func (r *Reconciler) SendOverlayCommand(cmd *fugov1.OverlayCommand) {
+	r.send(&fugov1.RenderPayload{
+		Payload: &fugov1.RenderPayload_Overlay{Overlay: cmd},
+	})
+}
+
 func (r *Reconciler) send(payload *fugov1.RenderPayload) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
