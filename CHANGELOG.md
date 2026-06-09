@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-06-09
+
+### Fixed
+- A `FloatingActionButton` fired its `OnClick` repeatedly on its own. The client wrapped every app in an outer `Scaffold`, so an `fg.Scaffold` with a FAB became a **nested** Scaffold, which misroutes the FAB's gestures. The outer surface is now a plain `Material`, leaving the app's own `Scaffold` as the only one.
+
+### Changed
+- Cleaner, flatter look: the client flattens the Material 3 seed-tinted surfaces to a neutral background (white in light, near-black in dark); the seed still colors interactive elements (buttons, FAB, switches).
+- `fugo init`'s counter template is now the canonical responsive Material app — a `Scaffold` with an app bar, a centered count, and a floating action button — so it fills the window instead of leaving a small centered cluster.
+
 ## [0.4.0] - 2026-06-09
 
 ### Added

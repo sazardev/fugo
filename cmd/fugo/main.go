@@ -107,7 +107,7 @@ func scaffoldMain(template, name string) string {
 	case "showcase":
 		return fmt.Sprintf(showcaseTemplate, name)
 	default:
-		return fmt.Sprintf(counterTemplate, name)
+		return fmt.Sprintf(counterTemplate, name, name)
 	}
 }
 
@@ -129,21 +129,20 @@ func main() {
 }
 
 func buildUI(ctx *fugo.Context) fg.Widget {
-	counter := 0
-	counterText := fg.Text("0").FontSize(48)
+	count := 0
+	display := fg.Text("0").FontSize(57)
 
-	incBtn := fg.FilledButton("+").OnClick(func(_ fg.Event) {
-		counter++
-		counterText.SetText(strconv.Itoa(counter))
-		ctx.Update()
-	})
-
-	// A bare Column auto-centers in the window; Material 3 (light) styles the
-	// button. Add color/padding only when you want to override the theme.
-	return fg.Column(
-		counterText,
-		fg.SizedBox(0, 16),
-		incBtn,
+	// A Scaffold fills the window responsively: an app bar, a centered body,
+	// and a floating action button — straight from the Material 3 theme, with
+	// nothing to tune.
+	return fg.Scaffold(
+		fg.Center(display),
+	).AppBar("%s").FAB(
+		fg.FloatingActionButton("add").OnClick(func(_ fg.Event) {
+			count++
+			display.SetText(strconv.Itoa(count))
+			ctx.Update()
+		}),
 	)
 }
 `
