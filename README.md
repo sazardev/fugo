@@ -151,7 +151,8 @@ fg.SizedBox(0, t.Spacing.LG)
 `fg.TextButton`, `fg.ElevatedButton`, `fg.IconButton` (and `fg.Button`, an alias of
 `FilledButton`). Other native Material widgets: `fg.Card`, `fg.Scaffold`, `fg.AppBar`
 (title + `.Leading` / `.Actions`), `fg.FloatingActionButton`, `fg.ListTile`, `fg.Chip`, and
-`fg.ProgressCircular` / `fg.ProgressLinear`, and `fg.NavigationBar`. A scaffold composes them —
+`fg.ProgressCircular` / `fg.ProgressLinear`, `fg.NavigationBar`, and `fg.Tabs` (a `TabBar` +
+`TabBarView`, switched client-side). A scaffold composes them —
 an app bar, the body, a FAB, a slide-in `.Drawer`, and a bottom `.BottomBar`:
 
 ```go

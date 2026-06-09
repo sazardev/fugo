@@ -91,6 +91,7 @@ enum WidgetType {
   PROGRESS = 35;
   APPBAR = 36;
   NAVIGATIONBAR = 37;
+  TABS = 38;
 }
 
 // ButtonVariant selects which Material 3 button widget renders. The Flutter
@@ -335,6 +336,14 @@ message NavigationBarProps {
   repeated string icons = 1;
   repeated string labels = 2;
   int32 selected_index = 3;
+}
+
+// TabsProps backs a TabBar + TabBarView. labels names the tabs; the children
+// are the per-tab views, one per label, in order. Tab switching is handled on
+// the client (no round-trip to Go).
+message TabsProps {
+  repeated string labels = 1;
+  int32 initial_index = 2;
 }
 
 // AppBarProps backs a Material AppBar. Children are the leading widget (first,

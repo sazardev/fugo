@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-06-09
+
+### Added
+- `fg.Tabs` — a Material tab strip with one view per tab (`.Tab(label, content)`, `.InitialIndex`). Tab switching is handled on the client, so it needs no round-trip to Go. (Pedido A wave 3.)
+
 ## [0.8.0] - 2026-06-09
 
 ### Added
