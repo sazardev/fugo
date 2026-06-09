@@ -289,6 +289,31 @@ func (a *App) sendHost(cmd *fugov1.HostCommand, cb func([]byte)) {
 	a.reconciler.SendHostCommand(cmd)
 }
 
+// sendOverlay issues an overlay command (snackbar, dialog, bottom sheet, picker)
+// to the client. A non-nil cb is registered under a fresh request id and invoked
+// with the reply once the client answers (used by the date/time pickers); a nil
+// cb is fire-and-forget. The callback runs on the transport goroutine, like a
+// widget event handler, so it may mutate widgets and call Context.Update.
+func (a *App) sendOverlay(cmd *fugov1.OverlayCommand, cb func([]byte)) {
+	if a.reconciler == nil {
+		flog.Errorf("overlay command dropped: no client connected")
+
+		return
+	}
+
+	if cb != nil {
+		a.hostMu.Lock()
+		a.hostSeq++
+		id := a.hostSeq
+		a.hostReqs[id] = cb
+		a.hostMu.Unlock()
+
+		cmd.RequestId = id
+	}
+
+	a.reconciler.SendOverlayCommand(cmd)
+}
+
 func (a *App) dispatchHostReply(ev *fugov1.ClientEvent) {
 	id, err := strconv.ParseUint(ev.GetNodeId(), 10, 64)
 	if err != nil {

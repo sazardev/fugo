@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-06-09
+
+### Added
+- More imperative overlays from Go: `ctx.ShowBottomSheet(title, message)` (modal bottom sheet) and the native pickers `ctx.PickDate(func(date string))` / `ctx.PickTime(func(t string))`, which return the chosen value (ISO `YYYY-MM-DD` / 24-hour `HH:MM`) to a callback — empty if cancelled. Pickers reuse the request/reply correlation of the host-service channel. (Pedido A continuation — wave 7.)
+
 ## [0.12.0] - 2026-06-09
 
 ### Added

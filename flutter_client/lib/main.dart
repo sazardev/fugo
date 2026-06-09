@@ -8,7 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
 
-import 'generated/fugo/v1/fugo.pb.dart';
+import 'generated/fugo/v1/fugo.pb.dart'
+    hide MainAxisSize, MainAxisAlignment, CrossAxisAlignment;
 import 'events.dart';
 import 'fugo_renderer.dart';
 import 'grpc_isolate.dart';
@@ -101,21 +102,82 @@ void applyOverlayCommand(OverlayCommand cmd) {
           ?.showSnackBar(SnackBar(content: Text(cmd.message)));
       break;
     case OverlayOp.OVERLAY_DIALOG:
-      final ctx = _navigatorKey.currentContext;
-      if (ctx != null) {
-        showDialog<void>(
-          context: ctx,
-          builder: (c) => AlertDialog(
-            title: cmd.title.isNotEmpty ? Text(cmd.title) : null,
-            content: cmd.message.isNotEmpty ? Text(cmd.message) : null,
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(c).pop(),
-                child: const Text('OK'),
+      {
+        final ctx = _navigatorKey.currentContext;
+        if (ctx != null) {
+          showDialog<void>(
+            context: ctx,
+            builder: (c) => AlertDialog(
+              title: cmd.title.isNotEmpty ? Text(cmd.title) : null,
+              content: cmd.message.isNotEmpty ? Text(cmd.message) : null,
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(c).pop(),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+      }
+      break;
+    case OverlayOp.OVERLAY_BOTTOMSHEET:
+      {
+        final ctx = _navigatorKey.currentContext;
+        if (ctx != null) {
+          showModalBottomSheet<void>(
+            context: ctx,
+            builder: (c) => Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (cmd.title.isNotEmpty)
+                    Text(cmd.title, style: Theme.of(c).textTheme.titleLarge),
+                  if (cmd.message.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(cmd.message),
+                    ),
+                ],
               ),
-            ],
-          ),
-        );
+            ),
+          );
+        }
+      }
+      break;
+    case OverlayOp.OVERLAY_DATE_PICKER:
+      {
+        final id = cmd.requestId.toInt();
+        final ctx = _navigatorKey.currentContext;
+        if (ctx != null) {
+          showDatePicker(
+            context: ctx,
+            initialDate: DateTime.now(),
+            firstDate: DateTime(1900),
+            lastDate: DateTime(2100),
+          ).then((d) => _replyHost(
+              id, d != null ? d.toIso8601String().split('T').first : ''));
+        } else {
+          _replyHost(id, '');
+        }
+      }
+      break;
+    case OverlayOp.OVERLAY_TIME_PICKER:
+      {
+        final id = cmd.requestId.toInt();
+        final ctx = _navigatorKey.currentContext;
+        if (ctx != null) {
+          showTimePicker(context: ctx, initialTime: TimeOfDay.now()).then((t) {
+            final s = t != null
+                ? '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}'
+                : '';
+            _replyHost(id, s);
+          });
+        } else {
+          _replyHost(id, '');
+        }
       }
       break;
     default:
