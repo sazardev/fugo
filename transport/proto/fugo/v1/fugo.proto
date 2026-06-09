@@ -93,6 +93,10 @@ enum WidgetType {
   APPBAR = 36;
   NAVIGATIONBAR = 37;
   TABS = 38;
+  TOOLTIP = 39;
+  BADGE = 40;
+  AVATAR = 41;
+  SEGMENTEDBUTTON = 42;
 }
 
 // ButtonVariant selects which Material 3 button widget renders. The Flutter
@@ -352,6 +356,29 @@ message NavigationBarProps {
 message TabsProps {
   repeated string labels = 1;
   int32 initial_index = 2;
+}
+
+message TooltipProps {
+  string message = 1;
+}
+
+message BadgeProps {
+  string label = 1; // empty = a small dot badge
+}
+
+message AvatarProps {
+  string text = 1;     // initials, when set
+  string icon = 2;     // icon name, used when text is empty
+  string bg_color = 3; // empty = the M3 default
+  double radius = 4;   // 0 = the M3 default size
+}
+
+// SegmentedButtonProps backs a Material 3 SegmentedButton. values and labels are
+// parallel arrays; selected is the currently chosen value.
+message SegmentedButtonProps {
+  repeated string values = 1;
+  repeated string labels = 2;
+  string selected = 3;
 }
 
 // AppBarProps backs a Material AppBar. Children are the leading widget (first,
