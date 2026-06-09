@@ -252,6 +252,35 @@ fugo upgrade              # Self-update the CLI to the latest release (go instal
 fugo --version            # Print version information
 ```
 
+`fugo init` scaffolds a **recommended layout** and initializes a git repo (initial commit; skip with `--no-git`):
+
+```
+myapp/
+├─ main.go        # entrypoint: sets the theme, then fugo.RunStandalone(fugo.ConfigOptions("fugo.toml"), ui.Build)
+├─ ui/            # your screens (package ui); ui.Build is the root widget
+│  └─ home.go
+├─ fugo.toml      # window title/size + gRPC address — read by the CLI and the app
+├─ bin/           # dev builds        (gitignored)
+├─ dist/          # release bundle    (gitignored)
+├─ logs/          # fugo run → logs/run.log (gitignored)
+├─ README.md
+└─ .gitignore
+```
+
+Edit **`fugo.toml`** to change the window or server address — no recompiling the config into Go:
+
+```toml
+name = "myapp"
+
+[window]
+title  = "My App"
+width  = 800
+height = 600
+
+[server]
+addr = "127.0.0.1:9510"   # fugo run uses this unless you pass --addr
+```
+
 **Hot reload** keeps the Flutter window open and reconnects after each Go rebuild (the in-memory
 state still resets — full state restore would need a managed-state layer and is not implemented yet).
 

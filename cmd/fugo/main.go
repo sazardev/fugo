@@ -16,6 +16,8 @@ import (
 	"time"
 
 	"github.com/urfave/cli/v3"
+
+	"github.com/sazardev/fugo/config"
 )
 
 var (
@@ -101,316 +103,31 @@ func versionString() string {
 	return fmt.Sprintf("%s (commit %s, built %s)", v, c, d)
 }
 
-// scaffoldMain returns the main.go source for the chosen starter template,
-// with the project name interpolated into the window title.
-func scaffoldMain(template, name string) string {
-	switch template {
-	case "app":
-		return fmt.Sprintf(appTemplate, name)
-	case "showcase":
-		return fmt.Sprintf(showcaseTemplate, name)
-	default:
-		return fmt.Sprintf(counterTemplate, name)
-	}
-}
-
-const counterTemplate = `package main
-
-import (
-	"strconv"
-
-	"github.com/sazardev/fugo"
-	"github.com/sazardev/fugo/fg"
-)
-
-func main() {
-	fugo.RunStandalone(fugo.AppOptions{
-		Title:  "%s",
-		Width:  800,
-		Height: 600,
-	}, buildUI)
-}
-
-func buildUI(ctx *fugo.Context) fg.Widget {
-	count := 0
-	display := fg.Text("0").FontSize(57)
-
-	update := func() {
-		display.SetText(strconv.Itoa(count))
-		ctx.Update()
-	}
-
-	return fg.Scaffold(
-		fg.Center(display),
-	).AppBar(fg.AppBar("Fugo")).FAB(
-		fg.Row(
-			fg.FloatingActionButton("remove").OnClick(func(_ fg.Event) {
-				count--
-				update()
-			}),
-			fg.SizedBox(16, 0),
-			fg.FloatingActionButton("add").OnClick(func(_ fg.Event) {
-				count++
-				update()
-			}),
-		),
-	)
-}
-`
-
-const appTemplate = `package main
-
-import (
-	"strconv"
-
-	"github.com/sazardev/fugo"
-	"github.com/sazardev/fugo/fg"
-)
-
-func main() {
-	fg.UseTheme(fg.DarkTheme()) // try fg.LightTheme() to re-skin the whole app
-
-	fugo.RunStandalone(fugo.AppOptions{
-		Title:  "%s",
-		Width:  900,
-		Height: 640,
-	}, buildUI)
-}
-
-func buildUI(ctx *fugo.Context) fg.Widget {
-	return fg.Router(map[string]func() fg.Widget{
-		"/":      func() fg.Widget { return homePage(ctx) },
-		"/about": func() fg.Widget { return aboutPage(ctx) },
-	}, "/")
-}
-
-func homePage(ctx *fugo.Context) fg.Widget {
-	t := fg.CurrentTheme()
-	counter := 0
-	count := fg.Text("0").FontSize(t.Typography.Heading * 2)
-
-	inc := fg.Button("Increment").
-		BgColor(t.Colors.Primary).
-		OnClick(func(_ fg.Event) {
-			counter++
-			count.SetText(strconv.Itoa(counter))
-			ctx.Update()
-		})
-
-	about := fg.Button("About →").
-		BgColor(t.Colors.Secondary).
-		OnClick(func(_ fg.Event) { ctx.NavigateTo("/about") })
-
-	return page(t, "Home", count, fg.SizedBox(0, t.Spacing.MD), inc, fg.SizedBox(0, t.Spacing.SM), about)
-}
-
-func aboutPage(ctx *fugo.Context) fg.Widget {
-	t := fg.CurrentTheme()
-	back := fg.Button("← Back").
-		BgColor(t.Colors.Surface).
-		OnClick(func(_ fg.Event) { ctx.GoBack() })
-
-	return page(t, "About",
-		fg.Text("Built with Fugo — Go drives logic, Flutter renders.").Color(t.Colors.Muted),
-		fg.SizedBox(0, t.Spacing.MD),
-		back,
-	)
-}
-
-func page(t fg.Theme, title string, body ...fg.Widget) fg.Widget {
-	items := []fg.Widget{
-		fg.Text(title).FontSize(t.Typography.Heading).Weight(fg.WeightBold),
-		fg.Divider().Color(t.Colors.Border),
-		fg.SizedBox(0, t.Spacing.MD),
-	}
-	items = append(items, body...)
-
-	return fg.Container(fg.Column(items...)).
-		BgColor(t.Colors.Background).
-		Pad(fg.EdgeAll(t.Spacing.LG))
-}
-`
-
-const showcaseTemplate = `package main
-
-import (
-	"strconv"
-
-	"github.com/sazardev/fugo"
-	"github.com/sazardev/fugo/fg"
-)
-
-func main() {
-	fg.UseTheme(fg.DarkTheme())
-
-	fugo.RunStandalone(fugo.AppOptions{
-		Title:  "%s",
-		Width:  980,
-		Height: 760,
-	}, buildUI)
-}
-
-func buildUI(ctx *fugo.Context) fg.Widget {
-	return fg.Router(map[string]func() fg.Widget{
-		"/":      func() fg.Widget { return showcasePage(ctx) },
-		"/about": func() fg.Widget { return aboutPage(ctx) },
-	}, "/")
-}
-
-func showcasePage(ctx *fugo.Context) fg.Widget {
-	t := fg.CurrentTheme()
-
-	counter := 0
-	countText := fg.Text("0").FontSize(t.Typography.Heading).Weight(fg.WeightBold)
-	dec := fg.Button("−").BgColor(t.Colors.Error).OnClick(func(_ fg.Event) {
-		counter--
-		countText.SetText(strconv.Itoa(counter))
-		ctx.Update()
-	})
-	inc := fg.Button("+").BgColor(t.Colors.Success).OnClick(func(_ fg.Event) {
-		counter++
-		countText.SetText(strconv.Itoa(counter))
-		ctx.Update()
-	})
-
-	cbStatus := fg.Text("off").Color(t.Colors.Muted)
-	cb := fg.Checkbox("Enable feature").OnChange(func(e fg.Event) {
-		cbStatus.SetText(map[bool]string{true: "on", false: "off"}[string(e.Data) == "1"])
-		ctx.Update()
-	})
-	swStatus := fg.Text("off").Color(t.Colors.Muted)
-	sw := fg.Switch().OnChange(func(e fg.Event) {
-		swStatus.SetText(map[bool]string{true: "on", false: "off"}[string(e.Data) == "1"])
-		ctx.Update()
-	})
-	sliderText := fg.Text("50").Color(t.Colors.Muted)
-	sl := fg.Slider().SetMin(0).SetMax(100).SetValue(50)
-	sl.OnChange(func(e fg.Event) {
-		if v, err := strconv.ParseFloat(string(e.Data), 64); err == nil {
-			sl.SetValue(v)
-			sliderText.SetText(strconv.Itoa(int(v)))
-			ctx.Update()
-		}
-	})
-	echo := fg.Text("…").Color(t.Colors.Muted)
-	tf := fg.TextField("Type here").OnChange(func(e fg.Event) {
-		echo.SetText(string(e.Data))
-		ctx.Update()
-	})
-
-	pick := fg.Text("none").Color(t.Colors.Muted)
-	radioA := fg.Radio("a", "Option A").Group("a")
-	radioB := fg.Radio("b", "Option B").Group("a")
-	radioA.OnChange(func(_ fg.Event) { radioA.GroupValue = "a"; radioB.GroupValue = "a"; pick.SetText("A"); ctx.Update() })
-	radioB.OnChange(func(_ fg.Event) { radioA.GroupValue = "b"; radioB.GroupValue = "b"; pick.SetText("B"); ctx.Update() })
-	dd := fg.Dropdown([]string{"Red", "Green", "Blue"}).SetValue("Red")
-	dd.OnChange(func(e fg.Event) { dd.SetValue(string(e.Data)); pick.SetText(string(e.Data)); ctx.Update() })
-
-	animColors := []fg.Color{t.Colors.Primary, t.Colors.Secondary, t.Colors.Success, t.Colors.Error}
-	animIdx := 0
-	anim := fg.AnimatedContainer(fg.PaddingAll(fg.Text("Tap me"), 16)).BgColor(animColors[0]).DurationMs(300)
-	tap := fg.GestureDetector(anim).OnTap(func(_ fg.Event) {
-		animIdx = (animIdx + 1) %% len(animColors)
-		anim.BgColor(animColors[animIdx])
-		ctx.Update()
-	})
-
-	var tiles []fg.Widget
-	for _, c := range []fg.Color{t.Colors.Primary, t.Colors.Secondary, t.Colors.Success, t.Colors.Error, fg.Hex("#F59E0B"), fg.Hex("#EC4899")} {
-		tiles = append(tiles, fg.Container(fg.SizedBox(56, 56)).BgColor(c).BorderRadius(8))
-	}
-	grid := fg.SizedBox(0, 140).Child(fg.GridView(tiles...).CrossAxisCount(6).ChildAspectRatio(1))
-
-	var chips []fg.Widget
-	for _, s := range []string{"go", "flutter", "grpc", "protobuf", "impeller"} {
-		chips = append(chips, fg.Container(fg.PaddingAll(fg.Text(s), 6)).BgColor(t.Colors.Surface).BorderRadius(12))
-	}
-	wrap := fg.Wrap(chips...).Spacing(8).RunSpacing(8)
-
-	icons := fg.Row(
-		fg.Icon("home").Size(28), fg.SizedBox(16, 0),
-		fg.Icon("star").Size(28).Color(t.Colors.Success), fg.SizedBox(16, 0),
-		fg.Icon("favorite").Size(28).Color(t.Colors.Error), fg.SizedBox(16, 0),
-		fg.Icon("settings").Size(28),
-	)
-
-	body := fg.Column(
-		fg.Text("Fugo Showcase").FontSize(t.Typography.Heading*1.6).Weight(fg.WeightBold),
-		fg.Text("Go drives logic & state; Flutter renders. Dark theme, live.").Color(t.Colors.Muted),
-		fg.SizedBox(0, t.Spacing.LG),
-
-		card(t, "Buttons & counter", fg.Row(dec, fg.SizedBox(16, 0), countText, fg.SizedBox(16, 0), inc)),
-		card(t, "Inputs",
-			fg.Row(cb, fg.SizedBox(8, 0), cbStatus),
-			fg.SizedBox(0, t.Spacing.SM),
-			fg.Row(sw, fg.SizedBox(8, 0), swStatus),
-			fg.SizedBox(0, t.Spacing.SM),
-			sl, sliderText,
-			fg.SizedBox(0, t.Spacing.SM),
-			tf, echo,
-		),
-		card(t, "Selection", radioA, radioB, fg.SizedBox(0, t.Spacing.SM), dd,
-			fg.SizedBox(0, t.Spacing.SM), fg.Row(fg.Text("Picked: ").Color(t.Colors.Muted), pick)),
-		card(t, "Animation + gestures", tap),
-		card(t, "Gallery (grid + wrap)", grid, fg.SizedBox(0, t.Spacing.SM), wrap),
-		card(t, "Icons", icons),
-
-		fg.SizedBox(0, t.Spacing.MD),
-		fg.Button("About →").BgColor(t.Colors.Primary).OnClick(func(_ fg.Event) { ctx.NavigateTo("/about") }),
-		fg.SizedBox(0, t.Spacing.XL),
-	)
-
-	return fg.Container(fg.ScrollView(body)).BgColor(t.Colors.Background).Pad(fg.EdgeAll(t.Spacing.LG))
-}
-
-func aboutPage(ctx *fugo.Context) fg.Widget {
-	t := fg.CurrentTheme()
-
-	return fg.Container(
-		fg.Center(fg.Column(
-			fg.Text("About").FontSize(t.Typography.Heading).Weight(fg.WeightBold),
-			fg.SizedBox(0, t.Spacing.MD),
-			fg.Text("Built with Fugo — one Go binary, native Flutter rendering.").Color(t.Colors.Muted),
-			fg.SizedBox(0, t.Spacing.LG),
-			fg.Button("← Back").BgColor(t.Colors.Surface).OnClick(func(_ fg.Event) { ctx.GoBack() }),
-		)),
-	).BgColor(t.Colors.Background).Pad(fg.EdgeAll(t.Spacing.LG))
-}
-
-func card(t fg.Theme, title string, body ...fg.Widget) fg.Widget {
-	items := []fg.Widget{
-		fg.Text(title).Weight(fg.WeightBold).Color(t.Colors.OnSurface),
-		fg.Divider().Color(t.Colors.Border),
-		fg.SizedBox(0, t.Spacing.SM),
-	}
-	items = append(items, body...)
-
-	return fg.Container(fg.PaddingAll(fg.Column(items...), 16)).
-		BgColor(t.Colors.Surface).BorderRadius(12)
-}
-`
-
 func initCmd() *cli.Command {
 	var (
 		fugoSrc  string
 		template string
+		noGit    bool
 	)
 
 	return &cli.Command{
 		Name:      "init",
 		Usage:     "Create a new Fugo project",
 		ArgsUsage: "<project-name>",
-		Description: `Scaffold a new Fugo project: write main.go, run 'go mod init', wire a replace
-directive to your local fugo checkout (auto-detected), and run 'go mod tidy'.
+		Description: `Scaffold a new Fugo project with a recommended layout: a thin main.go, a
+ui package for your screens, fugo.toml for the window/server config, a README
+and .gitignore, plus bin/ dist/ logs/ folders. It runs 'go mod init' + 'go mod
+tidy' and initializes a git repo with an initial commit.
 
 Templates (--template, -t):
-  counter   minimal counter — one screen, a button, live state (default)
+  counter   minimal counter — one screen, two FABs, live state (default)
   app       themed multi-page starter with a Router and Home/About pages
-  showcase  every widget on one scrollable page — a living API reference
+  showcase  most widgets on one scrollable page — a living API reference
 
 Examples:
   fugo init myapp
   fugo init myapp -t showcase
+  fugo init myapp --no-git
   fugo init myapp --fugo-src ../fugo`,
 		Flags: append([]cli.Flag{
 			&cli.StringFlag{
@@ -425,6 +142,11 @@ Examples:
 				Destination: &template,
 				Usage:       "starter template: counter | app | showcase",
 			},
+			&cli.BoolFlag{
+				Name:        "no-git",
+				Destination: &noGit,
+				Usage:       "skip 'git init' and the initial commit",
+			},
 		}, verbosityFlags()...),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			setupUI()
@@ -435,18 +157,16 @@ Examples:
 			}
 
 			dir := filepath.Clean(name)
-			out.tracef("template=%s  dir=%s", template, dir)
-			if err := os.MkdirAll(dir, 0o755); err != nil {
-				return fmt.Errorf("create directory: %w", err)
-			}
+			module := filepath.Base(dir)
+			files := filesFor(template, module)
+			out.tracef("template=%s  dir=%s  module=%s", template, dir, module)
 
-			mainFile := filepath.Join(dir, "main.go")
-			if err := os.WriteFile(mainFile, []byte(scaffoldMain(template, name)), 0o644); err != nil {
-				return fmt.Errorf("write main.go: %w", err)
+			if err := scaffoldProject(dir, module, files); err != nil {
+				return err
 			}
-			out.successf("wrote %s %s", mainFile, out.paint(cDim, "("+template+" template)"))
+			out.successf("scaffolded %s %s", dir+string(os.PathSeparator), out.paint(cDim, "("+template+" template)"))
 
-			modInit := exec.CommandContext(ctx, "go", "mod", "init", name)
+			modInit := exec.CommandContext(ctx, "go", "mod", "init", module)
 			modInit.Dir = dir
 			if err := out.runStep("Initializing Go module", modInit); err != nil {
 				return fmt.Errorf("go mod init: %w", err)
@@ -470,13 +190,90 @@ Examples:
 				return fmt.Errorf("go mod tidy: %w", err)
 			}
 
-			out.infof("")
-			out.successf("created %s%c", dir, os.PathSeparator)
-			out.infof("  next: %s", out.paint(cBold, "cd "+dir+" && fugo run"))
+			if !noGit {
+				initGitRepo(ctx, dir)
+			}
+
+			printInitSummary(dir)
 
 			return nil
 		},
 	}
+}
+
+// scaffoldProject writes the project's directory skeleton and source files.
+func scaffoldProject(dir, module string, files projectFiles) error {
+	for _, d := range []string{dir, filepath.Join(dir, "ui"), filepath.Join(dir, "logs")} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			return fmt.Errorf("create %s: %w", d, err)
+		}
+	}
+
+	writes := []struct{ path, content string }{
+		{filepath.Join(dir, "main.go"), mainGo(module, files.theme)},
+		{filepath.Join(dir, "ui", "home.go"), files.uiHome},
+		{filepath.Join(dir, "fugo.toml"), fmt.Sprintf(configTemplate, module, module, files.width, files.height)},
+		{filepath.Join(dir, "README.md"), fmt.Sprintf(readmeTemplate, module)},
+		{filepath.Join(dir, ".gitignore"), gitignoreTemplate},
+		{filepath.Join(dir, "logs", ".gitkeep"), ""},
+	}
+	for _, w := range writes {
+		if err := os.WriteFile(w.path, []byte(w.content), 0o644); err != nil {
+			return fmt.Errorf("write %s: %w", w.path, err)
+		}
+		out.tracef("wrote %s", w.path)
+	}
+
+	return nil
+}
+
+// initGitRepo runs 'git init' + an initial commit in dir. A missing git binary
+// or an unset user identity is non-fatal: the repo is left in place and the
+// user is told what to do.
+func initGitRepo(ctx context.Context, dir string) {
+	if _, err := exec.LookPath("git"); err != nil {
+		out.tracef("git not on PATH — skipping repo init")
+
+		return
+	}
+
+	git := func(args ...string) error {
+		cmd := exec.CommandContext(ctx, "git", args...)
+		cmd.Dir = dir
+
+		return cmd.Run()
+	}
+
+	if err := git("init", "-q"); err != nil {
+		out.warnf("git init failed: %v", err)
+
+		return
+	}
+	_ = git("add", "-A")
+	if err := git("commit", "-q", "-m", "chore: scaffold with fugo"); err != nil {
+		out.warnf("git repo ready; initial commit skipped (set git user.name/user.email, then commit)")
+
+		return
+	}
+
+	out.successf("initialized git repo %s", out.paint(cDim, "(initial commit)"))
+}
+
+// printInitSummary prints the generated layout and the next step.
+func printInitSummary(dir string) {
+	out.infof("")
+	out.successf("created %s%c", dir, os.PathSeparator)
+	for _, line := range []string{
+		"main.go      entrypoint (theme + ui.Build)",
+		"ui/home.go   your first screen",
+		"fugo.toml    window + server config",
+		"README.md    project readme",
+		"logs/        runtime logs (gitignored)",
+	} {
+		out.infof("  %s", out.paint(cDim, line))
+	}
+	out.infof("")
+	out.infof("  next: %s", out.paint(cBold, "cd "+dir+" && fugo run"))
 }
 
 // addReplaceDirective appends a `replace github.com/sazardev/fugo => <rel>` line
@@ -597,12 +394,22 @@ Examples:
 				Usage:       "rebuild the Go server on .go changes; keep the window open",
 			},
 		}, verbosityFlags()...),
-		Action: func(ctx context.Context, _ *cli.Command) error {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			setupUI()
 
 			if !hasMainGo() {
 				return errors.New("no main.go in the current directory — run 'fugo init <name>' first")
 			}
+
+			// Fall back to fugo.toml's [server] addr when --addr wasn't passed.
+			if !c.IsSet("addr") {
+				if a := config.Find(config.DefaultName).Server.Addr; a != "" {
+					addr = a
+				}
+			}
+
+			closeLog := setupRunLog()
+			defer closeLog()
 
 			out.infof("%s %s", out.paint(cBold, "Fugo"), out.paint(cDim, "v"+version))
 
@@ -689,8 +496,8 @@ func startFlutterClient(ctx context.Context, addr, flutter string) (*exec.Cmd, e
 
 	cmd := exec.CommandContext(ctx, bin)
 	cmd.Env = append(os.Environ(), "FUGO_ADDR="+addr)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = appLog
+	cmd.Stderr = appLog
 
 	return cmd, cmd.Start()
 }
@@ -706,8 +513,8 @@ func buildApp(ctx context.Context) error {
 func startServerOnly(ctx context.Context, addr string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, appBinary())
 	cmd.Env = append(os.Environ(), "FUGO_ADDR="+addr, "FUGO_NO_FLUTTER=1")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = appLog
+	cmd.Stderr = appLog
 	if err := cmd.Start(); err != nil {
 		out.failf("start server: %v", err)
 
@@ -745,7 +552,7 @@ func fileSnapshot() map[string]time.Time {
 		}
 		if info.IsDir() {
 			base := filepath.Base(path)
-			if base == ".git" || base == "bin" || base == "vendor" {
+			if base == ".git" || base == "bin" || base == "dist" || base == "logs" || base == "vendor" {
 				return filepath.SkipDir
 			}
 
@@ -774,10 +581,39 @@ func snapshotEq(a, b map[string]time.Time) bool {
 	return true
 }
 
+// appLog is where a launched app's stdout/stderr go. setupRunLog points it at
+// logs/run.log (tee'd to the console) for the duration of a `fugo run`.
+var appLog io.Writer = os.Stdout
+
+// setupRunLog tees the app's output to logs/run.log and returns a closer. If the
+// file can't be created it falls back to console-only output.
+func setupRunLog() func() {
+	if err := os.MkdirAll("logs", 0o755); err != nil {
+		out.tracef("logs: %v — console only", err)
+
+		return func() {}
+	}
+
+	f, err := os.Create(filepath.Join("logs", "run.log"))
+	if err != nil {
+		out.tracef("logs: %v — console only", err)
+
+		return func() {}
+	}
+
+	appLog = io.MultiWriter(os.Stdout, f)
+	out.tracef("app output → logs%crun.log", os.PathSeparator)
+
+	return func() {
+		appLog = os.Stdout
+		_ = f.Close()
+	}
+}
+
 func runApp(ctx context.Context, addr, flutter string) error {
 	run := exec.CommandContext(ctx, appBinary())
-	run.Stdout = os.Stdout
-	run.Stderr = os.Stderr
+	run.Stdout = appLog
+	run.Stderr = appLog
 	run.Env = append(os.Environ(), "FUGO_ADDR="+addr)
 	if flutter != "" {
 		run.Env = append(run.Env, "FUGO_FLUTTER_BINARY="+flutter)
@@ -834,6 +670,14 @@ Examples:
 				return fmt.Errorf("build failed: %w", err)
 			}
 
+			// Ship fugo.toml beside the binary so the app keeps its window/server
+			// config regardless of the launch directory.
+			if _, err := os.Stat(config.DefaultName); err == nil {
+				if err := copyFile(config.DefaultName, filepath.Join(outDir, config.DefaultName)); err != nil {
+					out.tracef("copy %s: %v", config.DefaultName, err)
+				}
+			}
+
 			src := flutterBundleDir(ctx)
 			if src == "" {
 				out.warnf("Flutter client bundle not found — built the Go binary only")
@@ -862,8 +706,13 @@ Examples:
 	}
 }
 
-// projectName returns the current directory's base name, used as the app binary name.
+// projectName returns the app/binary name: fugo.toml's name when set to a real
+// value, otherwise the current directory's base name.
 func projectName() string {
+	if cfg := config.Find(config.DefaultName); cfg.Name != "" && cfg.Name != config.Default().Name {
+		return cfg.Name
+	}
+
 	dir, err := os.Getwd()
 	if err != nil || dir == "" {
 		return "app"

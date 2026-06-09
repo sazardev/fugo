@@ -37,9 +37,12 @@ make cli                 # builds bin/fugo.exe and bin/fugo-spike.exe
 ./bin/fugo-spike.exe
 
 # 2b. Or scaffold and run a user app:
-./bin/fugo.exe init myapp      # writes main.go + go.mod (+ replace directive to local fugo)
+./bin/fugo.exe init myapp      # scaffolds main.go + ui/ package + fugo.toml + README + .gitignore + logs/,
+                               # runs go mod init/tidy (+ replace to local fugo), and git init + initial commit
 cd myapp && fugo run           # go build → launch app → spawn Flutter; add --watch to rebuild on .go change
 ```
+
+**Generated project layout** (`fugo init`): a thin `main.go` (sets the theme, then `fugo.RunStandalone(fugo.ConfigOptions("fugo.toml"), ui.Build)`), a `ui` package holding the screens (`ui.Build` is the root), `fugo.toml` (`[window] title/width/height` + `[server] addr`, read by the CLI **and** the app via the dependency-free `config` package), `README.md`, `.gitignore`, and `logs/` (`fugo run` tees runtime logs to `logs/run.log`). Build output goes to `bin/` (dev) and `dist/` (release, `fugo build` — which also ships `fugo.toml` beside the binary). `fugo run` uses `[server] addr` as the default address unless `--addr` is passed.
 
 `fugo doctor` checks for Go / Flutter / protoc / gofumpt. The Go process finds the Flutter binary via `FUGO_FLUTTER_BINARY`, then by searching up the tree for the fugo repo (see `findFlutterBinary` in `app.go` / `cmd/fugo-spike/main.go`). The gRPC address is `FUGO_ADDR` (default `127.0.0.1:9510`). The active `fg.Theme` is forwarded to the client as `FUGO_THEME_SEED` (primary color hex) + `FUGO_THEME_BRIGHTNESS` (`light`/`dark`), which seed the client's **Material 3** `ColorScheme.fromSeed` — **light by default** (call `fg.UseTheme(fg.DarkTheme())` before `RunStandalone` to change it).
 
@@ -82,6 +85,7 @@ buildUI(ctx) ──> fg.Widget tree (built ONCE, retained)
 | `fugo` (root, `app.go`) | `App`, `Context`, lifecycle. `Run` builds the tree + starts scheduler; `RunStandalone` also starts the gRPC server, tunes the GC (`runtime_tuning.go`, `FUGO_GOGC`/`FUGO_GOMEMLIMIT`), and spawns Flutter. Owns the `handlers` map (nodeID → Widget) and routes `ClientEvent`s. `Context` exposes `Update`/`UpdateNow` (priority), `Window()` (runtime window control), and the OS host services in `host.go`: `Clipboard()` and `Files()` (native file dialogs) — async requests correlated by id and answered with a `"host"` ClientEvent. |
 | `fg/` | The declarative widget API — **prefix-free** constructors (`fg.Text`, `fg.Container`, `fg.Button`, `fg.Router`, ...), **not** `NewText`. Each returns a concrete `*fg.TextWidget` / `*fg.ButtonWidget` / … with chainable setters. **This is the active (and only) widget package** — imported by `app.go` and both `cmd/`s. It also re-exports the `style`/theme helpers (`fg.Hex`, `fg.EdgeAll`, `fg.DarkTheme`, `fg.CurrentTheme`, ...). Each widget implements `Widget`; `walkNodes` assigns IDs depth-first and marshals its `*Props` proto into `WidgetNode.Props`. |
 | `style/` | Styling primitives: `Color` (`style.Hex(...)`), `TextStyle`, `EdgeInsets` (`style.EdgeAll`), `Border`, font weights. (`fg` re-exports the common ones.) |
+| `config/` | Dependency-free (stdlib-only) loader for `fugo.toml` (a small fixed TOML subset: `name`, `[window]`, `[server]`). Shared by the runtime (`fugo.ConfigOptions` in `config_options.go`) and the CLI; kept free of the gRPC stack so the CLI stays light. |
 | `engine/` | `Diff` (ID/positional diff → patches; pools the per-frame lookup map via `sync.Pool`, with a zero-alloc no-change fast path), `Reconciler` (wraps the gRPC stream, buffers payloads until a client connects; `SendWindowCommand`/`SendHostCommand` for out-of-band ops), `Scheduler` (dirty-flag + ticker coalescing updates to one flush per frame; `EnqueueNow` wakes the loop immediately for latency-sensitive updates). |
 | `transport/` | gRPC server (`StartServer`), health check, keepalive. UDS when addr has no `:`, TCP otherwise; adapts the stream into `engine.RenderStream`. |
 | `supervisor/` | Spawns/monitors the Flutter subprocess (`StartFlutter`), forwards `FUGO_ADDR`, handles graceful shutdown. |

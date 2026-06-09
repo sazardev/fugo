@@ -20,6 +20,7 @@ The engine, widget API (`fg/`), transport, supervisor, CLI, and Flutter client a
   `fg.UseTheme`) and the Flutter-style constant banks `fg.Icons` / `fg.Colors` / `fg.TextSize`
   (`fg/icons_gen.go` is generated — see `cmd/gen-icons`).
 - `style/` — styling primitives (`Color`, `EdgeInsets`, `TextStyle`, `Border`).
+- `config/` — stdlib-only `fugo.toml` loader (shared by the runtime and the CLI; no gRPC deps).
 - `engine/` — `Diff` (keyed patches), `Reconciler`, `Scheduler` (16ms/60fps coalescing).
 - `transport/` — gRPC server (UDS/TCP), health, keepalive.
 - `supervisor/` — spawns/monitors the Flutter subprocess.
