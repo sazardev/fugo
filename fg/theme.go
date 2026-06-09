@@ -15,14 +15,20 @@ type Theme struct {
 	Dark bool
 }
 
-// Brightness reports the Material brightness as the Flutter client expects it
-// over FUGO_THEME_BRIGHTNESS: "dark" or "light".
+// Material brightness values, as the Flutter client expects them over
+// FUGO_THEME_BRIGHTNESS.
+const (
+	brightnessDark  = "dark"
+	brightnessLight = "light"
+)
+
+// Brightness reports the Material brightness for the active theme.
 func (t Theme) Brightness() string {
 	if t.Dark {
-		return "dark"
+		return brightnessDark
 	}
 
-	return "light"
+	return brightnessLight
 }
 
 // ThemeColors are the semantic color roles of a theme.

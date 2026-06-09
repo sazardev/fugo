@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-09
+
+### Added
+- Flutter-style constant banks — stop hand-writing strings, hex and magic sizes:
+  - **`fg.Icons.*`** — the full Material icon set (~2,200 base icons, e.g. `fg.Icons.Home`, `fg.Icons.Coffee`). Works with every icon-taking API (`fg.Icon`, `fg.IconButton`, `fg.FloatingActionButton`, `fg.ListTile`).
+  - **`fg.Colors.*`** — the Material palette (`fg.Colors.Amber`, `.Blue`, `.RedAccent`, `.Grey800`, `.Transparent`, …).
+  - **`fg.TextSize.*`** — the Material 3 type scale (`fg.TextSize.DisplayLarge` … `.LabelSmall`).
+- `cmd/gen-icons`: a dev tool that regenerates `fg/icons_gen.go` and `flutter_client/lib/icons_gen.dart` from the installed Flutter SDK's `material/icons.dart` (base family).
+
+### Changed
+- The Flutter client resolves icon names through the generated `materialIcons` table instead of a hand-maintained ~20-icon switch, so any Material icon now renders.
+
 ## [0.5.0] - 2026-06-09
 
 ### Added

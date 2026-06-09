@@ -137,6 +137,8 @@ func (r *RouterWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	r.id = *counter
 
+	const routerKey = "router"
+
 	builder, params, ok := r.match(r.current)
 	r.params = params
 
@@ -145,7 +147,7 @@ func (r *RouterWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 
 		return []*fugov1.WidgetNode{{
 			Id:   r.id,
-			Key:  "router",
+			Key:  routerKey,
 			Type: fugov1.WidgetType_CONTAINER,
 		}}
 	}
@@ -163,7 +165,7 @@ func (r *RouterWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 
 	return append([]*fugov1.WidgetNode{{
 		Id:       r.id,
-		Key:      "router",
+		Key:      routerKey,
 		Type:     fugov1.WidgetType_CONTAINER,
 		Children: childIDs,
 	}}, childNodes...)

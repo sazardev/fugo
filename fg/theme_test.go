@@ -36,11 +36,11 @@ func TestThemeLegacyDefaults(t *testing.T) {
 }
 
 func TestThemeBrightness(t *testing.T) {
-	if got := LightTheme().Brightness(); got != "light" {
+	if got := LightTheme().Brightness(); got != brightnessLight {
 		t.Errorf("LightTheme().Brightness() = %q, want light", got)
 	}
 
-	if got := DarkTheme().Brightness(); got != "dark" {
+	if got := DarkTheme().Brightness(); got != brightnessDark {
 		t.Errorf("DarkTheme().Brightness() = %q, want dark", got)
 	}
 }
