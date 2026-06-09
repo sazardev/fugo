@@ -165,6 +165,8 @@ proto: proto-tools ## Generate protobuf code (Go + Dart)
 	protoc --proto_path=. --go_out=. --go_opt=paths=source_relative \
 		--go-grpc_out=. --go-grpc_opt=paths=source_relative \
 		transport/proto/fugo/v1/fugo.proto
+	@echo "=== Formatting generated Go (gofumpt) — these bindings are committed ==="
+	gofumpt -w transport/proto/fugo/v1/fugo.pb.go transport/proto/fugo/v1/fugo_grpc.pb.go
 	@echo "=== Copying proto to flutter_client ==="
 	@mkdir -p flutter_client/proto/fugo/v1
 	cp transport/proto/fugo/v1/fugo.proto flutter_client/proto/fugo/v1/

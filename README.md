@@ -13,7 +13,8 @@
 [![Protobuf](https://img.shields.io/badge/Protobuf-typed-orange)](https://protobuf.dev)
 [![UDS](https://img.shields.io/badge/UDS-5%E2%80%9310%C2%B5s-brightgreen)](#)
 [![License](https://img.shields.io/badge/license-MIT-green)](#)
-[![Version](https://img.shields.io/badge/version-0.2.0-brightgreen)](VERSION)
+[![Version](https://img.shields.io/badge/version-0.3.0-brightgreen)](VERSION)
+[![go install](https://img.shields.io/badge/go%20install-cmd%2Ffugo-00ADD8?logo=go)](#installation)
 
 ---
 
@@ -47,6 +48,34 @@ Fugo is a **local Server-Driven UI (SDUI)** framework that lets you build native
 | Flutter forces you into Dart for everything | Write all logic in Go, use any Go library |
 | Remote SDUI suffers 50-200ms network latency | Local IPC via UDS: **5-10µs** round-trip |
 | JSON parsing kills frame budgets | Compact **Protobuf** framing; only diffs cross the wire |
+
+---
+
+## Installation
+
+Install the `fugo` CLI straight from source (requires **Go 1.26+**):
+
+```bash
+go install github.com/sazardev/fugo/cmd/fugo@latest
+```
+
+This drops the `fugo` binary in `$(go env GOPATH)/bin` — make sure that's on your `PATH`, then:
+
+```bash
+fugo --version
+fugo doctor      # checks Go, Flutter, protoc, gofumpt
+```
+
+The generated protobuf bindings are **committed**, so a clean module fetch compiles without `protoc` or any code-gen step.
+
+> **Rendering prerequisite.** `fugo init`, `fugo doctor` and `fugo widgets` work standalone. But because Fugo renders through a precompiled **Flutter** client, `fugo run` / `fugo build` additionally require the [Flutter SDK](https://docs.flutter.dev/get-started/install) with desktop support enabled. The CLI builds the render client on first `run`; alternatively, point **`FUGO_FLUTTER_BINARY`** at a prebuilt client binary. `go install` ships the Go CLI only — not the Flutter engine.
+
+**From a clone** (e.g. to hack on the framework):
+
+```bash
+git clone https://github.com/sazardev/fugo && cd fugo
+go build ./cmd/fugo      # or: make cli   (Go bindings are committed; no protoc needed)
+```
 
 ---
 
@@ -139,8 +168,9 @@ Tokens live under `Colors` (Primary, Surface, OnSurface, Muted, Border, …), `T
 
 ## Current Status
 
-**Version 0.2.0 — engine + widget API + transport + CLI + Flutter client are implemented and run end-to-end.**
+**Version 0.3.0 — engine + widget API + transport + CLI + Flutter client are implemented and run end-to-end, and the CLI is installable via `go install`.**
 
+- [x] Installable: `go install github.com/sazardev/fugo/cmd/fugo@latest` (generated protobuf bindings committed; builds on a clean fetch)
 - [x] Diffing engine, reconciler, 60 fps scheduler with priority (`Update` / `UpdateNow`)
 - [x] gRPC transport (UDS / TCP on Windows), health check, keepalive, opt-in auth token
 - [x] 30 widgets in `fg/` with a fluent, prefix-free API + a `Theme` system
