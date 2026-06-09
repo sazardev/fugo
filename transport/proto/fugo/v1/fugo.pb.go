@@ -117,6 +117,7 @@ const (
 	WidgetType_CHIP                 WidgetType = 34
 	WidgetType_PROGRESS             WidgetType = 35
 	WidgetType_APPBAR               WidgetType = 36
+	WidgetType_NAVIGATIONBAR        WidgetType = 37
 )
 
 // Enum value maps for WidgetType.
@@ -159,6 +160,7 @@ var (
 		34: "CHIP",
 		35: "PROGRESS",
 		36: "APPBAR",
+		37: "NAVIGATIONBAR",
 	}
 	WidgetType_value = map[string]int32{
 		"TEXT":                 0,
@@ -198,6 +200,7 @@ var (
 		"CHIP":                 34,
 		"PROGRESS":             35,
 		"APPBAR":               36,
+		"NAVIGATIONBAR":        37,
 	}
 )
 
@@ -2658,12 +2661,14 @@ func (x *CardProps) GetBorderRadius() float64 {
 }
 
 // ScaffoldProps backs a Material Scaffold. Children are, in order: the body
-// (always present), then the app bar when has_app_bar is set, then the floating
-// action button when has_fab is set.
+// (always present), then — each only when its flag is set — the app bar, the
+// floating action button, the drawer, and the bottom navigation bar.
 type ScaffoldProps struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	HasAppBar     bool                   `protobuf:"varint,2,opt,name=has_app_bar,json=hasAppBar,proto3" json:"has_app_bar,omitempty"`
 	HasFab        bool                   `protobuf:"varint,3,opt,name=has_fab,json=hasFab,proto3" json:"has_fab,omitempty"`
+	HasDrawer     bool                   `protobuf:"varint,4,opt,name=has_drawer,json=hasDrawer,proto3" json:"has_drawer,omitempty"`
+	HasBottomBar  bool                   `protobuf:"varint,5,opt,name=has_bottom_bar,json=hasBottomBar,proto3" json:"has_bottom_bar,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2712,6 +2717,82 @@ func (x *ScaffoldProps) GetHasFab() bool {
 	return false
 }
 
+func (x *ScaffoldProps) GetHasDrawer() bool {
+	if x != nil {
+		return x.HasDrawer
+	}
+	return false
+}
+
+func (x *ScaffoldProps) GetHasBottomBar() bool {
+	if x != nil {
+		return x.HasBottomBar
+	}
+	return false
+}
+
+// NavigationBarProps backs a Material 3 NavigationBar. icons and labels are
+// parallel arrays — one destination each.
+type NavigationBarProps struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Icons         []string               `protobuf:"bytes,1,rep,name=icons,proto3" json:"icons,omitempty"`
+	Labels        []string               `protobuf:"bytes,2,rep,name=labels,proto3" json:"labels,omitempty"`
+	SelectedIndex int32                  `protobuf:"varint,3,opt,name=selected_index,json=selectedIndex,proto3" json:"selected_index,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NavigationBarProps) Reset() {
+	*x = NavigationBarProps{}
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NavigationBarProps) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NavigationBarProps) ProtoMessage() {}
+
+func (x *NavigationBarProps) ProtoReflect() protoreflect.Message {
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NavigationBarProps.ProtoReflect.Descriptor instead.
+func (*NavigationBarProps) Descriptor() ([]byte, []int) {
+	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *NavigationBarProps) GetIcons() []string {
+	if x != nil {
+		return x.Icons
+	}
+	return nil
+}
+
+func (x *NavigationBarProps) GetLabels() []string {
+	if x != nil {
+		return x.Labels
+	}
+	return nil
+}
+
+func (x *NavigationBarProps) GetSelectedIndex() int32 {
+	if x != nil {
+		return x.SelectedIndex
+	}
+	return 0
+}
+
 // AppBarProps backs a Material AppBar. Children are the leading widget (first,
 // when has_leading is set) followed by the action widgets.
 type AppBarProps struct {
@@ -2726,7 +2807,7 @@ type AppBarProps struct {
 
 func (x *AppBarProps) Reset() {
 	*x = AppBarProps{}
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[34]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2738,7 +2819,7 @@ func (x *AppBarProps) String() string {
 func (*AppBarProps) ProtoMessage() {}
 
 func (x *AppBarProps) ProtoReflect() protoreflect.Message {
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[34]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2751,7 +2832,7 @@ func (x *AppBarProps) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppBarProps.ProtoReflect.Descriptor instead.
 func (*AppBarProps) Descriptor() ([]byte, []int) {
-	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{34}
+	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *AppBarProps) GetTitle() string {
@@ -2793,7 +2874,7 @@ type FabProps struct {
 
 func (x *FabProps) Reset() {
 	*x = FabProps{}
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[35]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2805,7 +2886,7 @@ func (x *FabProps) String() string {
 func (*FabProps) ProtoMessage() {}
 
 func (x *FabProps) ProtoReflect() protoreflect.Message {
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[35]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2818,7 +2899,7 @@ func (x *FabProps) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FabProps.ProtoReflect.Descriptor instead.
 func (*FabProps) Descriptor() ([]byte, []int) {
-	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{35}
+	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *FabProps) GetIcon() string {
@@ -2854,7 +2935,7 @@ type ListTileProps struct {
 
 func (x *ListTileProps) Reset() {
 	*x = ListTileProps{}
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[36]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2866,7 +2947,7 @@ func (x *ListTileProps) String() string {
 func (*ListTileProps) ProtoMessage() {}
 
 func (x *ListTileProps) ProtoReflect() protoreflect.Message {
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[36]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2879,7 +2960,7 @@ func (x *ListTileProps) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTileProps.ProtoReflect.Descriptor instead.
 func (*ListTileProps) Descriptor() ([]byte, []int) {
-	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{36}
+	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *ListTileProps) GetTitle() string {
@@ -2921,7 +3002,7 @@ type ChipProps struct {
 
 func (x *ChipProps) Reset() {
 	*x = ChipProps{}
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[37]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2933,7 +3014,7 @@ func (x *ChipProps) String() string {
 func (*ChipProps) ProtoMessage() {}
 
 func (x *ChipProps) ProtoReflect() protoreflect.Message {
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[37]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2946,7 +3027,7 @@ func (x *ChipProps) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChipProps.ProtoReflect.Descriptor instead.
 func (*ChipProps) Descriptor() ([]byte, []int) {
-	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{37}
+	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *ChipProps) GetLabel() string {
@@ -2980,7 +3061,7 @@ type ProgressProps struct {
 
 func (x *ProgressProps) Reset() {
 	*x = ProgressProps{}
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[38]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2992,7 +3073,7 @@ func (x *ProgressProps) String() string {
 func (*ProgressProps) ProtoMessage() {}
 
 func (x *ProgressProps) ProtoReflect() protoreflect.Message {
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[38]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3005,7 +3086,7 @@ func (x *ProgressProps) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProgressProps.ProtoReflect.Descriptor instead.
 func (*ProgressProps) Descriptor() ([]byte, []int) {
-	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{38}
+	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *ProgressProps) GetLinear() bool {
@@ -3035,7 +3116,7 @@ type WindowCommand struct {
 
 func (x *WindowCommand) Reset() {
 	*x = WindowCommand{}
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[39]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3047,7 +3128,7 @@ func (x *WindowCommand) String() string {
 func (*WindowCommand) ProtoMessage() {}
 
 func (x *WindowCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[39]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3060,7 +3141,7 @@ func (x *WindowCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WindowCommand.ProtoReflect.Descriptor instead.
 func (*WindowCommand) Descriptor() ([]byte, []int) {
-	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{39}
+	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *WindowCommand) GetOp() WindowOp {
@@ -3115,7 +3196,7 @@ type HostCommand struct {
 
 func (x *HostCommand) Reset() {
 	*x = HostCommand{}
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[40]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3127,7 +3208,7 @@ func (x *HostCommand) String() string {
 func (*HostCommand) ProtoMessage() {}
 
 func (x *HostCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[40]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3140,7 +3221,7 @@ func (x *HostCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HostCommand.ProtoReflect.Descriptor instead.
 func (*HostCommand) Descriptor() ([]byte, []int) {
-	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{40}
+	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *HostCommand) GetOp() HostOp {
@@ -3190,7 +3271,7 @@ type ClientEvent struct {
 
 func (x *ClientEvent) Reset() {
 	*x = ClientEvent{}
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[41]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3202,7 +3283,7 @@ func (x *ClientEvent) String() string {
 func (*ClientEvent) ProtoMessage() {}
 
 func (x *ClientEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[41]
+	mi := &file_transport_proto_fugo_v1_fugo_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3215,7 +3296,7 @@ func (x *ClientEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClientEvent.ProtoReflect.Descriptor instead.
 func (*ClientEvent) Descriptor() ([]byte, []int) {
-	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{41}
+	return file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *ClientEvent) GetNodeId() string {
@@ -3407,10 +3488,17 @@ const file_transport_proto_fugo_v1_fugo_proto_rawDesc = "" +
 	"\tCardProps\x12\x1c\n" +
 	"\televation\x18\x01 \x01(\x01R\televation\x12\x18\n" +
 	"\apadding\x18\x02 \x01(\x01R\apadding\x12#\n" +
-	"\rborder_radius\x18\x03 \x01(\x01R\fborderRadius\"H\n" +
+	"\rborder_radius\x18\x03 \x01(\x01R\fborderRadius\"\x8d\x01\n" +
 	"\rScaffoldProps\x12\x1e\n" +
 	"\vhas_app_bar\x18\x02 \x01(\bR\thasAppBar\x12\x17\n" +
-	"\ahas_fab\x18\x03 \x01(\bR\x06hasFab\"\x82\x01\n" +
+	"\ahas_fab\x18\x03 \x01(\bR\x06hasFab\x12\x1d\n" +
+	"\n" +
+	"has_drawer\x18\x04 \x01(\bR\thasDrawer\x12$\n" +
+	"\x0ehas_bottom_bar\x18\x05 \x01(\bR\fhasBottomBar\"i\n" +
+	"\x12NavigationBarProps\x12\x14\n" +
+	"\x05icons\x18\x01 \x03(\tR\x05icons\x12\x16\n" +
+	"\x06labels\x18\x02 \x03(\tR\x06labels\x12%\n" +
+	"\x0eselected_index\x18\x03 \x01(\x05R\rselectedIndex\"\x82\x01\n" +
 	"\vAppBarProps\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x12!\n" +
 	"\fcenter_title\x18\x02 \x01(\bR\vcenterTitle\x12\x1f\n" +
@@ -3460,7 +3548,7 @@ const file_transport_proto_fugo_v1_fugo_proto_rawDesc = "" +
 	"\fPATCH_UPDATE\x10\x01\x12\x10\n" +
 	"\fPATCH_DELETE\x10\x02\x12\x11\n" +
 	"\rPATCH_REPLACE\x10\x03\x12\x11\n" +
-	"\rPATCH_REORDER\x10\x04*\x9f\x04\n" +
+	"\rPATCH_REORDER\x10\x04*\xb2\x04\n" +
 	"\n" +
 	"WidgetType\x12\b\n" +
 	"\x04TEXT\x10\x00\x12\r\n" +
@@ -3507,7 +3595,8 @@ const file_transport_proto_fugo_v1_fugo_proto_rawDesc = "" +
 	"\x04CHIP\x10\"\x12\f\n" +
 	"\bPROGRESS\x10#\x12\n" +
 	"\n" +
-	"\x06APPBAR\x10$*\x87\x01\n" +
+	"\x06APPBAR\x10$\x12\x11\n" +
+	"\rNAVIGATIONBAR\x10%*\x87\x01\n" +
 	"\rButtonVariant\x12\x11\n" +
 	"\rBUTTON_FILLED\x10\x00\x12\x17\n" +
 	"\x13BUTTON_FILLED_TONAL\x10\x01\x12\x13\n" +
@@ -3561,7 +3650,7 @@ func file_transport_proto_fugo_v1_fugo_proto_rawDescGZIP() []byte {
 
 var (
 	file_transport_proto_fugo_v1_fugo_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
-	file_transport_proto_fugo_v1_fugo_proto_msgTypes  = make([]protoimpl.MessageInfo, 42)
+	file_transport_proto_fugo_v1_fugo_proto_msgTypes  = make([]protoimpl.MessageInfo, 43)
 	file_transport_proto_fugo_v1_fugo_proto_goTypes   = []any{
 		PatchOp(0),                      // 0: fugo.v1.PatchOp
 		WidgetType(0),                   // 1: fugo.v1.WidgetType
@@ -3605,21 +3694,22 @@ var (
 		(*DropdownProps)(nil),           // 39: fugo.v1.DropdownProps
 		(*CardProps)(nil),               // 40: fugo.v1.CardProps
 		(*ScaffoldProps)(nil),           // 41: fugo.v1.ScaffoldProps
-		(*AppBarProps)(nil),             // 42: fugo.v1.AppBarProps
-		(*FabProps)(nil),                // 43: fugo.v1.FabProps
-		(*ListTileProps)(nil),           // 44: fugo.v1.ListTileProps
-		(*ChipProps)(nil),               // 45: fugo.v1.ChipProps
-		(*ProgressProps)(nil),           // 46: fugo.v1.ProgressProps
-		(*WindowCommand)(nil),           // 47: fugo.v1.WindowCommand
-		(*HostCommand)(nil),             // 48: fugo.v1.HostCommand
-		(*ClientEvent)(nil),             // 49: fugo.v1.ClientEvent
+		(*NavigationBarProps)(nil),      // 42: fugo.v1.NavigationBarProps
+		(*AppBarProps)(nil),             // 43: fugo.v1.AppBarProps
+		(*FabProps)(nil),                // 44: fugo.v1.FabProps
+		(*ListTileProps)(nil),           // 45: fugo.v1.ListTileProps
+		(*ChipProps)(nil),               // 46: fugo.v1.ChipProps
+		(*ProgressProps)(nil),           // 47: fugo.v1.ProgressProps
+		(*WindowCommand)(nil),           // 48: fugo.v1.WindowCommand
+		(*HostCommand)(nil),             // 49: fugo.v1.HostCommand
+		(*ClientEvent)(nil),             // 50: fugo.v1.ClientEvent
 	}
 )
 var file_transport_proto_fugo_v1_fugo_proto_depIdxs = []int32{
 	11, // 0: fugo.v1.RenderPayload.full_tree:type_name -> fugo.v1.WidgetTree
 	9,  // 1: fugo.v1.RenderPayload.patches:type_name -> fugo.v1.PatchList
-	47, // 2: fugo.v1.RenderPayload.window:type_name -> fugo.v1.WindowCommand
-	48, // 3: fugo.v1.RenderPayload.host:type_name -> fugo.v1.HostCommand
+	48, // 2: fugo.v1.RenderPayload.window:type_name -> fugo.v1.WindowCommand
+	49, // 3: fugo.v1.RenderPayload.host:type_name -> fugo.v1.HostCommand
 	10, // 4: fugo.v1.PatchList.patches:type_name -> fugo.v1.Patch
 	0,  // 5: fugo.v1.Patch.op:type_name -> fugo.v1.PatchOp
 	12, // 6: fugo.v1.Patch.node:type_name -> fugo.v1.WidgetNode
@@ -3634,7 +3724,7 @@ var file_transport_proto_fugo_v1_fugo_proto_depIdxs = []int32{
 	7,  // 15: fugo.v1.ColumnProps.cross_alignment:type_name -> fugo.v1.CrossAxisAlignment
 	3,  // 16: fugo.v1.WindowCommand.op:type_name -> fugo.v1.WindowOp
 	4,  // 17: fugo.v1.HostCommand.op:type_name -> fugo.v1.HostOp
-	49, // 18: fugo.v1.FugoRender.RenderStream:input_type -> fugo.v1.ClientEvent
+	50, // 18: fugo.v1.FugoRender.RenderStream:input_type -> fugo.v1.ClientEvent
 	8,  // 19: fugo.v1.FugoRender.RenderStream:output_type -> fugo.v1.RenderPayload
 	19, // [19:20] is the sub-list for method output_type
 	18, // [18:19] is the sub-list for method input_type
@@ -3660,7 +3750,7 @@ func file_transport_proto_fugo_v1_fugo_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_transport_proto_fugo_v1_fugo_proto_rawDesc), len(file_transport_proto_fugo_v1_fugo_proto_rawDesc)),
 			NumEnums:      8,
-			NumMessages:   42,
+			NumMessages:   43,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-06-09
+
+### Added
+- `Scaffold.Drawer(widget)` — a slide-in side panel (e.g. a `Column` of `ListTile`s). With an app bar present and no explicit leading, the menu button that opens it appears automatically.
+- `fg.NavigationBar` — a Material 3 bottom navigation bar (`.Item(icon, label)`, `.Selected(i)`, `.OnChange` with the selected index in the event data), attached via `Scaffold.BottomBar(...)`. (Pedido A wave 2: navigation/layout.)
+
 ## [0.7.0] - 2026-06-09
 
 ### Added

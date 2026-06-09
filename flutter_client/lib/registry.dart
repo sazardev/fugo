@@ -74,6 +74,8 @@ class WidgetRegistry {
         return _buildScaffold(node, children);
       case proto.WidgetType.APPBAR:
         return _buildAppBar(node, children);
+      case proto.WidgetType.NAVIGATIONBAR:
+        return _buildNavigationBar(node);
       case proto.WidgetType.FLOATINGACTIONBUTTON:
         return _buildFab(node);
       case proto.WidgetType.LISTTILE:
@@ -626,8 +628,8 @@ class WidgetRegistry {
   Widget _buildScaffold(proto.WidgetNode node, List<Widget> children) {
     final props = proto.ScaffoldProps.fromBuffer(node.props);
 
-    // Children arrive in order: body, then the app bar (if has_app_bar), then
-    // the FAB (if has_fab).
+    // Children arrive in order (each present only when its flag is set): body,
+    // app bar, FAB, drawer, bottom navigation bar.
     var i = 0;
     final body = i < children.length ? children[i++] : null;
 
@@ -637,12 +639,47 @@ class WidgetRegistry {
       appBar = w is PreferredSizeWidget ? w : null;
     }
 
-    final fab = (props.hasFab && i < children.length) ? children[i] : null;
+    final fab = (props.hasFab && i < children.length) ? children[i++] : null;
+    final drawer =
+        (props.hasDrawer && i < children.length) ? children[i++] : null;
+    final bottomBar =
+        (props.hasBottomBar && i < children.length) ? children[i++] : null;
 
     return Scaffold(
       appBar: appBar,
       body: body,
       floatingActionButton: fab,
+      drawer: drawer != null ? Drawer(child: drawer) : null,
+      bottomNavigationBar: bottomBar,
+    );
+  }
+
+  Widget _buildNavigationBar(proto.WidgetNode node) {
+    final props = proto.NavigationBarProps.fromBuffer(node.props);
+
+    final destinations = <NavigationDestination>[];
+    for (var k = 0; k < props.labels.length; k++) {
+      final icon = k < props.icons.length ? props.icons[k] : '';
+      destinations.add(NavigationDestination(
+        icon: Icon(_mapIconData(icon)),
+        label: props.labels[k],
+      ));
+    }
+    // A Material NavigationBar requires at least two destinations.
+    while (destinations.length < 2) {
+      destinations.add(
+        const NavigationDestination(icon: Icon(Icons.circle), label: ''),
+      );
+    }
+
+    return NavigationBar(
+      selectedIndex: props.selectedIndex.clamp(0, destinations.length - 1),
+      destinations: destinations,
+      onDestinationSelected: (idx) => sendEvent(proto.ClientEvent(
+        nodeId: node.id.toString(),
+        eventType: 'onChange',
+        eventData: idx.toString().codeUnits,
+      )),
     );
   }
 

@@ -151,13 +151,17 @@ fg.SizedBox(0, t.Spacing.LG)
 `fg.TextButton`, `fg.ElevatedButton`, `fg.IconButton` (and `fg.Button`, an alias of
 `FilledButton`). Other native Material widgets: `fg.Card`, `fg.Scaffold`, `fg.AppBar`
 (title + `.Leading` / `.Actions`), `fg.FloatingActionButton`, `fg.ListTile`, `fg.Chip`, and
-`fg.ProgressCircular` / `fg.ProgressLinear`. A scaffold composes them:
+`fg.ProgressCircular` / `fg.ProgressLinear`, and `fg.NavigationBar`. A scaffold composes them —
+an app bar, the body, a FAB, a slide-in `.Drawer`, and a bottom `.BottomBar`:
 
 ```go
 fg.Scaffold(body).
-    AppBar(fg.AppBar("Inbox").
-        Leading(fg.IconButton(fg.Icons.Menu)).
-        Actions(fg.IconButton(fg.Icons.Search), fg.IconButton(fg.Icons.MoreVert))).
+    AppBar(fg.AppBar("Inbox").Actions(fg.IconButton(fg.Icons.Search))).
+    Drawer(fg.Column(fg.ListTile("Home").Leading(fg.Icons.Home))).
+    BottomBar(fg.NavigationBar().
+        Item(fg.Icons.Home, "Home").
+        Item(fg.Icons.Person, "Profile").
+        OnChange(func(e fg.Event) { /* e.Data is the selected index */ })).
     FAB(fg.FloatingActionButton(fg.Icons.Add))
 ```
 

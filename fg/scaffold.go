@@ -8,9 +8,11 @@ import (
 // ScaffoldWidget is the Material 3 page layout: an optional app bar, a body,
 // and an optional floating action button. Build one with Scaffold.
 type ScaffoldWidget struct {
-	body   Widget
-	appBar Widget
-	fab    Widget
+	body      Widget
+	appBar    Widget
+	fab       Widget
+	drawer    Widget
+	bottomBar Widget
 	baseWidget
 }
 
@@ -29,6 +31,22 @@ func (s *ScaffoldWidget) AppBar(bar *AppBarWidget) *ScaffoldWidget {
 // FAB sets the floating action button (typically a FloatingActionButton) and returns the widget for chaining.
 func (s *ScaffoldWidget) FAB(w Widget) *ScaffoldWidget {
 	s.fab = w
+
+	return s
+}
+
+// Drawer sets a slide-in side panel (e.g. a Column of ListTiles). When an app
+// bar is present, a menu button that opens the drawer appears automatically.
+// Returns the widget for chaining.
+func (s *ScaffoldWidget) Drawer(w Widget) *ScaffoldWidget {
+	s.drawer = w
+
+	return s
+}
+
+// BottomBar sets the bottom navigation bar (build one with fg.NavigationBar) and returns the widget for chaining.
+func (s *ScaffoldWidget) BottomBar(w Widget) *ScaffoldWidget {
+	s.bottomBar = w
 
 	return s
 }
@@ -52,6 +70,14 @@ func (s *ScaffoldWidget) widgetChildren() []Widget {
 		children = append(children, s.fab)
 	}
 
+	if s.drawer != nil {
+		children = append(children, s.drawer)
+	}
+
+	if s.bottomBar != nil {
+		children = append(children, s.bottomBar)
+	}
+
 	return children
 }
 
@@ -62,8 +88,10 @@ func (s *ScaffoldWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	childIDs, allNodes := walkChildren(s.widgetChildren(), counter)
 
 	props, _ := proto.Marshal(&fugov1.ScaffoldProps{
-		HasAppBar: s.appBar != nil,
-		HasFab:    s.fab != nil,
+		HasAppBar:    s.appBar != nil,
+		HasFab:       s.fab != nil,
+		HasDrawer:    s.drawer != nil,
+		HasBottomBar: s.bottomBar != nil,
 	})
 
 	self := &fugov1.WidgetNode{
