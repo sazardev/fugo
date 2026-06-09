@@ -8,10 +8,9 @@ import (
 // ScaffoldWidget is the Material 3 page layout: an optional app bar, a body,
 // and an optional floating action button. Build one with Scaffold.
 type ScaffoldWidget struct {
-	body        Widget
-	fab         Widget
-	appBarTitle string
-	hasAppBar   bool
+	body   Widget
+	appBar Widget
+	fab    Widget
 	baseWidget
 }
 
@@ -20,10 +19,9 @@ func Scaffold(body Widget) *ScaffoldWidget {
 	return &ScaffoldWidget{body: body}
 }
 
-// AppBar adds a top app bar with the given title and returns the widget for chaining.
-func (s *ScaffoldWidget) AppBar(title string) *ScaffoldWidget {
-	s.appBarTitle = title
-	s.hasAppBar = true
+// AppBar sets the top app bar (build one with fg.AppBar) and returns the widget for chaining.
+func (s *ScaffoldWidget) AppBar(bar *AppBarWidget) *ScaffoldWidget {
+	s.appBar = bar
 
 	return s
 }
@@ -37,12 +35,17 @@ func (s *ScaffoldWidget) FAB(w Widget) *ScaffoldWidget {
 
 func (s *ScaffoldWidget) isWidget() {}
 
-// widgetChildren returns the body first and, when present, the FAB last — the
-// order the client relies on to tell them apart.
+// widgetChildren returns body, then the app bar, then the FAB — the order the
+// client relies on (guided by the has_app_bar / has_fab flags) to tell them
+// apart.
 func (s *ScaffoldWidget) widgetChildren() []Widget {
 	var children []Widget
 	if s.body != nil {
 		children = append(children, s.body)
+	}
+
+	if s.appBar != nil {
+		children = append(children, s.appBar)
 	}
 
 	if s.fab != nil {
@@ -59,9 +62,8 @@ func (s *ScaffoldWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	childIDs, allNodes := walkChildren(s.widgetChildren(), counter)
 
 	props, _ := proto.Marshal(&fugov1.ScaffoldProps{
-		AppBarTitle: s.appBarTitle,
-		HasAppBar:   s.hasAppBar,
-		HasFab:      s.fab != nil,
+		HasAppBar: s.appBar != nil,
+		HasFab:    s.fab != nil,
 	})
 
 	self := &fugov1.WidgetNode{
