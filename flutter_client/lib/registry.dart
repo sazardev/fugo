@@ -3,6 +3,7 @@ import 'package:window_manager/window_manager.dart';
 
 import 'generated/fugo/v1/fugo.pb.dart' as proto;
 import 'events.dart';
+import 'icons_gen.dart';
 
 class WidgetRegistry {
   Widget build(BuildContext context, proto.WidgetNode node, List<Widget> children) {
@@ -708,54 +709,9 @@ class WidgetRegistry {
         : CircularProgressIndicator(value: value);
   }
 
-  IconData _mapIconData(String name) {
-    switch (name) {
-      case 'home':
-        return Icons.home;
-      case 'settings':
-        return Icons.settings;
-      case 'search':
-        return Icons.search;
-      case 'add':
-        return Icons.add;
-      case 'remove':
-        return Icons.remove;
-      case 'delete':
-        return Icons.delete;
-      case 'edit':
-        return Icons.edit;
-      case 'close':
-        return Icons.close;
-      case 'check':
-        return Icons.check;
-      case 'arrow_back':
-        return Icons.arrow_back;
-      case 'arrow_forward':
-        return Icons.arrow_forward;
-      case 'menu':
-        return Icons.menu;
-      case 'person':
-        return Icons.person;
-      case 'favorite':
-        return Icons.favorite;
-      case 'share':
-        return Icons.share;
-      case 'info':
-        return Icons.info;
-      case 'warning':
-        return Icons.warning;
-      case 'star':
-        return Icons.star;
-      case 'play_arrow':
-        return Icons.play_arrow;
-      case 'pause':
-        return Icons.pause;
-      case 'refresh':
-        return Icons.refresh;
-      default:
-        return Icons.circle;
-    }
-  }
+  // _mapIconData resolves an fg icon name (fg.Icons.Home -> 'home') to its
+  // Flutter IconData via the generated table (see cmd/gen-icons).
+  IconData _mapIconData(String name) => materialIcons[name] ?? Icons.help_outline;
 
   Curve _mapCurve(String name) {
     switch (name) {

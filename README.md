@@ -158,6 +158,18 @@ A bare `fg.Column` (or any intrinsically-sized root) auto-centers in the window;
 OnSurface, Muted, Border, …), `Typography` (Heading/Body/Caption), `Spacing` (XS→XL), and
 `Radius` (SM/MD/LG).
 
+### Skip the boilerplate: `fg.Icons`, `fg.Colors`, `fg.TextSize`
+
+Use Flutter's constants instead of hand-written strings, hex, and magic numbers:
+
+```go
+fg.IconButton(fg.Icons.Favorite)                       // ~2,200 Material icons: fg.Icons.Home, .Coffee, .Settings…
+fg.Container(child).BgColor(fg.Colors.Amber)           // the Material palette: fg.Colors.Blue, .RedAccent, .Grey800…
+fg.Text("Title").FontSize(fg.TextSize.HeadlineMedium)  // the M3 type scale: .DisplayLarge, .BodyMedium…
+```
+
+`fg.Icons.*` mirrors Flutter's `Icons` (generated from the installed SDK via `go run ./cmd/gen-icons`); `fg.Colors.*` mirrors `Colors`; `fg.TextSize.*` is the Material 3 type scale.
+
 ---
 
 ## Tech Stack

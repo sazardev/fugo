@@ -17,12 +17,15 @@ The engine, widget API (`fg/`), transport, supervisor, CLI, and Flutter client a
   test cannot be relocated without losing access to unexported symbols.
 - `fg/` — declarative widget API (`fg.Text`, `fg.Button`, `fg.Container`, …; prefix-free
   constructors returning `*fg.XxxWidget`) plus the `Theme` system (`fg.DarkTheme`/`LightTheme`,
-  `fg.UseTheme`).
+  `fg.UseTheme`) and the Flutter-style constant banks `fg.Icons` / `fg.Colors` / `fg.TextSize`
+  (`fg/icons_gen.go` is generated — see `cmd/gen-icons`).
 - `style/` — styling primitives (`Color`, `EdgeInsets`, `TextStyle`, `Border`).
 - `engine/` — `Diff` (keyed patches), `Reconciler`, `Scheduler` (16ms/60fps coalescing).
 - `transport/` — gRPC server (UDS/TCP), health, keepalive.
 - `supervisor/` — spawns/monitors the Flutter subprocess.
-- `cmd/fugo/` — CLI (`init`, `run` + `--watch`, `build`, `doctor`); `cmd/fugo-spike/` — demo.
+- `cmd/fugo/` — CLI (`init`, `run` + `--watch`, `build`, `doctor`, `widgets`, `upgrade`);
+  `cmd/fugo-spike/` — demo; `cmd/gen-icons/` — regenerates the Material icon table from the
+  Flutter SDK (`go run ./cmd/gen-icons`).
 - `flutter_client/` — Dart render client.
 
 Top-level docs and config (`README.md`, `CLAUDE.md`, `SPEC.md`, `ROADMAP/`, `docs/`, `Makefile`,
