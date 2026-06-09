@@ -140,6 +140,9 @@ enum HostOp {
 enum OverlayOp {
   OVERLAY_SNACKBAR = 0;
   OVERLAY_DIALOG = 1;
+  OVERLAY_BOTTOMSHEET = 2;
+  OVERLAY_DATE_PICKER = 3;
+  OVERLAY_TIME_PICKER = 4;
 }
 
 enum MainAxisSize {
@@ -458,6 +461,9 @@ message OverlayCommand {
   OverlayOp op = 1;
   string title = 2;
   string message = 3;
+  // Correlates a reply for overlays that return a value (date/time pickers);
+  // 0 for fire-and-forget overlays. The client answers with a "host" ClientEvent.
+  uint64 request_id = 4;
 }
 
 message WindowCommand {

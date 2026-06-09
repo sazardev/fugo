@@ -265,7 +265,9 @@ windows, wrap a region in **`fg.WindowDragArea(...)`** to make it drag the windo
 **`fg.AnimatedPositioned(...)`** inside a `Stack` to animate a child between positions.
 
 **Overlays** are imperative, driven from Go over the same command channel: `ctx.ShowSnackBar("Saved")`
-shows a Material snackbar and `ctx.ShowDialog("Title", "Message")` shows an alert dialog.
+(snackbar), `ctx.ShowDialog("Title", "Message")` (alert dialog), and `ctx.ShowBottomSheet("Title",
+"Message")` (bottom sheet). The native pickers return a value to a callback: `ctx.PickDate(func(d string){…})`
+(ISO `YYYY-MM-DD`) and `ctx.PickTime(func(t string){…})` (`HH:MM`), empty if cancelled.
 
 ---
 

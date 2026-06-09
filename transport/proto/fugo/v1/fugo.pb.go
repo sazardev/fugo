@@ -442,8 +442,11 @@ func (HostOp) EnumDescriptor() ([]byte, []int) {
 type OverlayOp int32
 
 const (
-	OverlayOp_OVERLAY_SNACKBAR OverlayOp = 0
-	OverlayOp_OVERLAY_DIALOG   OverlayOp = 1
+	OverlayOp_OVERLAY_SNACKBAR    OverlayOp = 0
+	OverlayOp_OVERLAY_DIALOG      OverlayOp = 1
+	OverlayOp_OVERLAY_BOTTOMSHEET OverlayOp = 2
+	OverlayOp_OVERLAY_DATE_PICKER OverlayOp = 3
+	OverlayOp_OVERLAY_TIME_PICKER OverlayOp = 4
 )
 
 // Enum value maps for OverlayOp.
@@ -451,10 +454,16 @@ var (
 	OverlayOp_name = map[int32]string{
 		0: "OVERLAY_SNACKBAR",
 		1: "OVERLAY_DIALOG",
+		2: "OVERLAY_BOTTOMSHEET",
+		3: "OVERLAY_DATE_PICKER",
+		4: "OVERLAY_TIME_PICKER",
 	}
 	OverlayOp_value = map[string]int32{
-		"OVERLAY_SNACKBAR": 0,
-		"OVERLAY_DIALOG":   1,
+		"OVERLAY_SNACKBAR":    0,
+		"OVERLAY_DIALOG":      1,
+		"OVERLAY_BOTTOMSHEET": 2,
+		"OVERLAY_DATE_PICKER": 3,
+		"OVERLAY_TIME_PICKER": 4,
 	}
 )
 
@@ -3783,10 +3792,13 @@ func (x *ProgressProps) GetValue() float64 {
 // OverlayCommand asks the client to show a transient overlay: a SnackBar
 // (message only) or an AlertDialog (title + message, dismissed with OK).
 type OverlayCommand struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Op            OverlayOp              `protobuf:"varint,1,opt,name=op,proto3,enum=fugo.v1.OverlayOp" json:"op,omitempty"`
-	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Op      OverlayOp              `protobuf:"varint,1,opt,name=op,proto3,enum=fugo.v1.OverlayOp" json:"op,omitempty"`
+	Title   string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Message string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	// Correlates a reply for overlays that return a value (date/time pickers);
+	// 0 for fire-and-forget overlays. The client answers with a "host" ClientEvent.
+	RequestId     uint64 `protobuf:"varint,4,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3840,6 +3852,13 @@ func (x *OverlayCommand) GetMessage() string {
 		return x.Message
 	}
 	return ""
+}
+
+func (x *OverlayCommand) GetRequestId() uint64 {
+	if x != nil {
+		return x.RequestId
+	}
+	return 0
 }
 
 type WindowCommand struct {
@@ -4294,11 +4313,13 @@ const file_transport_proto_fugo_v1_fugo_proto_rawDesc = "" +
 	"\tdeletable\x18\x03 \x01(\bR\tdeletable\"=\n" +
 	"\rProgressProps\x12\x16\n" +
 	"\x06linear\x18\x01 \x01(\bR\x06linear\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x01R\x05value\"d\n" +
+	"\x05value\x18\x02 \x01(\x01R\x05value\"\x83\x01\n" +
 	"\x0eOverlayCommand\x12\"\n" +
 	"\x02op\x18\x01 \x01(\x0e2\x12.fugo.v1.OverlayOpR\x02op\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
-	"\amessage\x18\x03 \x01(\tR\amessage\"\x8a\x01\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x04 \x01(\x04R\trequestId\"\x8a\x01\n" +
 	"\rWindowCommand\x12!\n" +
 	"\x02op\x18\x01 \x01(\x0e2\x11.fugo.v1.WindowOpR\x02op\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x14\n" +
@@ -4405,10 +4426,13 @@ const file_transport_proto_fugo_v1_fugo_proto_rawDesc = "" +
 	"\x14HOST_CLIPBOARD_WRITE\x10\x00\x12\x17\n" +
 	"\x13HOST_CLIPBOARD_READ\x10\x01\x12\x12\n" +
 	"\x0eHOST_FILE_OPEN\x10\x02\x12\x12\n" +
-	"\x0eHOST_FILE_SAVE\x10\x03*5\n" +
+	"\x0eHOST_FILE_SAVE\x10\x03*\x80\x01\n" +
 	"\tOverlayOp\x12\x14\n" +
 	"\x10OVERLAY_SNACKBAR\x10\x00\x12\x12\n" +
-	"\x0eOVERLAY_DIALOG\x10\x01**\n" +
+	"\x0eOVERLAY_DIALOG\x10\x01\x12\x17\n" +
+	"\x13OVERLAY_BOTTOMSHEET\x10\x02\x12\x17\n" +
+	"\x13OVERLAY_DATE_PICKER\x10\x03\x12\x17\n" +
+	"\x13OVERLAY_TIME_PICKER\x10\x04**\n" +
 	"\fMainAxisSize\x12\f\n" +
 	"\bMAIN_MIN\x10\x00\x12\f\n" +
 	"\bMAIN_MAX\x10\x01*\x88\x01\n" +
