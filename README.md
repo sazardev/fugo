@@ -154,7 +154,8 @@ fg.SizedBox(0, t.Spacing.LG)
 `fg.ProgressCircular` / `fg.ProgressLinear`, `fg.NavigationBar`, and `fg.Tabs` (a `TabBar` +
 `TabBarView`, switched client-side) — plus `fg.Tooltip`, `fg.Badge`, `fg.CircleAvatar`,
 `fg.SegmentedButton`, `fg.Spacer`, `fg.AspectRatio`, `fg.ClipRRect`, `fg.FittedBox`, `fg.Flexible`,
-`fg.ExpansionTile`, and `fg.PopupMenuButton`. A scaffold composes them —
+`fg.ExpansionTile`, `fg.PopupMenuButton`, `fg.RichText`, `fg.DataTable`, and `fg.Stepper`. A scaffold
+composes them —
 an app bar, the body, a FAB, a slide-in `.Drawer`, and a bottom `.BottomBar`:
 
 ```go

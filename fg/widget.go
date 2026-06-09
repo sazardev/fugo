@@ -57,6 +57,9 @@ const (
 	WidgetFlexible           = fugov1.WidgetType_FLEXIBLE
 	WidgetExpansionTile      = fugov1.WidgetType_EXPANSIONTILE
 	WidgetPopupMenu          = fugov1.WidgetType_POPUPMENU
+	WidgetRichText           = fugov1.WidgetType_RICHTEXT
+	WidgetDataTable          = fugov1.WidgetType_DATATABLE
+	WidgetStepper            = fugov1.WidgetType_STEPPER
 )
 
 // Event is a user interaction forwarded from the client to a widget's handler.

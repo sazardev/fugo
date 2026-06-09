@@ -103,6 +103,9 @@ enum WidgetType {
   FLEXIBLE = 46;
   EXPANSIONTILE = 47;
   POPUPMENU = 48;
+  RICHTEXT = 49;
+  DATATABLE = 50;
+  STEPPER = 51;
 }
 
 // ButtonVariant selects which Material 3 button widget renders. The Flutter
@@ -420,6 +423,33 @@ message PopupMenuProps {
   string icon = 1;
   repeated string values = 2;
   repeated string labels = 3;
+}
+
+message TextSpan {
+  string text = 1;
+  string color = 2;     // empty = inherit
+  double font_size = 3; // 0 = inherit
+  bool bold = 4;
+}
+
+message RichTextProps {
+  repeated TextSpan spans = 1;
+}
+
+message DataRow {
+  repeated string cells = 1;
+}
+
+message DataTableProps {
+  repeated string columns = 1;
+  repeated DataRow rows = 2;
+}
+
+// StepperProps backs a Material Stepper. titles names each step; the children
+// are the per-step content widgets (one per title). active is the current step.
+message StepperProps {
+  repeated string titles = 1;
+  int32 active = 2;
 }
 
 // AppBarProps backs a Material AppBar. Children are the leading widget (first,

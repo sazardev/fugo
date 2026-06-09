@@ -98,6 +98,12 @@ class WidgetRegistry {
         return _buildExpansionTile(node, children);
       case proto.WidgetType.POPUPMENU:
         return _buildPopupMenu(node);
+      case proto.WidgetType.RICHTEXT:
+        return _buildRichText(node);
+      case proto.WidgetType.DATATABLE:
+        return _buildDataTable(node);
+      case proto.WidgetType.STEPPER:
+        return _buildStepper(node, children);
       case proto.WidgetType.FLOATINGACTIONBUTTON:
         return _buildFab(node);
       case proto.WidgetType.LISTTILE:
@@ -962,6 +968,65 @@ class WidgetRegistry {
         nodeId: node.id.toString(),
         eventType: 'onSelected',
         eventData: v.codeUnits,
+      )),
+    );
+  }
+
+  Widget _buildRichText(proto.WidgetNode node) {
+    final props = proto.RichTextProps.fromBuffer(node.props);
+
+    return Text.rich(TextSpan(
+      children: [
+        for (final s in props.spans)
+          TextSpan(
+            text: s.text,
+            style: TextStyle(
+              color: s.color.isNotEmpty ? hexToColor(s.color) : null,
+              fontSize: s.fontSize > 0 ? s.fontSize : null,
+              fontWeight: s.bold ? FontWeight.bold : null,
+            ),
+          ),
+      ],
+    ));
+  }
+
+  Widget _buildDataTable(proto.WidgetNode node) {
+    final props = proto.DataTableProps.fromBuffer(node.props);
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        columns: [for (final c in props.columns) DataColumn(label: Text(c))],
+        rows: [
+          for (final r in props.rows)
+            DataRow(cells: [for (final cell in r.cells) DataCell(Text(cell))]),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepper(proto.WidgetNode node, List<Widget> children) {
+    final props = proto.StepperProps.fromBuffer(node.props);
+
+    final steps = <Step>[];
+    for (var k = 0; k < props.titles.length; k++) {
+      steps.add(Step(
+        title: Text(props.titles[k]),
+        content: k < children.length ? children[k] : const SizedBox.shrink(),
+        isActive: k == props.active,
+      ));
+    }
+    if (steps.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Stepper(
+      currentStep: props.active.clamp(0, steps.length - 1),
+      steps: steps,
+      onStepTapped: (i) => sendEvent(proto.ClientEvent(
+        nodeId: node.id.toString(),
+        eventType: 'onChange',
+        eventData: i.toString().codeUnits,
       )),
     );
   }
