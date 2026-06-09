@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-06-09
+
+### Added
+- `fg.RichText(fg.Span("a").Bold(), fg.Span("b").Color(...).Size(...))` — a paragraph of mixed-style text runs.
+- `fg.DataTable().Columns(...).Row(...)` — a Material data table (horizontally scrollable).
+- `fg.Stepper().Step(title, content).Active(i).OnStep(fn)` — a step-by-step wizard (the tapped step index arrives via OnStep). (Pedido A continuation — wave 8; rounds out the planned Material catalog.)
+
 ## [0.13.0] - 2026-06-09
 
 ### Added
