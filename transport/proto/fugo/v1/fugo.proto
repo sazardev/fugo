@@ -90,6 +90,7 @@ enum WidgetType {
   CHIP = 34;
   PROGRESS = 35;
   APPBAR = 36;
+  NAVIGATIONBAR = 37;
 }
 
 // ButtonVariant selects which Material 3 button widget renders. The Flutter
@@ -319,11 +320,21 @@ message CardProps {
 }
 
 // ScaffoldProps backs a Material Scaffold. Children are, in order: the body
-// (always present), then the app bar when has_app_bar is set, then the floating
-// action button when has_fab is set.
+// (always present), then — each only when its flag is set — the app bar, the
+// floating action button, the drawer, and the bottom navigation bar.
 message ScaffoldProps {
   bool has_app_bar = 2;
   bool has_fab = 3;
+  bool has_drawer = 4;
+  bool has_bottom_bar = 5;
+}
+
+// NavigationBarProps backs a Material 3 NavigationBar. icons and labels are
+// parallel arrays — one destination each.
+message NavigationBarProps {
+  repeated string icons = 1;
+  repeated string labels = 2;
+  int32 selected_index = 3;
 }
 
 // AppBarProps backs a Material AppBar. Children are the leading widget (first,
