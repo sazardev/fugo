@@ -86,6 +86,18 @@ class WidgetRegistry {
         return _buildAvatar(node);
       case proto.WidgetType.SEGMENTEDBUTTON:
         return _buildSegmentedButton(node);
+      case proto.WidgetType.ASPECTRATIO:
+        return _buildAspectRatio(node, children);
+      case proto.WidgetType.CLIPRRECT:
+        return _buildClipRRect(node, children);
+      case proto.WidgetType.FITTEDBOX:
+        return _buildFittedBox(children);
+      case proto.WidgetType.FLEXIBLE:
+        return _buildFlexible(node, children);
+      case proto.WidgetType.EXPANSIONTILE:
+        return _buildExpansionTile(node, children);
+      case proto.WidgetType.POPUPMENU:
+        return _buildPopupMenu(node);
       case proto.WidgetType.FLOATINGACTIONBUTTON:
         return _buildFab(node);
       case proto.WidgetType.LISTTILE:
@@ -879,6 +891,78 @@ class WidgetRegistry {
           ));
         }
       },
+    );
+  }
+
+  Widget _buildAspectRatio(proto.WidgetNode node, List<Widget> children) {
+    final props = proto.AspectRatioProps.fromBuffer(node.props);
+    final child =
+        children.isNotEmpty ? children.first : const SizedBox.shrink();
+
+    return AspectRatio(
+      aspectRatio: props.ratio > 0 ? props.ratio : 1,
+      child: child,
+    );
+  }
+
+  Widget _buildClipRRect(proto.WidgetNode node, List<Widget> children) {
+    final props = proto.ClipRRectProps.fromBuffer(node.props);
+    final child =
+        children.isNotEmpty ? children.first : const SizedBox.shrink();
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(props.radius),
+      child: child,
+    );
+  }
+
+  Widget _buildFittedBox(List<Widget> children) {
+    return FittedBox(
+      child: children.isNotEmpty ? children.first : const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildFlexible(proto.WidgetNode node, List<Widget> children) {
+    final props = proto.FlexibleProps.fromBuffer(node.props);
+    final child =
+        children.isNotEmpty ? children.first : const SizedBox.shrink();
+
+    return Flexible(flex: props.flex > 0 ? props.flex : 1, child: child);
+  }
+
+  Widget _buildExpansionTile(proto.WidgetNode node, List<Widget> children) {
+    final props = proto.ExpansionTileProps.fromBuffer(node.props);
+
+    return ExpansionTile(
+      title: Text(props.title),
+      subtitle: props.subtitle.isNotEmpty ? Text(props.subtitle) : null,
+      leading: props.leadingIcon.isNotEmpty
+          ? Icon(_mapIconData(props.leadingIcon))
+          : null,
+      initiallyExpanded: props.initiallyExpanded,
+      children: children,
+    );
+  }
+
+  Widget _buildPopupMenu(proto.WidgetNode node) {
+    final props = proto.PopupMenuProps.fromBuffer(node.props);
+
+    return PopupMenuButton<String>(
+      icon: Icon(
+        props.icon.isNotEmpty ? _mapIconData(props.icon) : Icons.more_vert,
+      ),
+      itemBuilder: (_) => [
+        for (var k = 0; k < props.values.length; k++)
+          PopupMenuItem<String>(
+            value: props.values[k],
+            child: Text(k < props.labels.length ? props.labels[k] : props.values[k]),
+          ),
+      ],
+      onSelected: (v) => sendEvent(proto.ClientEvent(
+        nodeId: node.id.toString(),
+        eventType: 'onSelected',
+        eventData: v.codeUnits,
+      )),
     );
   }
 

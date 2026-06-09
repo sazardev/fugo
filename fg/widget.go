@@ -51,6 +51,12 @@ const (
 	WidgetBadge              = fugov1.WidgetType_BADGE
 	WidgetAvatar             = fugov1.WidgetType_AVATAR
 	WidgetSegmentedButton    = fugov1.WidgetType_SEGMENTEDBUTTON
+	WidgetAspectRatio        = fugov1.WidgetType_ASPECTRATIO
+	WidgetClipRRect          = fugov1.WidgetType_CLIPRRECT
+	WidgetFittedBox          = fugov1.WidgetType_FITTEDBOX
+	WidgetFlexible           = fugov1.WidgetType_FLEXIBLE
+	WidgetExpansionTile      = fugov1.WidgetType_EXPANSIONTILE
+	WidgetPopupMenu          = fugov1.WidgetType_POPUPMENU
 )
 
 // Event is a user interaction forwarded from the client to a widget's handler.
@@ -192,4 +198,25 @@ func walkChildren(children []Widget, counter *uint32) ([]uint32, []*fugov1.Widge
 	}
 
 	return childIDs, allNodes
+}
+
+// oneChild wraps child in a slice, or returns nil for a nil child.
+func oneChild(child Widget) []Widget {
+	if child == nil {
+		return nil
+	}
+
+	return []Widget{child}
+}
+
+// selfNode builds a parent node and prepends it to its descendants — the common
+// tail of a widget's walkNodes.
+func selfNode(id uint32, key string, t fugov1.WidgetType, props []byte, childIDs []uint32, descendants []*fugov1.WidgetNode) []*fugov1.WidgetNode {
+	return append([]*fugov1.WidgetNode{{
+		Id:       id,
+		Key:      key,
+		Type:     t,
+		Props:    props,
+		Children: childIDs,
+	}}, descendants...)
 }

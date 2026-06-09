@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-06-09
+
+### Added
+- Layout helpers: `fg.AspectRatio(ratio, child)`, `fg.ClipRRect(radius, child)`, `fg.FittedBox(child)`, and `fg.Flexible(child).Flex(n)` (loose-fit counterpart of `Expanded`).
+- `fg.ExpansionTile(title)` — a collapsible accordion (`.Subtitle`, `.Leading`, `.Children`, `.InitiallyExpanded`), expanded/collapsed on the client.
+- `fg.PopupMenuButton(icon)` — an overflow/context menu (`.Item(value, label)`, `.OnSelected` with the chosen value in the event data).
+
 ## [0.11.0] - 2026-06-09
 
 ### Added
