@@ -17,22 +17,38 @@ class FugoApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // The Material 3 ColorScheme is derived entirely from the seed + brightness
-    // that Go sends (FUGO_THEME_SEED / FUGO_THEME_BRIGHTNESS), so widgets pick
-    // up native M3 colors unless a fugo widget sets an explicit override.
+    // The Material 3 ColorScheme is derived from the seed + brightness that Go
+    // sends (FUGO_THEME_SEED / FUGO_THEME_BRIGHTNESS). We flatten the
+    // seed-tinted surfaces to a clean neutral background for a minimal look —
+    // the seed still colors interactive elements (buttons, FAB, switches).
+    final scheme = ColorScheme.fromSeed(
+      seedColor: seedColor,
+      brightness: brightness,
+    );
+    final background = brightness == Brightness.light
+        ? Colors.white
+        : const Color(0xFF111315);
     final theme = ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: seedColor,
-        brightness: brightness,
+      colorScheme: scheme.copyWith(surface: background),
+      scaffoldBackgroundColor: background,
+      appBarTheme: AppBarTheme(
+        backgroundColor: background,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
       ),
     );
 
+    // The outer surface is a plain Material (not a Scaffold) so an app that
+    // uses fg.Scaffold isn't nested inside a second Scaffold — nested Scaffolds
+    // misroute a FloatingActionButton's gestures. A Scaffold-less app still
+    // gets a Material ancestor (for ink/buttons) and the themed background.
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: theme,
-      home: Scaffold(
-        body: SafeArea(child: FugoRenderer(key: rendererKey)),
+      home: Material(
+        color: background,
+        child: SafeArea(child: FugoRenderer(key: rendererKey)),
       ),
     );
   }
