@@ -8,29 +8,36 @@ type WidgetType = fugov1.WidgetType
 // Widget type identifiers, one per supported widget kind. They mirror the
 // WidgetType enum in the protobuf schema.
 const (
-	WidgetText              = fugov1.WidgetType_TEXT
-	WidgetContainer         = fugov1.WidgetType_CONTAINER
-	WidgetColumn            = fugov1.WidgetType_COLUMN
-	WidgetCenter            = fugov1.WidgetType_CENTER
-	WidgetButton            = fugov1.WidgetType_BUTTON
-	WidgetRow               = fugov1.WidgetType_ROW
-	WidgetStack             = fugov1.WidgetType_STACK
-	WidgetExpanded          = fugov1.WidgetType_EXPANDED
-	WidgetPadding           = fugov1.WidgetType_PADDING
-	WidgetSizedBox          = fugov1.WidgetType_SIZEDBOX
-	WidgetImage             = fugov1.WidgetType_IMAGE
-	WidgetTextField         = fugov1.WidgetType_TEXTFIELD
-	WidgetPositioned        = fugov1.WidgetType_POSITIONED
-	WidgetCheckbox          = fugov1.WidgetType_CHECKBOX
-	WidgetSwitchWidget      = fugov1.WidgetType_SWITCH_WIDGET
-	WidgetSlider            = fugov1.WidgetType_SLIDER
-	WidgetListView          = fugov1.WidgetType_LISTVIEW
-	WidgetAnimatedContainer = fugov1.WidgetType_ANIMATEDCONTAINER
-	WidgetIcon              = fugov1.WidgetType_ICON
-	WidgetDivider           = fugov1.WidgetType_DIVIDER
-	WidgetWrap              = fugov1.WidgetType_WRAP
-	WidgetGridView          = fugov1.WidgetType_GRIDVIEW
-	WidgetAnimatedOpacity   = fugov1.WidgetType_ANIMATEDOPACITY
+	WidgetText               = fugov1.WidgetType_TEXT
+	WidgetContainer          = fugov1.WidgetType_CONTAINER
+	WidgetColumn             = fugov1.WidgetType_COLUMN
+	WidgetCenter             = fugov1.WidgetType_CENTER
+	WidgetButton             = fugov1.WidgetType_BUTTON
+	WidgetRow                = fugov1.WidgetType_ROW
+	WidgetStack              = fugov1.WidgetType_STACK
+	WidgetExpanded           = fugov1.WidgetType_EXPANDED
+	WidgetPadding            = fugov1.WidgetType_PADDING
+	WidgetSizedBox           = fugov1.WidgetType_SIZEDBOX
+	WidgetImage              = fugov1.WidgetType_IMAGE
+	WidgetTextField          = fugov1.WidgetType_TEXTFIELD
+	WidgetPositioned         = fugov1.WidgetType_POSITIONED
+	WidgetCheckbox           = fugov1.WidgetType_CHECKBOX
+	WidgetSwitchWidget       = fugov1.WidgetType_SWITCH_WIDGET
+	WidgetSlider             = fugov1.WidgetType_SLIDER
+	WidgetListView           = fugov1.WidgetType_LISTVIEW
+	WidgetAnimatedContainer  = fugov1.WidgetType_ANIMATEDCONTAINER
+	WidgetIcon               = fugov1.WidgetType_ICON
+	WidgetDivider            = fugov1.WidgetType_DIVIDER
+	WidgetWrap               = fugov1.WidgetType_WRAP
+	WidgetGridView           = fugov1.WidgetType_GRIDVIEW
+	WidgetAnimatedOpacity    = fugov1.WidgetType_ANIMATEDOPACITY
+	WidgetScrollView         = fugov1.WidgetType_SCROLLVIEW
+	WidgetGestureDetector    = fugov1.WidgetType_GESTUREDETECTOR
+	WidgetAlign              = fugov1.WidgetType_ALIGN
+	WidgetRadio              = fugov1.WidgetType_RADIO
+	WidgetDropdown           = fugov1.WidgetType_DROPDOWN
+	WidgetAnimatedPositioned = fugov1.WidgetType_ANIMATEDPOSITIONED
+	WidgetWindowDragArea     = fugov1.WidgetType_WINDOWDRAGAREA
 )
 
 // Event is a user interaction forwarded from the client to a widget's handler.
@@ -117,12 +124,36 @@ func BuildTreeWithMerge(root Widget, oldMap map[uint32]Widget) (*fugov1.WidgetTr
 	return tree, oldMap
 }
 
-// WithKey assigns a stable key to w (used by the diff to track identity across
-// frames in dynamic lists) and returns w for chaining.
+// WithKey assigns a stable identity key to w and returns it as a Widget. Prefer
+// Keyed when you want to keep chaining concrete setters — it preserves the
+// widget's concrete type.
+//
+// A key labels a node's identity so the diff treats a key change as a real
+// change (treesEqual compares keys). Keys are most useful on the children of a
+// dynamic list, where they document which item a node represents across frames.
 func WithKey(w Widget, key string) Widget {
 	w.setWidgetKey(key)
 
 	return w
+}
+
+// Keyed assigns a stable identity key to w and returns w unchanged so callers
+// can keep chaining concrete setters, e.g.
+//
+//	fg.Keyed(fg.Text("Alice"), "user-1").FontSize(18)
+//
+// It is the generic, type-preserving counterpart of WithKey. See WithKey for
+// what keys mean.
+func Keyed[T Widget](w T, key string) T {
+	w.setWidgetKey(key)
+
+	return w
+}
+
+// Key reads the identity key previously assigned to w via Keyed/WithKey, or ""
+// if none was set.
+func Key(w Widget) string {
+	return w.widgetKey()
 }
 
 func collectIDs(w Widget, m map[uint32]Widget) {

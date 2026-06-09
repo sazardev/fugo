@@ -41,9 +41,15 @@ Cada archivo aborda una dimensión del proyecto. Se recomienda leer en orden num
 
 ## Estado actual del proyecto
 
-- **Versión**: 0.1.0 — el motor (diff/reconciler/scheduler), la API de widgets (`fg/`), el
-  transporte gRPC, el supervisor, la CLI y el cliente Flutter están **implementados y funcionan
-  end-to-end**.
+- **Versión**: 0.2.0 — el motor (diff/reconciler/scheduler con prioridad), la API de widgets
+  (`fg/`, 30 tipos), el transporte gRPC (con token de auth opcional), el supervisor, la CLI y el
+  cliente Flutter están **implementados y funcionan end-to-end**.
+- **Fase E (Desktop)**: control de ventana en runtime (`window_manager`), `WindowDragArea`,
+  portapapeles y diálogos de archivo nativos (`Context.Clipboard()` / `Context.Files()`),
+  empaquetado en las 3 plataformas. Pendiente: nada bloqueante.
+- **Fase G (Rendimiento)**: diff con object-pool, GC tuning (`FUGO_GOGC` / `FUGO_GOMEMLIMIT`),
+  benchmarks Go **y** Dart, y un gate de regresión en CI (1ms / 1000 nodos, zero-alloc en el
+  fast-path). Pendiente: scheduler con prioridades múltiples más allá de normal/inmediata.
 - **Módulo Go**: `github.com/sazardev/fugo` (Go 1.26.3)
 - **Documentación base**: `CLAUDE.md` es la guía canónica y actualizada; `SPEC.md` + `docs/` son diseño.
 

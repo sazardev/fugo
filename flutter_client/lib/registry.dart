@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'generated/fugo/v1/fugo.pb.dart' as proto;
 import 'events.dart';
@@ -62,6 +63,10 @@ class WidgetRegistry {
         return _buildRadio(context, node);
       case proto.WidgetType.DROPDOWN:
         return _buildDropdown(node);
+      case proto.WidgetType.ANIMATEDPOSITIONED:
+        return _buildAnimatedPositioned(node, children);
+      case proto.WidgetType.WINDOWDRAGAREA:
+        return _buildWindowDragArea(children);
       default:
         return const SizedBox.shrink();
     }
@@ -500,6 +505,32 @@ class WidgetRegistry {
           ));
         }
       },
+    );
+  }
+
+  Widget _buildAnimatedPositioned(proto.WidgetNode node, List<Widget> children) {
+    final props = proto.AnimatedPositionedProps.fromBuffer(node.props);
+    final child = children.isNotEmpty ? children.first : const SizedBox.shrink();
+    final duration = Duration(
+      milliseconds: props.hasDurationMs() ? props.durationMs : 200,
+    );
+
+    return AnimatedPositioned(
+      left: props.hasLeft() ? props.left : null,
+      top: props.hasTop() ? props.top : null,
+      right: props.hasRight() ? props.right : null,
+      bottom: props.hasBottom() ? props.bottom : null,
+      width: props.hasWidth() ? props.width : null,
+      height: props.hasHeight() ? props.height : null,
+      duration: duration,
+      curve: props.hasCurve() ? _mapCurve(props.curve) : Curves.ease,
+      child: child,
+    );
+  }
+
+  Widget _buildWindowDragArea(List<Widget> children) {
+    return DragToMoveArea(
+      child: children.isNotEmpty ? children.first : const SizedBox.shrink(),
     );
   }
 

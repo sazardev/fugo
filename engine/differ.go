@@ -1,8 +1,18 @@
 package engine
 
 import (
+	"sync"
+
 	fugov1 "github.com/sazardev/fugo/transport/proto/fugo/v1"
 )
+
+// oldMapPool recycles the id→node lookup map allocated on the diff's change
+// path. The no-change fast path returns before touching it, so the zero-alloc
+// guarantee (TestDiffNoChangeZeroAlloc) is unaffected; this only trims the
+// per-frame allocation when something actually changed.
+var oldMapPool = sync.Pool{
+	New: func() any { return make(map[uint32]*fugov1.WidgetNode) },
+}
 
 // Patch describes a single mutation to apply to the client's widget tree:
 // creating, updating, deleting, replacing, or reordering a node. The fields
@@ -15,10 +25,6 @@ type Patch struct {
 	Op       fugov1.PatchOp
 	NodeID   uint32
 	ParentID uint32
-}
-
-type diffState struct {
-	oldMap map[uint32]*fugov1.WidgetNode
 }
 
 // Diff compares the previous and next widget trees and returns the minimal set
@@ -46,14 +52,15 @@ func Diff(oldTree, newTree *fugov1.WidgetTree) []Patch {
 		return nil
 	}
 
-	s := &diffState{
-		oldMap: indexByID(oldTree.GetNodes()),
+	oldMap := oldMapPool.Get().(map[uint32]*fugov1.WidgetNode)
+	for _, n := range oldTree.GetNodes() {
+		oldMap[n.GetId()] = n
 	}
 
 	var patches []Patch
 
 	for _, newNode := range newTree.GetNodes() {
-		oldNode := s.lookup(newNode)
+		oldNode := oldMap[newNode.GetId()]
 
 		switch {
 		case oldNode == nil:
@@ -88,21 +95,22 @@ func Diff(oldTree, newTree *fugov1.WidgetTree) []Patch {
 			}
 		}
 
-		delete(s.oldMap, newNode.GetId())
+		delete(oldMap, newNode.GetId())
 	}
 
-	for id := range s.oldMap {
+	for id := range oldMap {
 		patches = append(patches, Patch{
 			Op:     fugov1.PatchOp_PATCH_DELETE,
 			NodeID: id,
 		})
 	}
 
-	return patches
-}
+	// Clear before returning to the pool so it stops pinning the previous
+	// frame's nodes; a map is a reference type, so Put itself does not allocate.
+	clear(oldMap)
+	oldMapPool.Put(oldMap)
 
-func (s *diffState) lookup(newNode *fugov1.WidgetNode) *fugov1.WidgetNode {
-	return s.oldMap[newNode.GetId()]
+	return patches
 }
 
 func fullCreate(tree *fugov1.WidgetTree) []Patch {
@@ -142,15 +150,6 @@ func treesEqual(a, b *fugov1.WidgetTree) bool {
 	}
 
 	return true
-}
-
-func indexByID(nodes []*fugov1.WidgetNode) map[uint32]*fugov1.WidgetNode {
-	m := make(map[uint32]*fugov1.WidgetNode, len(nodes))
-	for _, n := range nodes {
-		m[n.GetId()] = n
-	}
-
-	return m
 }
 
 func bytesEqual(a, b []byte) bool {

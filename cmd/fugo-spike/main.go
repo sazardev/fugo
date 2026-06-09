@@ -71,11 +71,19 @@ func main() {
 }
 
 func buildUI(ctx *fugo.Context) fg.Widget {
+	// FUGO_DEMO_ROUTE lets a launcher open the demo straight on a given page
+	// (handy for validating one screen end-to-end); defaults to home.
+	initial := os.Getenv("FUGO_DEMO_ROUTE")
+	if initial == "" {
+		initial = "/"
+	}
+
 	return fg.Router(map[string]func() fg.Widget{
 		"/":        func() fg.Widget { return homePage(ctx) },
 		"/inputs":  func() fg.Widget { return inputsPage(ctx) },
 		"/gallery": func() fg.Widget { return galleryPage(ctx) },
-	}, "/")
+		"/desktop": func() fg.Widget { return desktopPage(ctx) },
+	}, initial)
 }
 
 // Home page.
@@ -119,6 +127,12 @@ func homePage(ctx *fugo.Context) fg.Widget {
 			ctx.NavigateTo("/gallery")
 		})
 
+	goDesktop := fg.Button("Go to Desktop \u2192").
+		BgColor(fg.Hex("#EC4899")).
+		OnClick(func(_ fg.Event) {
+			ctx.NavigateTo("/desktop")
+		})
+
 	header := fg.Text("Home").FontSize(20).Weight(fg.WeightBold)
 
 	return fg.Container(
@@ -129,6 +143,8 @@ func homePage(ctx *fugo.Context) fg.Widget {
 			goInputs,
 			fg.SizedBox(0, 8),
 			goGallery,
+			fg.SizedBox(0, 8),
+			goDesktop,
 		),
 	).BgColor(fg.Hex("#1A1A2E")).Pad(fg.EdgeAll(24))
 }
@@ -364,6 +380,152 @@ func galleryPage(ctx *fugo.Context) fg.Widget {
 			iconRow,
 			fg.SizedBox(0, 8),
 			divider,
+		),
+	).BgColor(fg.Hex("#1A1A2E")).Pad(fg.EdgeAll(24))
+}
+
+// Desktop page: exercises the OS host services (clipboard, native file
+// dialogs), the WindowDragArea + runtime window controls, and AnimatedPositioned.
+func desktopPage(ctx *fugo.Context) fg.Widget {
+	accent := fg.Hex("#0F3460")
+	green := fg.Hex("#10B981")
+	muted := fg.Hex("#9CA3AF")
+	white := fg.Hex("#FFFFFF")
+
+	sectionLabel := func(s string) fg.Widget {
+		return fg.Text(s).FontSize(14).Weight(fg.WeightBold).Color(white)
+	}
+
+	// --- WindowDragArea: a custom title bar that drags the OS window. ---
+	dragBar := fg.WindowDragArea(
+		fg.Container(
+			fg.PaddingAll(fg.Text("⠿  Drag this bar to move the window").Color(white), 10),
+		).BgColor(accent).BorderRadius(6),
+	)
+
+	// --- Clipboard: type, Copy writes it; Paste reads it back. ---
+	clipInput := ""
+	clipStatus := fg.Text("clipboard: —").Color(muted)
+	clipField := fg.TextField("Type, then Copy…").
+		OnChange(func(e fg.Event) {
+			clipInput = string(e.Data)
+			// UpdateNow: echo the keystroke without waiting for the next frame.
+			ctx.UpdateNow()
+		})
+	copyBtn := fg.Button("Copy").BgColor(green).
+		OnClick(func(_ fg.Event) {
+			ctx.Clipboard().Write(clipInput)
+			clipStatus.SetText("copied: " + clipInput)
+			ctx.Update()
+		})
+	pasteBtn := fg.Button("Paste").BgColor(accent).
+		OnClick(func(_ fg.Event) {
+			ctx.Clipboard().Read(func(text string) {
+				clipStatus.SetText("pasted: " + text)
+				ctx.Update()
+			})
+		})
+
+	// --- Native file dialogs. ---
+	fileStatus := fg.Text("file: —").Color(muted)
+	openBtn := fg.Button("Open File").BgColor(fg.Hex("#3B82F6")).
+		OnClick(func(_ fg.Event) {
+			ctx.Files().Open(fugo.FileDialog{
+				Title:      "Open a text file",
+				Extensions: []string{"txt", "md", "go"},
+			}, func(path string) {
+				if path == "" {
+					path = "(cancelled)"
+				}
+				fileStatus.SetText("open: " + path)
+				ctx.Update()
+			})
+		})
+	saveBtn := fg.Button("Save File").BgColor(fg.Hex("#8B5CF6")).
+		OnClick(func(_ fg.Event) {
+			ctx.Files().Save(fugo.FileDialog{
+				Title:       "Save as…",
+				DefaultName: "note.txt",
+				Extensions:  []string{"txt"},
+			}, func(path string) {
+				if path == "" {
+					path = "(cancelled)"
+				}
+				fileStatus.SetText("save: " + path)
+				ctx.Update()
+			})
+		})
+
+	// --- AnimatedPositioned: a box that glides between two corners. ---
+	moved := false
+	animBox := fg.AnimatedPositioned(
+		fg.Container(fg.SizedBox(48, 48)).BgColor(green).BorderRadius(8),
+	).Left(8).Top(8).DurationMs(400).Curve("easeInOut")
+	animStage := fg.Stack(
+		fg.Container(fg.SizedBox(280, 110)).BgColor(accent).BorderRadius(8),
+		animBox,
+	)
+	moveBtn := fg.Button("Move box").BgColor(fg.Hex("#F59E0B")).
+		OnClick(func(_ fg.Event) {
+			moved = !moved
+			if moved {
+				animBox.Left(224).Top(54)
+			} else {
+				animBox.Left(8).Top(8)
+			}
+			ctx.Update()
+		})
+
+	// --- Runtime window controls. ---
+	winRow := fg.Row(
+		fg.Button("Min").BgColor(accent).OnClick(func(_ fg.Event) { ctx.Window().Minimize() }),
+		fg.SizedBox(8, 0),
+		fg.Button("Max").BgColor(accent).OnClick(func(_ fg.Event) { ctx.Window().Maximize() }),
+		fg.SizedBox(8, 0),
+		fg.Button("Center").BgColor(accent).OnClick(func(_ fg.Event) { ctx.Window().Center() }),
+		fg.SizedBox(8, 0),
+		fg.Button("Title").BgColor(accent).OnClick(func(_ fg.Event) { ctx.Window().SetTitle("Fugo • Desktop demo") }),
+	)
+
+	backBtn := fg.Button("← Back").
+		BgColor(accent).
+		OnClick(func(_ fg.Event) {
+			ctx.GoBack()
+		})
+
+	header := fg.Text("Desktop").FontSize(20).Weight(fg.WeightBold)
+
+	return fg.Container(
+		fg.ScrollView(
+			fg.Column(
+				dragBar,
+				fg.SizedBox(0, 12),
+				fg.Row(backBtn, fg.SizedBox(16, 0), header),
+				fg.SizedBox(0, 16),
+
+				sectionLabel("Clipboard"),
+				clipField,
+				fg.SizedBox(0, 6),
+				fg.Row(copyBtn, fg.SizedBox(8, 0), pasteBtn),
+				fg.SizedBox(0, 4),
+				clipStatus,
+				fg.SizedBox(0, 16),
+
+				sectionLabel("Native file dialogs"),
+				fg.Row(openBtn, fg.SizedBox(8, 0), saveBtn),
+				fg.SizedBox(0, 4),
+				fileStatus,
+				fg.SizedBox(0, 16),
+
+				sectionLabel("AnimatedPositioned"),
+				animStage,
+				fg.SizedBox(0, 6),
+				moveBtn,
+				fg.SizedBox(0, 16),
+
+				sectionLabel("Window controls"),
+				winRow,
+			),
 		),
 	).BgColor(fg.Hex("#1A1A2E")).Pad(fg.EdgeAll(24))
 }

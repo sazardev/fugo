@@ -91,6 +91,9 @@ linters:
     - lll               # line length is handled by gofumpt, not gated here
     - wsl_v5            # whitespace-between-statements is too pedantic here
   exclusions:
+    paths:
+      # Gitignored scratch directory for leetcode practice — not shipped code.
+      - leetcode
     rules:
       # A CLI legitimately writes to stdout/stderr and does file I/O on
       # user-supplied paths (scaffolding, packaging).

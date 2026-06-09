@@ -13,6 +13,7 @@ message RenderPayload {
     WidgetTree full_tree = 1;
     PatchList patches = 2;
     WindowCommand window = 3;
+    HostCommand host = 4;
   }
 }
 
@@ -80,6 +81,8 @@ enum WidgetType {
   ALIGN = 25;
   RADIO = 26;
   DROPDOWN = 27;
+  ANIMATEDPOSITIONED = 28;
+  WINDOWDRAGAREA = 29;
 }
 
 enum WindowOp {
@@ -89,6 +92,15 @@ enum WindowOp {
   WINDOW_MAXIMIZE = 3;
   WINDOW_CENTER = 4;
   WINDOW_FULLSCREEN = 5;
+}
+
+// HostOp identifies an out-of-band request to the host OS that the Flutter
+// client fulfills on Go's behalf (clipboard access, native file dialogs).
+enum HostOp {
+  HOST_CLIPBOARD_WRITE = 0;
+  HOST_CLIPBOARD_READ = 1;
+  HOST_FILE_OPEN = 2;
+  HOST_FILE_SAVE = 3;
 }
 
 enum MainAxisSize {
@@ -241,6 +253,17 @@ message AnimatedOpacityProps {
   int32 duration_ms = 2;
 }
 
+message AnimatedPositionedProps {
+  double left = 1;
+  double top = 2;
+  double right = 3;
+  double bottom = 4;
+  double width = 5;
+  double height = 6;
+  int32 duration_ms = 7;
+  string curve = 8;
+}
+
 message ScrollViewProps {
   int32 scroll_direction = 1; // 0 = vertical, 1 = horizontal
 }
@@ -267,6 +290,18 @@ message WindowCommand {
   double width = 3;
   double height = 4;
   bool flag = 5; // generic boolean (e.g. fullscreen on/off)
+}
+
+// HostCommand is an out-of-band request from Go to the client to use an OS
+// service. Requests that expect a reply carry a non-zero request_id; the client
+// answers with a ClientEvent whose event_type is "host" and whose node_id is
+// the request_id rendered as a decimal string, with the result in event_data.
+message HostCommand {
+  HostOp op = 1;
+  uint64 request_id = 2; // correlates the reply; 0 = fire-and-forget (no reply)
+  string text = 3;       // clipboard payload (write) or dialog title (file ops)
+  string default_name = 4; // suggested file name for save dialogs
+  repeated string extensions = 5; // allowed extensions for file dialogs, no dot (e.g. "txt")
 }
 
 message ClientEvent {

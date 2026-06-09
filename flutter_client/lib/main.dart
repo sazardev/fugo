@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'generated/fugo/v1/fugo.pb.dart';
@@ -37,6 +40,52 @@ Future<void> applyWindowCommand(WindowCommand cmd) async {
     default:
       break;
   }
+}
+
+// applyHostCommand fulfills an out-of-band host-service request from Go
+// (clipboard access, native file dialog) and, for requests that expect a reply,
+// sends the result back as a "host" ClientEvent keyed by the request id.
+Future<void> applyHostCommand(HostCommand cmd) async {
+  final requestId = cmd.requestId.toInt();
+  switch (cmd.op) {
+    case HostOp.HOST_CLIPBOARD_WRITE:
+      await Clipboard.setData(ClipboardData(text: cmd.text));
+      break;
+    case HostOp.HOST_CLIPBOARD_READ:
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      _replyHost(requestId, data?.text ?? '');
+      break;
+    case HostOp.HOST_FILE_OPEN:
+      final result = await FilePicker.pickFiles(
+        dialogTitle: cmd.text.isNotEmpty ? cmd.text : null,
+        type: cmd.extensions.isNotEmpty ? FileType.custom : FileType.any,
+        allowedExtensions: cmd.extensions.isNotEmpty ? cmd.extensions : null,
+      );
+      _replyHost(requestId, result?.files.single.path ?? '');
+      break;
+    case HostOp.HOST_FILE_SAVE:
+      final path = await FilePicker.saveFile(
+        dialogTitle: cmd.text.isNotEmpty ? cmd.text : null,
+        fileName: cmd.defaultName.isNotEmpty ? cmd.defaultName : null,
+        type: cmd.extensions.isNotEmpty ? FileType.custom : FileType.any,
+        allowedExtensions: cmd.extensions.isNotEmpty ? cmd.extensions : null,
+      );
+      _replyHost(requestId, path ?? '');
+      break;
+    default:
+      break;
+  }
+}
+
+// _replyHost sends the result of a host request back to Go. A request id of 0
+// means fire-and-forget (e.g. a clipboard write), so no reply is sent.
+void _replyHost(int requestId, String result) {
+  if (requestId == 0) return;
+  sendEvent(ClientEvent(
+    nodeId: requestId.toString(),
+    eventType: 'host',
+    eventData: utf8.encode(result),
+  ));
 }
 
 void main() async {
@@ -78,6 +127,11 @@ void main() async {
 
         if (payload.hasWindow()) {
           applyWindowCommand(payload.window);
+          return;
+        }
+
+        if (payload.hasHost()) {
+          applyHostCommand(payload.host);
           return;
         }
 

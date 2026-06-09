@@ -100,6 +100,15 @@ func (r *Reconciler) SendWindowCommand(cmd *fugov1.WindowCommand) {
 	})
 }
 
+// SendHostCommand sends an out-of-band host-service request (clipboard access,
+// native file dialog) to the client. Requests that expect a reply carry a
+// non-zero RequestId and the client answers with a "host" ClientEvent.
+func (r *Reconciler) SendHostCommand(cmd *fugov1.HostCommand) {
+	r.send(&fugov1.RenderPayload{
+		Payload: &fugov1.RenderPayload_Host{Host: cmd},
+	})
+}
+
 func (r *Reconciler) send(payload *fugov1.RenderPayload) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

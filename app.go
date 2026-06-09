@@ -46,6 +46,12 @@ type App struct {
 	// flush→collectHandlers while the transport goroutine reads it in
 	// HandleEvent.
 	handlersMu sync.RWMutex
+
+	// hostReqs correlates outstanding host-service requests (clipboard reads,
+	// file dialogs) to the callback awaiting their reply. hostSeq mints the ids.
+	hostMu   sync.Mutex
+	hostSeq  uint64
+	hostReqs map[uint64]func([]byte)
 }
 
 // Context is passed to buildUI and to event handlers. It exposes navigation
@@ -73,6 +79,15 @@ func (c *Context) GoBack() {
 // frame. Call it after mutating widgets in an event handler.
 func (c *Context) Update() {
 	c.app.scheduler.Enqueue()
+}
+
+// UpdateNow is Update for latency-sensitive changes: it wakes the render loop
+// immediately instead of waiting for the next frame, so the update reaches the
+// client without up to a frame of delay. Prefer Update for ordinary mutations;
+// reach for UpdateNow when the change must feel instant (e.g. echoing a
+// keystroke). Like Update, repeated calls within the same instant coalesce.
+func (c *Context) UpdateNow() {
+	c.app.scheduler.EnqueueNow()
 }
 
 // Param returns the value captured for a :param in the active route (e.g. "id"
@@ -148,6 +163,7 @@ func NewApp(opts AppOptions) *App {
 	return &App{
 		opts:      opts,
 		handlers:  make(map[uint32]fg.Widget),
+		hostReqs:  make(map[uint64]func([]byte)),
 		done:      make(chan struct{}),
 		scheduler: engine.NewScheduler(schedulerInterval),
 	}
@@ -210,9 +226,19 @@ func (a *App) Shutdown() {
 	close(a.done)
 }
 
+// hostEventType is the ClientEvent.event_type the client uses to reply to a
+// HostCommand; the node_id then carries the request id rather than a widget id.
+const hostEventType = "host"
+
 // HandleEvent routes a client event to the handler of the widget whose node id
 // matches. It implements the transport's app handler.
 func (a *App) HandleEvent(ev *fugov1.ClientEvent) {
+	if ev.GetEventType() == hostEventType {
+		a.dispatchHostReply(ev)
+
+		return
+	}
+
 	nodeID := parseNodeID(ev.GetNodeId())
 
 	a.handlersMu.RLock()
@@ -236,6 +262,49 @@ func (a *App) HandleEvent(ev *fugov1.ClientEvent) {
 		EventType: ev.GetEventType(),
 		Data:      ev.GetEventData(),
 	})
+}
+
+// sendHost issues a host-service command to the client. When cb is non-nil it
+// is registered under a fresh request id and invoked with the reply bytes once
+// the client answers; a nil cb means fire-and-forget (e.g. a clipboard write).
+// The callback runs on the transport goroutine, like a widget event handler, so
+// it may mutate widgets and call Context.Update.
+func (a *App) sendHost(cmd *fugov1.HostCommand, cb func([]byte)) {
+	if a.reconciler == nil {
+		flog.Errorf("host command dropped: no client connected")
+
+		return
+	}
+
+	if cb != nil {
+		a.hostMu.Lock()
+		a.hostSeq++
+		id := a.hostSeq
+		a.hostReqs[id] = cb
+		a.hostMu.Unlock()
+
+		cmd.RequestId = id
+	}
+
+	a.reconciler.SendHostCommand(cmd)
+}
+
+func (a *App) dispatchHostReply(ev *fugov1.ClientEvent) {
+	id, err := strconv.ParseUint(ev.GetNodeId(), 10, 64)
+	if err != nil {
+		flog.Errorf("host reply with bad request id %q: %v", ev.GetNodeId(), err)
+
+		return
+	}
+
+	a.hostMu.Lock()
+	cb, ok := a.hostReqs[id]
+	delete(a.hostReqs, id)
+	a.hostMu.Unlock()
+
+	if ok && cb != nil {
+		cb(ev.GetEventData())
+	}
 }
 
 func (a *App) collectHandlers(m map[uint32]fg.Widget) {
@@ -263,6 +332,7 @@ func parseNodeID(s string) uint32 {
 func RunStandalone(opts AppOptions, buildUI func(ctx *Context) fg.Widget) {
 	app := NewApp(opts)
 
+	tuneRuntime()
 	enableAuthToken()
 	exportWindowEnv(opts)
 

@@ -13,7 +13,7 @@
 [![Protobuf](https://img.shields.io/badge/Protobuf-typed-orange)](https://protobuf.dev)
 [![UDS](https://img.shields.io/badge/UDS-5%E2%80%9310%C2%B5s-brightgreen)](#)
 [![License](https://img.shields.io/badge/license-MIT-green)](#)
-[![Version](https://img.shields.io/badge/version-0.1.0--alpha-yellow)](VERSION)
+[![Version](https://img.shields.io/badge/version-0.2.0-brightgreen)](VERSION)
 
 ---
 
@@ -139,17 +139,21 @@ Tokens live under `Colors` (Primary, Surface, OnSurface, Muted, Border, …), `T
 
 ## Current Status
 
-**Version 0.1.0 — engine + widget API + transport + CLI + Flutter client are implemented and run end-to-end.**
+**Version 0.2.0 — engine + widget API + transport + CLI + Flutter client are implemented and run end-to-end.**
 
-- [x] Diffing engine, reconciler, 60 fps scheduler
-- [x] gRPC transport (UDS / TCP on Windows), health check, keepalive
-- [x] 24 widgets in `fg/` with a fluent, prefix-free API + a `Theme` system
+- [x] Diffing engine, reconciler, 60 fps scheduler with priority (`Update` / `UpdateNow`)
+- [x] gRPC transport (UDS / TCP on Windows), health check, keepalive, opt-in auth token
+- [x] 30 widgets in `fg/` with a fluent, prefix-free API + a `Theme` system
 - [x] Flutter render client (background gRPC isolate, widget registry, auto-reconnect)
-- [x] CLI: `fugo init` / `run` (`--watch`) / `build` / `doctor`
+- [x] CLI: `fugo init` (templates) / `run` (`--watch`) / `build` / `doctor` / `widgets`
+- [x] Runtime window control (`Context.Window()`), `window_manager`-backed
+- [x] OS host services: clipboard (`Context.Clipboard()`), native file dialogs (`Context.Files()`)
+- [x] Performance: object-pooled diff, GC tuning (`FUGO_GOGC` / `FUGO_GOMEMLIMIT`), Go + Dart benchmarks with a CI perf gate
 
 See [ROADMAP](./ROADMAP/) and [SPEC.md](./SPEC.md) for the full design vision. **Note:** the
-roadmap/spec describe a FlatBuffers transport; the shipped implementation uses standard
-**Protocol Buffers** instead.
+roadmap describes a FlatBuffers transport; the shipped implementation uses standard
+**Protocol Buffers** (`google.golang.org/protobuf`) instead — per-widget props are a protobuf
+message marshaled into each node's `bytes` field. `CLAUDE.md` is the canonical, up-to-date guide.
 
 ---
 
@@ -184,6 +188,12 @@ state still resets — full state restore would need a managed-state layer and i
 **Stateful components** are an alternative to a buildUI closure — implement `Render(ctx)` and pass
 the value to `fugo.RunComponent`. **Routing** supports `:params` (e.g. `/user/:id`), read with
 `ctx.Param("id")`. Set **`FUGO_AUTH=1`** to mint a per-run token that hardens the local transport.
+
+**OS host services** run on the client and answer asynchronously: `ctx.Clipboard().Write/Read`,
+`ctx.Files().Open/Save(fg.FileDialog{...}, func(path string){...})`. The callback runs on the
+event goroutine, so mutate widgets and call `ctx.Update()` from it like any handler. For frameless
+windows, wrap a region in **`fg.WindowDragArea(...)`** to make it drag the window, and use
+**`fg.AnimatedPositioned(...)`** inside a `Stack` to animate a child between positions.
 
 ---
 

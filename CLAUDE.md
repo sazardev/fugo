@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A local **Server-Driven UI** framework for desktop. You write app logic, state, and routing **entirely in Go**; a precompiled Flutter binary acts as a dumb render terminal. The two processes talk over gRPC bidirectional streaming (TCP on Windows, UDS elsewhere). Go is the single source of truth — Flutter holds no business logic or state.
 
-> **Note on stale docs:** `AGENTS.md` claims "zero application code exists yet" — this is **out of date**. The engine, widget API, transport, supervisor, CLI, and Flutter client are all implemented. `README.md` advertises FlatBuffers + vtprotobuf serialization, but the code actually uses **standard `google.golang.org/protobuf`** (see "Wire format" below). Trust the code, not those two files.
+> **Note on stale docs:** `AGENTS.md` claims "zero application code exists yet" — this is **out of date**. The engine, widget API, transport, supervisor, CLI, and Flutter client are all implemented. The **ROADMAP** (notably `05_TRANSPORTE.md`) still describes FlatBuffers + vtprotobuf serialization, but the code uses **standard `google.golang.org/protobuf`** (see "Wire format" below). `README.md` and `SPEC.md` have been realigned to the code (Protobuf, `fg/` API); `CLAUDE.md` is canonical. Trust the code over the ROADMAP.
 
 ## Commands
 
@@ -47,6 +47,8 @@ cd myapp && fugo run           # go build → launch app → spawn Flutter; add 
 
 `transport/proto/fugo/v1/fugo.proto` is the single source. `make proto` runs `protoc` to generate Go (`*.pb.go`, `*_grpc.pb.go`) **and** copies the proto into `flutter_client/proto/` to regenerate the Dart bindings under `flutter_client/lib/generated/`. After editing the proto you must run `make proto` and keep both sides in sync. Requires `protoc`, `protoc-gen-go`, `protoc-gen-go-grpc`, and `protoc-gen-dart` on PATH.
 
+> **`protoc-gen-dart` version pin (gotcha).** The Dart `protobuf` runtime is pinned to `^3.1.0` in `flutter_client/pubspec.yaml`, so the generator must be **`protoc_plugin` 21.1.x** (`dart pub global activate protoc_plugin 21.1.2`). A newer plugin (e.g. 25.x) emits code for the `protobuf` 6.x runtime — calls like `$_clearField` / `$_initByValueList` and `PbList` return types — which will not compile against 3.1.0. If `flutter analyze` floods with "method `$_clearField` isn't defined", you regenerated with the wrong plugin version.
+
 The generated `*.pb.go` / `*.pb.dart` are **gitignored and not committed** — a clean checkout cannot `go build` until the Go bindings are generated. CI regenerates them itself via the `./.github/actions/gen-proto` composite action (used in the lint/vet/build/test/bench jobs); the `format` job intentionally skips it so `gofumpt` never scans generated code.
 
 ## Architecture & data flow
@@ -77,10 +79,10 @@ buildUI(ctx) ──> fg.Widget tree (built ONCE, retained)
 
 | Package | Role |
 |---|---|
-| `fugo` (root, `app.go`) | `App`, `Context`, lifecycle. `Run` builds the tree + starts scheduler; `RunStandalone` also starts the gRPC server and spawns Flutter. Owns the `handlers` map (nodeID → Widget) and routes `ClientEvent`s. |
+| `fugo` (root, `app.go`) | `App`, `Context`, lifecycle. `Run` builds the tree + starts scheduler; `RunStandalone` also starts the gRPC server, tunes the GC (`runtime_tuning.go`, `FUGO_GOGC`/`FUGO_GOMEMLIMIT`), and spawns Flutter. Owns the `handlers` map (nodeID → Widget) and routes `ClientEvent`s. `Context` exposes `Update`/`UpdateNow` (priority), `Window()` (runtime window control), and the OS host services in `host.go`: `Clipboard()` and `Files()` (native file dialogs) — async requests correlated by id and answered with a `"host"` ClientEvent. |
 | `fg/` | The declarative widget API — **prefix-free** constructors (`fg.Text`, `fg.Container`, `fg.Button`, `fg.Router`, ...), **not** `NewText`. Each returns a concrete `*fg.TextWidget` / `*fg.ButtonWidget` / … with chainable setters. **This is the active (and only) widget package** — imported by `app.go` and both `cmd/`s. It also re-exports the `style`/theme helpers (`fg.Hex`, `fg.EdgeAll`, `fg.DarkTheme`, `fg.CurrentTheme`, ...). Each widget implements `Widget`; `walkNodes` assigns IDs depth-first and marshals its `*Props` proto into `WidgetNode.Props`. |
 | `style/` | Styling primitives: `Color` (`style.Hex(...)`), `TextStyle`, `EdgeInsets` (`style.EdgeAll`), `Border`, font weights. (`fg` re-exports the common ones.) |
-| `engine/` | `Diff` (ID/positional diff → patches), `Reconciler` (wraps the gRPC stream, buffers payloads until a client connects), `Scheduler` (dirty-flag + ticker coalescing updates to one flush per frame). |
+| `engine/` | `Diff` (ID/positional diff → patches; pools the per-frame lookup map via `sync.Pool`, with a zero-alloc no-change fast path), `Reconciler` (wraps the gRPC stream, buffers payloads until a client connects; `SendWindowCommand`/`SendHostCommand` for out-of-band ops), `Scheduler` (dirty-flag + ticker coalescing updates to one flush per frame; `EnqueueNow` wakes the loop immediately for latency-sensitive updates). |
 | `transport/` | gRPC server (`StartServer`), health check, keepalive. UDS when addr has no `:`, TCP otherwise; adapts the stream into `engine.RenderStream`. |
 | `supervisor/` | Spawns/monitors the Flutter subprocess (`StartFlutter`), forwards `FUGO_ADDR`, handles graceful shutdown. |
 | `cmd/fugo/` | The `fugo` CLI: `init`, `run` (+`--watch`), `build`, `doctor`. |
