@@ -97,6 +97,12 @@ enum WidgetType {
   BADGE = 40;
   AVATAR = 41;
   SEGMENTEDBUTTON = 42;
+  ASPECTRATIO = 43;
+  CLIPRRECT = 44;
+  FITTEDBOX = 45;
+  FLEXIBLE = 46;
+  EXPANSIONTILE = 47;
+  POPUPMENU = 48;
 }
 
 // ButtonVariant selects which Material 3 button widget renders. The Flutter
@@ -379,6 +385,38 @@ message SegmentedButtonProps {
   repeated string values = 1;
   repeated string labels = 2;
   string selected = 3;
+}
+
+message AspectRatioProps {
+  double ratio = 1;
+}
+
+message ClipRRectProps {
+  double radius = 1;
+}
+
+message FittedBoxProps {
+  // 0 contain, 1 cover, 2 fill, 3 fitWidth, 4 fitHeight, 5 scaleDown, 6 none
+  int32 fit = 1;
+}
+
+message FlexibleProps {
+  int32 flex = 1; // 0 is treated as flex 1
+}
+
+message ExpansionTileProps {
+  string title = 1;
+  string subtitle = 2;
+  string leading_icon = 3;
+  bool initially_expanded = 4;
+}
+
+// PopupMenuProps backs a PopupMenuButton. values and labels are parallel arrays
+// — one menu entry each.
+message PopupMenuProps {
+  string icon = 1;
+  repeated string values = 2;
+  repeated string labels = 3;
 }
 
 // AppBarProps backs a Material AppBar. Children are the leading widget (first,

@@ -153,7 +153,8 @@ fg.SizedBox(0, t.Spacing.LG)
 (title + `.Leading` / `.Actions`), `fg.FloatingActionButton`, `fg.ListTile`, `fg.Chip`, and
 `fg.ProgressCircular` / `fg.ProgressLinear`, `fg.NavigationBar`, and `fg.Tabs` (a `TabBar` +
 `TabBarView`, switched client-side) — plus `fg.Tooltip`, `fg.Badge`, `fg.CircleAvatar`,
-`fg.SegmentedButton`, and `fg.Spacer`. A scaffold composes them —
+`fg.SegmentedButton`, `fg.Spacer`, `fg.AspectRatio`, `fg.ClipRRect`, `fg.FittedBox`, `fg.Flexible`,
+`fg.ExpansionTile`, and `fg.PopupMenuButton`. A scaffold composes them —
 an app bar, the body, a FAB, a slide-in `.Drawer`, and a bottom `.BottomBar`:
 
 ```go
