@@ -13,7 +13,7 @@
 [![Protobuf](https://img.shields.io/badge/Protobuf-typed-orange)](https://protobuf.dev)
 [![UDS](https://img.shields.io/badge/UDS-5%E2%80%9310%C2%B5s-brightgreen)](#)
 [![License](https://img.shields.io/badge/license-MIT-green)](#)
-[![Version](https://img.shields.io/badge/version-0.3.0-brightgreen)](VERSION)
+[![Version](https://img.shields.io/badge/version-0.4.0-brightgreen)](VERSION)
 [![go install](https://img.shields.io/badge/go%20install-cmd%2Ffugo-00ADD8?logo=go)](#installation)
 
 ---
@@ -132,22 +132,31 @@ re-walks the same tree each frame, diffs it, and streams only the patches.
 
 ---
 
-## Theming
+## Theming & Material 3
 
-Fugo ships opinionated dark/light themes. The active theme feeds widget defaults (text color,
-button color, radii, sizes); per-widget setters always override it.
+Fugo renders with **Material 3** and a **light** color scheme by default. The active `fg.Theme`'s
+primary color seeds Flutter's `ColorScheme.fromSeed`, so widgets get native M3 colors
+automatically — a `fg.FilledButton` looks like a real filled button without setting any color.
+Per-widget setters still override the theme.
 
 ```go
-fg.UseTheme(fg.LightTheme()) // fg.DarkTheme() is active by default
+fg.UseTheme(fg.DarkTheme()) // light is active by default — call before RunStandalone
 
 t := fg.CurrentTheme()
 fg.Text("Title").FontSize(t.Typography.Heading)
-fg.Button("Save").BgColor(t.Colors.Success)
 fg.SizedBox(0, t.Spacing.LG)
 ```
 
-Tokens live under `Colors` (Primary, Surface, OnSurface, Muted, Border, …), `Typography`
-(Heading/Body/Caption), `Spacing` (XS→XL), and `Radius` (SM/MD/LG).
+**Buttons** mirror Material 3 — `fg.FilledButton`, `fg.FilledTonalButton`, `fg.OutlinedButton`,
+`fg.TextButton`, `fg.ElevatedButton`, `fg.IconButton` (and `fg.Button`, an alias of
+`FilledButton`). Other native Material widgets: `fg.Card`, `fg.Scaffold` (with `.AppBar` / `.FAB`),
+`fg.FloatingActionButton`, `fg.ListTile`, `fg.Chip`, and `fg.ProgressCircular` /
+`fg.ProgressLinear`.
+
+A bare `fg.Column` (or any intrinsically-sized root) auto-centers in the window; wrap a region in
+`fg.Scaffold`/`fg.Container` to fill it instead. Tokens live under `Colors` (Primary, Surface,
+OnSurface, Muted, Border, …), `Typography` (Heading/Body/Caption), `Spacing` (XS→XL), and
+`Radius` (SM/MD/LG).
 
 ---
 
@@ -168,12 +177,13 @@ Tokens live under `Colors` (Primary, Surface, OnSurface, Muted, Border, …), `T
 
 ## Current Status
 
-**Version 0.3.0 — engine + widget API + transport + CLI + Flutter client are implemented and run end-to-end, and the CLI is installable via `go install`.**
+**Version 0.4.0 — engine + widget API + transport + CLI + Flutter client are implemented and run end-to-end, the CLI is installable via `go install`, and the client renders native Material 3.**
 
 - [x] Installable: `go install github.com/sazardev/fugo/cmd/fugo@latest` (generated protobuf bindings committed; builds on a clean fetch)
+- [x] Native **Material 3** (light by default), seeded from `fg.Theme`; Material button variants (Filled/Tonal/Outlined/Text/Elevated/Icon) + Card/Scaffold/FAB/ListTile/Chip/Progress
 - [x] Diffing engine, reconciler, 60 fps scheduler with priority (`Update` / `UpdateNow`)
 - [x] gRPC transport (UDS / TCP on Windows), health check, keepalive, opt-in auth token
-- [x] 30 widgets in `fg/` with a fluent, prefix-free API + a `Theme` system
+- [x] 36+ widgets in `fg/` with a fluent, prefix-free API + a `Theme` system
 - [x] Flutter render client (background gRPC isolate, widget registry, auto-reconnect)
 - [x] CLI: `fugo init` (templates) / `run` (`--watch`) / `build` / `doctor` / `widgets`
 - [x] Runtime window control (`Context.Window()`), `window_manager`-backed

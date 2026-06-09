@@ -83,6 +83,24 @@ enum WidgetType {
   DROPDOWN = 27;
   ANIMATEDPOSITIONED = 28;
   WINDOWDRAGAREA = 29;
+  CARD = 30;
+  SCAFFOLD = 31;
+  FLOATINGACTIONBUTTON = 32;
+  LISTTILE = 33;
+  CHIP = 34;
+  PROGRESS = 35;
+}
+
+// ButtonVariant selects which Material 3 button widget renders. The Flutter
+// client maps these to FilledButton / FilledButton.tonal / OutlinedButton /
+// TextButton / ElevatedButton / IconButton respectively.
+enum ButtonVariant {
+  BUTTON_FILLED = 0;
+  BUTTON_FILLED_TONAL = 1;
+  BUTTON_OUTLINED = 2;
+  BUTTON_TEXT = 3;
+  BUTTON_ELEVATED = 4;
+  BUTTON_ICON = 5;
 }
 
 enum WindowOp {
@@ -134,9 +152,12 @@ message TextProps {
 
 message ButtonProps {
   string label = 1;
-  string bg_color = 2;
-  double font_size = 3;
-  double border_radius = 4;
+  string bg_color = 2;       // explicit override; empty = use the M3 ColorScheme
+  double font_size = 3;      // 0 = M3 default
+  double border_radius = 4;  // 0 = M3 default shape
+  ButtonVariant variant = 5;
+  string icon = 6;           // leading icon name; the sole content for BUTTON_ICON
+  bool enabled = 7;          // false renders a disabled button (no onPressed)
 }
 
 message ContainerProps {
@@ -151,6 +172,12 @@ message ContainerProps {
 }
 
 message RowProps {
+  MainAxisSize main_axis_size = 1;
+  MainAxisAlignment main_alignment = 2;
+  CrossAxisAlignment cross_alignment = 3;
+}
+
+message ColumnProps {
   MainAxisSize main_axis_size = 1;
   MainAxisAlignment main_alignment = 2;
   CrossAxisAlignment cross_alignment = 3;
@@ -282,6 +309,44 @@ message RadioProps {
 message DropdownProps {
   repeated string items = 1;
   string value = 2;
+}
+
+message CardProps {
+  double elevation = 1;     // 0 = M3 default elevation
+  double padding = 2;       // inner padding on all edges; 0 = none
+  double border_radius = 3; // 0 = M3 default shape
+}
+
+// ScaffoldProps backs a Material Scaffold. Children are: the body (first child)
+// and, when has_fab is set, the floating action button (last child).
+message ScaffoldProps {
+  string app_bar_title = 1;
+  bool has_app_bar = 2;
+  bool has_fab = 3;
+}
+
+message FabProps {
+  string icon = 1;   // icon name (see Icon names)
+  string label = 2;  // non-empty renders an extended FAB
+  bool mini = 3;
+}
+
+message ListTileProps {
+  string title = 1;
+  string subtitle = 2;
+  string leading_icon = 3;
+  string trailing_icon = 4;
+}
+
+message ChipProps {
+  string label = 1;
+  bool selected = 2;  // renders a FilterChip when set
+  bool deletable = 3; // shows a delete affordance
+}
+
+message ProgressProps {
+  bool linear = 1;  // false = circular
+  double value = 2; // < 0 = indeterminate; 0..1 = determinate
 }
 
 message WindowCommand {

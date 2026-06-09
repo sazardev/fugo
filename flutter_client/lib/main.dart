@@ -12,6 +12,7 @@ import 'generated/fugo/v1/fugo.pb.dart';
 import 'events.dart';
 import 'fugo_renderer.dart';
 import 'grpc_isolate.dart';
+import 'registry.dart' show hexToColor;
 
 final _fugoRendererKey = GlobalKey<FugoRendererState>();
 
@@ -96,6 +97,14 @@ void main() async {
   final width = double.tryParse(Platform.environment['FUGO_WIDTH'] ?? '') ?? 800;
   final height = double.tryParse(Platform.environment['FUGO_HEIGHT'] ?? '') ?? 600;
 
+  // Material 3 theme, seeded by Go (FUGO_THEME_SEED / FUGO_THEME_BRIGHTNESS).
+  final seedColor = hexToColor(
+    Platform.environment['FUGO_THEME_SEED'] ?? '#2563EB',
+  );
+  final brightness = Platform.environment['FUGO_THEME_BRIGHTNESS'] == 'dark'
+      ? Brightness.dark
+      : Brightness.light;
+
   final windowOptions = WindowOptions(
     size: Size(width, height),
     center: true,
@@ -116,7 +125,11 @@ void main() async {
     if (firstMessage) {
       firstMessage = false;
       setEventSendPort(message as SendPort);
-      runApp(FugoApp(rendererKey: _fugoRendererKey));
+      runApp(FugoApp(
+        rendererKey: _fugoRendererKey,
+        seedColor: seedColor,
+        brightness: brightness,
+      ));
 
       return;
     }

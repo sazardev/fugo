@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-09
+
+### Added
+- Native **Material 3** rendering, **light by default**. The Flutter client builds its `ColorScheme` from the active `fg.Theme` (forwarded as `FUGO_THEME_SEED` + `FUGO_THEME_BRIGHTNESS`) via `ColorScheme.fromSeed`.
+- Material button variants as separate constructors: `fg.FilledButton`, `fg.FilledTonalButton`, `fg.OutlinedButton`, `fg.TextButton`, `fg.ElevatedButton`, `fg.IconButton` (`fg.Button` is an alias of `FilledButton`). Buttons gain a leading `.Icon()` and `.Enabled()`.
+- Core Material widgets: `fg.Card`, `fg.Scaffold` (`.AppBar` / `.FAB`), `fg.FloatingActionButton`, `fg.ListTile`, `fg.Chip`, and `fg.ProgressCircular` / `fg.ProgressLinear`.
+- `fg.Column` alignment controls: `.MainAlign`, `.CrossAlign`, `.MainAxisSize`, `.Expand`.
+
+### Changed
+- The renderer **auto-centers** an intrinsically-sized root (e.g. a bare `Column`), so simple content lands in the middle of the window without an explicit `Center`. Roots that fill the viewport (`Scaffold`, `Container`, `ListView`, …) are left as-is.
+- Widgets no longer inject opinionated hex colors: `Text`, `Container`, and `Button` inherit the Material 3 `ColorScheme` unless a color setter is called. The default theme is now `LightTheme`.
+- `fugo init`'s counter template is now minimal (no manual colors or padding), relying on the Material 3 defaults and auto-centering.
+
 ## [0.3.2] - 2026-06-09
 
 ### Added

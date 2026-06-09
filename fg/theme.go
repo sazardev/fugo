@@ -9,6 +9,20 @@ type Theme struct {
 	Typography ThemeTypography
 	Spacing    ThemeSpacing
 	Radius     ThemeRadius
+	// Dark selects the Material 3 brightness the Flutter client builds its
+	// ColorScheme with (seeded from Colors.Primary). LightTheme sets it false,
+	// DarkTheme true.
+	Dark bool
+}
+
+// Brightness reports the Material brightness as the Flutter client expects it
+// over FUGO_THEME_BRIGHTNESS: "dark" or "light".
+func (t Theme) Brightness() string {
+	if t.Dark {
+		return "dark"
+	}
+
+	return "light"
 }
 
 // ThemeColors are the semantic color roles of a theme.
@@ -44,7 +58,8 @@ type ThemeRadius struct {
 	SM, MD, LG float64
 }
 
-// DarkTheme is the opinionated default dark theme (active out of the box).
+// DarkTheme is the opinionated dark theme. Activate it with UseTheme before
+// calling RunStandalone (the client reads the brightness/seed at startup).
 func DarkTheme() Theme {
 	return Theme{
 		Colors: ThemeColors{
@@ -62,10 +77,11 @@ func DarkTheme() Theme {
 		Typography: defaultTypography(),
 		Spacing:    defaultSpacing(),
 		Radius:     defaultRadius(),
+		Dark:       true,
 	}
 }
 
-// LightTheme is the opinionated default light theme.
+// LightTheme is the opinionated default light theme (active out of the box).
 func LightTheme() Theme {
 	return Theme{
 		Colors: ThemeColors{
@@ -105,7 +121,7 @@ func defaultRadius() ThemeRadius {
 }
 
 //nolint:gochecknoglobals // the active theme is intentional, opinionated, package-level state
-var active = DarkTheme()
+var active = LightTheme()
 
 // UseTheme sets the active theme. Call once at startup, before building the UI;
 // widget constructors created afterwards inherit its tokens.
