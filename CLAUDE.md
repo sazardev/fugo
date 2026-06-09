@@ -85,7 +85,7 @@ buildUI(ctx) ──> fg.Widget tree (built ONCE, retained)
 | `engine/` | `Diff` (ID/positional diff → patches; pools the per-frame lookup map via `sync.Pool`, with a zero-alloc no-change fast path), `Reconciler` (wraps the gRPC stream, buffers payloads until a client connects; `SendWindowCommand`/`SendHostCommand` for out-of-band ops), `Scheduler` (dirty-flag + ticker coalescing updates to one flush per frame; `EnqueueNow` wakes the loop immediately for latency-sensitive updates). |
 | `transport/` | gRPC server (`StartServer`), health check, keepalive. UDS when addr has no `:`, TCP otherwise; adapts the stream into `engine.RenderStream`. |
 | `supervisor/` | Spawns/monitors the Flutter subprocess (`StartFlutter`), forwards `FUGO_ADDR`, handles graceful shutdown. |
-| `cmd/fugo/` | The `fugo` CLI: `init`, `run` (+`--watch`), `build`, `doctor`. |
+| `cmd/fugo/` | The `fugo` CLI: `init`, `run` (+`--watch`), `build`, `doctor`, `widgets`, `upgrade` (self-update via `go install …@latest`). |
 | `cmd/fugo-spike/` | Demo/integration harness — a hand-written app exercising the router and every widget. Good reference for the widget API. |
 | `flutter_client/` | Dart render client. `grpc_isolate.dart` runs the gRPC client on a separate isolate (auto-reconnect w/ backoff) and ships raw proto bytes via `SendPort`. `fugo_renderer.dart` keeps a flat `Map<int, WidgetNode>` and applies patches. `registry.dart` maps each `WidgetType` to a Flutter widget by decoding the embedded props. `events.dart` debounces outbound events. |
 

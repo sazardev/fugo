@@ -185,7 +185,7 @@ OnSurface, Muted, Border, …), `Typography` (Heading/Body/Caption), `Spacing` (
 - [x] gRPC transport (UDS / TCP on Windows), health check, keepalive, opt-in auth token
 - [x] 36+ widgets in `fg/` with a fluent, prefix-free API + a `Theme` system
 - [x] Flutter render client (background gRPC isolate, widget registry, auto-reconnect)
-- [x] CLI: `fugo init` (templates) / `run` (`--watch`) / `build` / `doctor` / `widgets`
+- [x] CLI: `fugo init` (templates) / `run` (`--watch`) / `build` / `doctor` / `widgets` / `upgrade` (self-update)
 - [x] Runtime window control (`Context.Window()`), `window_manager`-backed
 - [x] OS host services: clipboard (`Context.Clipboard()`), native file dialogs (`Context.Files()`)
 - [x] Performance: object-pooled diff, GC tuning (`FUGO_GOGC` / `FUGO_GOMEMLIMIT`), Go + Dart benchmarks with a CI perf gate
@@ -219,6 +219,7 @@ fugo run                  # Build + run; auto-builds the Flutter client the firs
 fugo run --watch          # Hot reload: rebuild the Go server on .go changes; the window stays open
 fugo build                # Build + bundle the Flutter client into a self-contained dist/
 fugo doctor               # Verify the dev environment (Go, Flutter, protoc, gofumpt)
+fugo upgrade              # Self-update the CLI to the latest release (go install ...@latest)
 fugo --version            # Print version information
 ```
 

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-06-09
+
+### Added
+- `fugo upgrade` — self-update the CLI to the latest release via `go install …@latest` (pass a version to pin, e.g. `fugo upgrade v0.4.2`). On Windows the running binary is moved aside (`<exe>.old`) so `go install` can replace it.
+
 ### Changed
 - Repo hygiene: consolidated `.gitignore` so scratch artifacts never land in the tree — throwaway `fugo init` demo projects, manual-test screenshots and captured run logs belong under `.scratch/` (root-level `*.png` / `*.out` / `*.err` are ignored too). Documented the repository layout — including why Go tests live beside their package rather than in a separate folder — in `AGENTS.md`.
 

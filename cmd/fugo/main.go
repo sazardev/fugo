@@ -27,6 +27,7 @@ var (
 const (
 	osWindows   = "windows"
 	subcmdBuild = "build"
+	fugoModule  = "github.com/sazardev/fugo"
 )
 
 func main() {
@@ -48,6 +49,7 @@ Typical workflow:
 Other commands:
   fugo widgets           browse the fg widget catalog and their doc comments
   fugo doctor            check your toolchain (Go, Flutter, protoc, gofumpt)
+  fugo upgrade           update the fugo CLI to the latest release
 
 Every command accepts -V/--verbose (trace commands, paths, timings and the
 app's runtime logs) and -q/--quiet (errors only). Colors honor NO_COLOR.`,
@@ -57,6 +59,7 @@ app's runtime logs) and -q/--quiet (errors only). Colors honor NO_COLOR.`,
 			buildCmd(),
 			widgetsCmd(),
 			doctorCmd(),
+			upgradeCmd(),
 		},
 	}
 
@@ -1070,6 +1073,129 @@ version output and the resolved fugo module path.`,
 			return nil
 		},
 	}
+}
+
+// upgradeCmd updates the fugo CLI itself to the latest published release.
+func upgradeCmd() *cli.Command {
+	return &cli.Command{
+		Name:      "upgrade",
+		Usage:     "Update the fugo CLI to the latest release",
+		ArgsUsage: "[version]",
+		Description: `Reinstall the fugo CLI with the Go toolchain, defaulting to the latest
+release. Pass a version to pin one, e.g. fugo upgrade v0.4.2.
+
+Requires Go on PATH; installs to $(go env GOBIN) or $(go env GOPATH)/bin. On
+Windows the running binary is moved aside (<exe>.old) so it can be replaced.
+This updates the CLI only — rebuild the Flutter client with 'flutter build'.`,
+		Flags: verbosityFlags(),
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			setupUI()
+
+			return runUpgrade(ctx, cmd.Args().First())
+		},
+	}
+}
+
+func runUpgrade(ctx context.Context, version string) error {
+	if _, err := exec.LookPath("go"); err != nil {
+		out.failf("the Go toolchain is required to upgrade — install it from https://go.dev/dl")
+
+		return errors.New("go toolchain not found on PATH")
+	}
+
+	version = strings.TrimPrefix(strings.TrimSpace(version), "@")
+	if version == "" {
+		version = "latest"
+	}
+
+	out.infof("current: fugo %s", versionString())
+
+	// On Windows a running .exe cannot be overwritten, so move ourselves aside
+	// first when go install would replace the binary we are running from.
+	restore := stashRunningBinary(ctx)
+
+	pkg := fugoModule + "/cmd/fugo@" + version
+	if err := out.runStep("go install "+pkg, exec.CommandContext(ctx, "go", "install", pkg)); err != nil {
+		restore()
+		out.failf("upgrade failed — your existing fugo is unchanged")
+
+		return err
+	}
+
+	out.successf("fugo upgraded (%s)", version)
+	if dir := installDir(ctx); dir != "" {
+		out.infof("installed to %s — run `fugo --version` to confirm (keep that dir on PATH)", dir)
+	}
+
+	return nil
+}
+
+// stashRunningBinary, on Windows, renames the currently-running fugo.exe to
+// <exe>.old so `go install` can write a fresh one (Windows cannot overwrite a
+// running image). It returns a function that restores the old binary, called if
+// the install fails. On other systems it is a no-op — a running file can be
+// replaced in place.
+func stashRunningBinary(ctx context.Context) func() {
+	noop := func() {}
+	if runtime.GOOS != osWindows {
+		return noop
+	}
+
+	self, err := os.Executable()
+	if err != nil {
+		return noop
+	}
+
+	if !samePath(self, filepath.Join(installDir(ctx), "fugo.exe")) {
+		return noop // running from elsewhere (e.g. ./bin); go install won't touch us
+	}
+
+	bak := self + ".old"
+	_ = os.Remove(bak) // clear a leftover from a previous upgrade
+	if err := os.Rename(self, bak); err != nil {
+		out.tracef("could not move the running binary aside: %v", err)
+
+		return noop
+	}
+
+	out.tracef("moved running binary to %s", bak)
+
+	return func() { _ = os.Rename(bak, self) }
+}
+
+// samePath reports whether two filesystem paths point to the same location,
+// case-insensitively on Windows.
+func samePath(a, b string) bool {
+	ca, cb := filepath.Clean(a), filepath.Clean(b)
+	if runtime.GOOS == osWindows {
+		return strings.EqualFold(ca, cb)
+	}
+
+	return ca == cb
+}
+
+// installDir reports where `go install` places binaries: $GOBIN, else
+// $GOPATH/bin.
+func installDir(ctx context.Context) string {
+	if b := goEnv(ctx, "GOBIN"); b != "" {
+		return b
+	}
+
+	if p := goEnv(ctx, "GOPATH"); p != "" {
+		return filepath.Join(p, "bin")
+	}
+
+	return ""
+}
+
+// goEnv returns a single `go env` value, trimmed, or "" if it cannot be read.
+func goEnv(ctx context.Context, key string) string {
+	b, err := exec.CommandContext(ctx, "go", "env", key).Output()
+	if err != nil {
+		return ""
+	}
+
+	return strings.TrimSpace(string(b))
 }
 
 // firstLine runs name with args and returns the trimmed first line of its
