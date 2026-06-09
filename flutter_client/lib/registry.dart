@@ -76,6 +76,8 @@ class WidgetRegistry {
         return _buildAppBar(node, children);
       case proto.WidgetType.NAVIGATIONBAR:
         return _buildNavigationBar(node);
+      case proto.WidgetType.TABS:
+        return _buildTabs(node, children);
       case proto.WidgetType.FLOATINGACTIONBUTTON:
         return _buildFab(node);
       case proto.WidgetType.LISTTILE:
@@ -651,6 +653,25 @@ class WidgetRegistry {
       floatingActionButton: fab,
       drawer: drawer != null ? Drawer(child: drawer) : null,
       bottomNavigationBar: bottomBar,
+    );
+  }
+
+  Widget _buildTabs(proto.WidgetNode node, List<Widget> children) {
+    final props = proto.TabsProps.fromBuffer(node.props);
+    final n = props.labels.length;
+    if (n == 0) {
+      return const SizedBox.shrink();
+    }
+
+    return DefaultTabController(
+      length: n,
+      initialIndex: props.initialIndex.clamp(0, n - 1),
+      child: Column(
+        children: [
+          TabBar(tabs: [for (final l in props.labels) Tab(text: l)]),
+          Expanded(child: TabBarView(children: children)),
+        ],
+      ),
     );
   }
 

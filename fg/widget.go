@@ -46,6 +46,7 @@ const (
 	WidgetProgress           = fugov1.WidgetType_PROGRESS
 	WidgetAppBar             = fugov1.WidgetType_APPBAR
 	WidgetNavigationBar      = fugov1.WidgetType_NAVIGATIONBAR
+	WidgetTabs               = fugov1.WidgetType_TABS
 )
 
 // Event is a user interaction forwarded from the client to a widget's handler.

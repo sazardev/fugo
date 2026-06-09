@@ -133,6 +133,7 @@ class FugoRendererState extends State<FugoRenderer> {
     WidgetType.SCROLLVIEW,
     WidgetType.EXPANDED,
     WidgetType.ANIMATEDCONTAINER,
+    WidgetType.TABS,
   };
 
   @override
