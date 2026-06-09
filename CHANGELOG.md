@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-06-09
+
+### Added
+- More common Material widgets: `fg.Tooltip(message, child)`, `fg.Badge(child).Label(...)` (a dot when empty), `fg.CircleAvatar` (`.Text` / `.Icon` / `.BgColor` / `.Radius`), and `fg.SegmentedButton` (`.Item(value, label)`, `.Selected`, `.OnChange` with the selected value in the event data). (`fg.Spacer` already shipped as sugar over `Expanded`.)
+
 ## [0.10.0] - 2026-06-09
 
 ### Added

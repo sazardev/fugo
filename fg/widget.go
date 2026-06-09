@@ -47,6 +47,10 @@ const (
 	WidgetAppBar             = fugov1.WidgetType_APPBAR
 	WidgetNavigationBar      = fugov1.WidgetType_NAVIGATIONBAR
 	WidgetTabs               = fugov1.WidgetType_TABS
+	WidgetTooltip            = fugov1.WidgetType_TOOLTIP
+	WidgetBadge              = fugov1.WidgetType_BADGE
+	WidgetAvatar             = fugov1.WidgetType_AVATAR
+	WidgetSegmentedButton    = fugov1.WidgetType_SEGMENTEDBUTTON
 )
 
 // Event is a user interaction forwarded from the client to a widget's handler.

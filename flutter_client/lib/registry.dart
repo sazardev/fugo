@@ -78,6 +78,14 @@ class WidgetRegistry {
         return _buildNavigationBar(node);
       case proto.WidgetType.TABS:
         return _buildTabs(node, children);
+      case proto.WidgetType.TOOLTIP:
+        return _buildTooltip(node, children);
+      case proto.WidgetType.BADGE:
+        return _buildBadge(node, children);
+      case proto.WidgetType.AVATAR:
+        return _buildAvatar(node);
+      case proto.WidgetType.SEGMENTEDBUTTON:
+        return _buildSegmentedButton(node);
       case proto.WidgetType.FLOATINGACTIONBUTTON:
         return _buildFab(node);
       case proto.WidgetType.LISTTILE:
@@ -803,6 +811,77 @@ class WidgetRegistry {
 
   // _mapIconData resolves an fg icon name (fg.Icons.Home -> 'home') to its
   // Flutter IconData via the generated table (see cmd/gen-icons).
+  Widget _buildTooltip(proto.WidgetNode node, List<Widget> children) {
+    final props = proto.TooltipProps.fromBuffer(node.props);
+    final child =
+        children.isNotEmpty ? children.first : const SizedBox.shrink();
+
+    return Tooltip(message: props.message, child: child);
+  }
+
+  Widget _buildBadge(proto.WidgetNode node, List<Widget> children) {
+    final props = proto.BadgeProps.fromBuffer(node.props);
+    final child =
+        children.isNotEmpty ? children.first : const SizedBox.shrink();
+
+    return Badge(
+      label: props.label.isNotEmpty ? Text(props.label) : null,
+      child: child,
+    );
+  }
+
+  Widget _buildAvatar(proto.WidgetNode node) {
+    final props = proto.AvatarProps.fromBuffer(node.props);
+
+    Widget? child;
+    if (props.text.isNotEmpty) {
+      child = Text(props.text);
+    } else if (props.icon.isNotEmpty) {
+      child = Icon(_mapIconData(props.icon));
+    }
+
+    return CircleAvatar(
+      radius: props.radius > 0 ? props.radius : null,
+      backgroundColor:
+          props.bgColor.isNotEmpty ? hexToColor(props.bgColor) : null,
+      child: child,
+    );
+  }
+
+  Widget _buildSegmentedButton(proto.WidgetNode node) {
+    final props = proto.SegmentedButtonProps.fromBuffer(node.props);
+
+    final segments = <ButtonSegment<String>>[];
+    for (var k = 0; k < props.values.length; k++) {
+      final label = k < props.labels.length ? props.labels[k] : props.values[k];
+      segments.add(
+        ButtonSegment<String>(value: props.values[k], label: Text(label)),
+      );
+    }
+    if (segments.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final selected =
+        props.selected.isNotEmpty && props.values.contains(props.selected)
+            ? props.selected
+            : props.values.first;
+
+    return SegmentedButton<String>(
+      segments: segments,
+      selected: {selected},
+      onSelectionChanged: (s) {
+        if (s.isNotEmpty) {
+          sendEvent(proto.ClientEvent(
+            nodeId: node.id.toString(),
+            eventType: 'onChange',
+            eventData: s.first.codeUnits,
+          ));
+        }
+      },
+    );
+  }
+
   IconData _mapIconData(String name) => materialIcons[name] ?? Icons.help_outline;
 
   Curve _mapCurve(String name) {
