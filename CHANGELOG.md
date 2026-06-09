@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-06-09
+
+### Added
+- `FloatingActionButton` now uses a unique hero tag per node, so an app can show multiple FABs (e.g. an increment and a decrement) without a Hero tag collision. Added the `remove` (minus) icon.
+
+### Changed
+- `fugo init`'s template is now a minimal, elegant counter: a centered count, an app bar titled "Fugo", and two FABs (decrement / increment). Nothing to tune — the shortest idiomatic Go + Flutter Material 3 demo.
+
 ## [0.4.1] - 2026-06-09
 
 ### Fixed

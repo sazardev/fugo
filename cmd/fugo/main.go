@@ -107,7 +107,7 @@ func scaffoldMain(template, name string) string {
 	case "showcase":
 		return fmt.Sprintf(showcaseTemplate, name)
 	default:
-		return fmt.Sprintf(counterTemplate, name, name)
+		return fmt.Sprintf(counterTemplate, name)
 	}
 }
 
@@ -132,17 +132,25 @@ func buildUI(ctx *fugo.Context) fg.Widget {
 	count := 0
 	display := fg.Text("0").FontSize(57)
 
-	// A Scaffold fills the window responsively: an app bar, a centered body,
-	// and a floating action button — straight from the Material 3 theme, with
-	// nothing to tune.
+	update := func() {
+		display.SetText(strconv.Itoa(count))
+		ctx.Update()
+	}
+
 	return fg.Scaffold(
 		fg.Center(display),
-	).AppBar("%s").FAB(
-		fg.FloatingActionButton("add").OnClick(func(_ fg.Event) {
-			count++
-			display.SetText(strconv.Itoa(count))
-			ctx.Update()
-		}),
+	).AppBar("Fugo").FAB(
+		fg.Row(
+			fg.FloatingActionButton("remove").OnClick(func(_ fg.Event) {
+				count--
+				update()
+			}),
+			fg.SizedBox(16, 0),
+			fg.FloatingActionButton("add").OnClick(func(_ fg.Event) {
+				count++
+				update()
+			}),
+		),
 	)
 }
 `

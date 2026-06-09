@@ -639,9 +639,13 @@ class WidgetRegistry {
           eventType: 'onClick',
         ));
     final icon = Icon(_mapIconData(props.icon));
+    // A unique hero tag per node lets an app show more than one FAB (e.g. an
+    // increment and a decrement button) without the default-tag Hero collision.
+    final tag = 'fugo-fab-${node.id}';
 
     if (props.label.isNotEmpty) {
       return FloatingActionButton.extended(
+        heroTag: tag,
         onPressed: onPressed,
         icon: icon,
         label: Text(props.label),
@@ -649,6 +653,7 @@ class WidgetRegistry {
     }
 
     return FloatingActionButton(
+      heroTag: tag,
       onPressed: onPressed,
       mini: props.mini,
       child: icon,
@@ -713,6 +718,8 @@ class WidgetRegistry {
         return Icons.search;
       case 'add':
         return Icons.add;
+      case 'remove':
+        return Icons.remove;
       case 'delete':
         return Icons.delete;
       case 'edit':
