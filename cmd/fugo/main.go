@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -32,7 +33,7 @@ func main() {
 	cmd := &cli.Command{
 		Name:    "fugo",
 		Usage:   "Server-Driven UI framework for desktop — write Go, render with Flutter",
-		Version: fmt.Sprintf("%s (commit %s, built %s)", version, commit, date),
+		Version: versionString(),
 		Description: `Fugo lets you build native desktop apps writing only Go. Your logic, state
 and routing run in a Go process; a precompiled Flutter binary renders the UI
 over a local gRPC stream. Go is the single source of truth.
@@ -63,6 +64,38 @@ app's runtime logs) and -q/--quiet (errors only). Colors honor NO_COLOR.`,
 		out.failf("%v", err)
 		os.Exit(1)
 	}
+}
+
+// versionString reports the CLI version. `make build` injects version, commit
+// and date through -ldflags; a `go install` binary keeps the defaults, so we
+// fall back to the module version and VCS stamps the Go toolchain embeds in the
+// build info, keeping `fugo --version` accurate either way.
+func versionString() string {
+	v, c, d := version, commit, date
+
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return fmt.Sprintf("%s (commit %s, built %s)", v, c, d)
+	}
+
+	if v == "0.1.0" && info.Main.Version != "" && info.Main.Version != "(devel)" {
+		v = strings.TrimPrefix(info.Main.Version, "v")
+	}
+
+	for _, s := range info.Settings {
+		switch s.Key {
+		case "vcs.revision":
+			if c == "unknown" && len(s.Value) >= 7 {
+				c = s.Value[:7]
+			}
+		case "vcs.time":
+			if d == "unknown" && s.Value != "" {
+				d = s.Value
+			}
+		}
+	}
+
+	return fmt.Sprintf("%s (commit %s, built %s)", v, c, d)
 }
 
 // scaffoldMain returns the main.go source for the chosen starter template,
