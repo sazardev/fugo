@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -30,6 +31,7 @@ const (
 	osWindows   = "windows"
 	subcmdBuild = "build"
 	fugoModule  = "github.com/sazardev/fugo"
+	versionFlag = "--version"
 )
 
 func main() {
@@ -50,7 +52,7 @@ Typical workflow:
 
 Other commands:
   fugo widgets           browse the fg widget catalog and their doc comments
-  fugo doctor            check your toolchain (Go, Flutter, protoc, gofumpt)
+  fugo doctor            check the toolchain + (in a project) its health
   fugo upgrade           update the fugo CLI to the latest release
 
 Every command accepts -V/--verbose (trace commands, paths, timings and the
@@ -872,56 +874,190 @@ func appBinary() string {
 func doctorCmd() *cli.Command {
 	return &cli.Command{
 		Name:  "doctor",
-		Usage: "Check the development environment",
-		Description: `Probe the toolchain Fugo needs and report what's found. Use -V for full
-version output and the resolved fugo module path.`,
+		Usage: "Check the toolchain and (inside a project) the project's health",
+		Description: `Diagnose what Fugo needs to build and run. It checks the toolchain (Go,
+Flutter, git, protoc, gofumpt) and, when run inside a Fugo project, imports
+fugo.toml and validates the project: structure (main.go, ui/, go.mod), that the
+fugo module resolves, whether the Flutter client is built, whether the
+configured address is free, and that the project compiles.
+
+Exits non-zero if there is a blocking issue (✗), so it works in scripts/CI.
+Use -V to trace each probe.`,
 		Flags: verbosityFlags(),
 		Action: func(ctx context.Context, _ *cli.Command) error {
 			setupUI()
-
-			checks := []struct {
-				name string
-				bin  string
-				args []string
-				hint string
-			}{
-				{"Go", "go", []string{"version"}, "required — https://go.dev/dl"},
-				{"Flutter", "flutter", []string{"--version"}, "required to render — https://docs.flutter.dev"},
-				{"protoc", "protoc", []string{"--version"}, "only to regenerate protobuf (make proto)"},
-				{"gofumpt", "gofumpt", []string{"-version"}, "formatter — go install mvdan.cc/gofumpt@latest"},
-			}
-
 			out.heading("Fugo Doctor")
 
-			missing := 0
-			for _, c := range checks {
-				line, err := firstLine(ctx, c.bin, c.args...)
-				if err != nil {
-					missing++
-					out.printf("  %s %-9s %s\n", out.paint(cRed, "✗"), c.name, out.paint(cDim, c.hint))
+			rep := &doctorReport{}
+			doctorToolchain(ctx, rep)
 
-					continue
-				}
-
-				out.printf("  %s %-9s %s\n", out.paint(cGreen, "✓"), c.name, line)
-				out.tracef("%s: %s %s", c.name, c.bin, strings.Join(c.args, " "))
-			}
-
-			out.printf("\n  %-11s %s/%s\n", "platform", runtime.GOOS, runtime.GOARCH)
-			if repo := fugoModuleDir(ctx); repo != "" {
-				out.printf("  %-11s %s\n", "fugo module", repo)
+			if inProject() {
+				doctorProject(ctx, rep)
+			} else {
+				out.printf("\n  %s %s\n", out.paint(cDim, "·"),
+					out.paint(cDim, "not inside a Fugo project — run 'fugo init <name>' to scaffold one"))
 			}
 
 			out.printf("\n")
-			if missing == 0 {
-				out.successf("environment looks good")
-			} else {
-				out.warnf("%d tool(s) missing — see the hints above", missing)
+			switch {
+			case rep.fails > 0:
+				out.failf("%d blocking issue(s), %d warning(s) — fix the ✗ items above", rep.fails, rep.warns)
+
+				return fmt.Errorf("doctor: %d blocking issue(s)", rep.fails)
+			case rep.warns > 0:
+				out.warnf("%d warning(s) — see the ! items above", rep.warns)
+			default:
+				out.successf("all good — you're ready to 'fugo run'")
 			}
 
 			return nil
 		},
 	}
+}
+
+// doctorReport tallies ✗/! findings and prints aligned status lines.
+type doctorReport struct {
+	fails int
+	warns int
+}
+
+func (r *doctorReport) ok(label, detail string) {
+	out.printf("  %s %-14s %s\n", out.paint(cGreen, "✓"), label, detail)
+}
+
+func (r *doctorReport) warn(label, hint string) {
+	r.warns++
+	out.printf("  %s %-14s %s\n", out.paint(cYellow, "!"), label, out.paint(cDim, hint))
+}
+
+func (r *doctorReport) fail(label, hint string) {
+	r.fails++
+	out.printf("  %s %-14s %s\n", out.paint(cRed, "✗"), label, out.paint(cDim, hint))
+}
+
+func (r *doctorReport) note(label, detail string) {
+	out.printf("  %s %-14s %s\n", out.paint(cDim, "·"), label, out.paint(cDim, detail))
+}
+
+// doctorToolchain checks the external tools Fugo relies on.
+func doctorToolchain(ctx context.Context, rep *doctorReport) {
+	out.printf("\n%s\n", out.paint(cBold, "Toolchain"))
+
+	tools := []struct {
+		name, bin string
+		args      []string
+		required  bool
+		hint      string
+	}{
+		{"Go", "go", []string{"version"}, true, "required — https://go.dev/dl"},
+		{"Flutter", "flutter", []string{versionFlag}, true, "required to render — https://docs.flutter.dev"},
+		{"git", "git", []string{versionFlag}, false, "recommended — 'fugo init' starts a repo"},
+		{"protoc", "protoc", []string{versionFlag}, false, "only to regenerate protobuf (make proto)"},
+		{"gofumpt", "gofumpt", []string{"-version"}, false, "formatter — go install mvdan.cc/gofumpt@latest"},
+	}
+	for _, c := range tools {
+		line, err := firstLine(ctx, c.bin, c.args...)
+		switch {
+		case err == nil:
+			rep.ok(c.name, line)
+		case c.required:
+			rep.fail(c.name, c.hint)
+		default:
+			rep.warn(c.name, c.hint)
+		}
+	}
+
+	rep.note("platform", runtime.GOOS+"/"+runtime.GOARCH)
+}
+
+// inProject reports whether the working directory looks like a Fugo project.
+func inProject() bool {
+	for _, f := range []string{config.DefaultName, "main.go"} {
+		if _, err := os.Stat(f); err == nil {
+			return true
+		}
+	}
+
+	return false
+}
+
+// doctorProject imports fugo.toml and validates the project that would run.
+func doctorProject(ctx context.Context, rep *doctorReport) {
+	out.printf("\n%s\n", out.paint(cBold, "Project"))
+
+	// fugo.toml — the project-level config the CLI imports.
+	if _, err := os.Stat(config.DefaultName); err == nil {
+		cfg, loadErr := config.Load(config.DefaultName)
+		if loadErr != nil {
+			rep.warn("fugo.toml", "unreadable, using defaults: "+loadErr.Error())
+		} else {
+			rep.ok("fugo.toml", fmt.Sprintf("%q  %dx%d  %s",
+				cfg.Window.Title, cfg.Window.Width, cfg.Window.Height, cfg.Server.Addr))
+			doctorAddr(ctx, cfg.Server.Addr, rep)
+		}
+	} else {
+		rep.warn("fugo.toml", "missing — run/build fall back to defaults (800x600, "+config.DefaultAddr+")")
+	}
+
+	// Structure.
+	doctorPath(rep, "main.go", true, "missing — not a Fugo project root?")
+	doctorPath(rep, "ui", false, "no ui/ package (older/flat layout) — fine if screens live elsewhere")
+	doctorPath(rep, "go.mod", true, "missing — run 'go mod init <name>'")
+
+	// The fugo module must resolve (honoring any replace directive).
+	if repo := fugoModuleDir(ctx); repo != "" {
+		rep.ok("fugo module", repo)
+	} else {
+		rep.fail("fugo module", "github.com/sazardev/fugo not resolved — run 'go mod tidy'")
+	}
+
+	// Flutter render client: built, or buildable on first run.
+	if dir := flutterBundleDir(ctx); dir != "" {
+		rep.ok("flutter client", "built")
+	} else if _, err := exec.LookPath("flutter"); err == nil {
+		rep.note("flutter client", "not built yet — 'fugo run' builds it on first launch")
+	} else {
+		rep.warn("flutter client", "not built and flutter not on PATH — 'fugo run' cannot render")
+	}
+
+	// The definitive "will it run?" check.
+	if err := out.runStep("Compiling project (go build ./...)", exec.CommandContext(ctx, "go", subcmdBuild, "./...")); err != nil {
+		rep.fails++
+	}
+}
+
+// doctorPath checks for a project file/dir; missing required entries are ✗.
+func doctorPath(rep *doctorReport, name string, required bool, hint string) {
+	if _, err := os.Stat(name); err == nil {
+		rep.ok(name, "present")
+
+		return
+	}
+	if required {
+		rep.fail(name, hint)
+	} else {
+		rep.warn(name, hint)
+	}
+}
+
+// doctorAddr reports whether the configured gRPC address is usable: a free TCP
+// port, or a Unix socket path. An in-use port is a warning (another instance).
+func doctorAddr(ctx context.Context, addr string, rep *doctorReport) {
+	if !strings.Contains(addr, ":") {
+		rep.ok("server addr", addr+" (unix socket)")
+
+		return
+	}
+
+	var lc net.ListenConfig
+	ln, err := lc.Listen(ctx, "tcp", addr)
+	if err != nil {
+		rep.warn("server addr", addr+" in use — stop the other instance or set a different [server] addr / --addr")
+
+		return
+	}
+	_ = ln.Close()
+	rep.ok("server addr", addr+" (free)")
 }
 
 // upgradeCmd updates the fugo CLI itself to the latest published release.

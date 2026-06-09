@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-06-09
+
+### Added
+- `fugo doctor` is now a two-part health check. **Toolchain**: Go, Flutter, git, protoc, gofumpt (Go/Flutter are required → ✗; the rest are warnings) plus the platform. **Project** (when run inside a Fugo project): it imports `fugo.toml` and reports the resolved window/address, checks the configured gRPC address is free (or a unix socket), verifies the structure (`main.go`, `ui/`, `go.mod`), that the `github.com/sazardev/fugo` module resolves, whether the Flutter client is built (or buildable), and finally compiles the project (`go build ./...`).
+
+### Changed
+- `fugo doctor` now exits non-zero when there's a blocking issue (a required tool missing, an unresolved module, or a project that doesn't compile), so it can gate scripts/CI. Warnings alone keep a zero exit.
+
 ## [0.15.0] - 2026-06-09
 
 ### Added

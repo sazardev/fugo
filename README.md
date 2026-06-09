@@ -63,7 +63,7 @@ This drops the `fugo` binary in `$(go env GOPATH)/bin` — make sure that's on y
 
 ```bash
 fugo --version
-fugo doctor      # checks Go, Flutter, protoc, gofumpt
+fugo doctor      # checks the toolchain + (in a project) its health
 ```
 
 The generated protobuf bindings are **committed**, so a clean module fetch compiles without `protoc` or any code-gen step.
@@ -247,7 +247,7 @@ fugo init <name>          # Scaffold a project (use --template app for a themed 
 fugo run                  # Build + run; auto-builds the Flutter client the first time if it's missing
 fugo run --watch          # Hot reload: rebuild the Go server on .go changes; the window stays open
 fugo build                # Build + bundle the Flutter client into a self-contained dist/
-fugo doctor               # Verify the dev environment (Go, Flutter, protoc, gofumpt)
+fugo doctor               # Check the toolchain; inside a project, validate fugo.toml + structure + that it compiles
 fugo upgrade              # Self-update the CLI to the latest release (go install ...@latest)
 fugo --version            # Print version information
 ```
