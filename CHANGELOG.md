@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-09
+
+### Fixed
+- `fugo --version` now reports the correct version when the CLI is installed with `go install` (the Makefile's `-ldflags` are not applied in that path, so it previously printed the hardcoded `0.1.0`). It falls back to the module version and VCS stamps from `runtime/debug.ReadBuildInfo()`.
+
 ## [0.3.0] - 2026-06-09
 
 ### Added
