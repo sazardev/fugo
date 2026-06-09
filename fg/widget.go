@@ -38,6 +38,12 @@ const (
 	WidgetDropdown           = fugov1.WidgetType_DROPDOWN
 	WidgetAnimatedPositioned = fugov1.WidgetType_ANIMATEDPOSITIONED
 	WidgetWindowDragArea     = fugov1.WidgetType_WINDOWDRAGAREA
+	WidgetCard               = fugov1.WidgetType_CARD
+	WidgetScaffold           = fugov1.WidgetType_SCAFFOLD
+	WidgetFAB                = fugov1.WidgetType_FLOATINGACTIONBUTTON
+	WidgetListTile           = fugov1.WidgetType_LISTTILE
+	WidgetChip               = fugov1.WidgetType_CHIP
+	WidgetProgress           = fugov1.WidgetType_PROGRESS
 )
 
 // Event is a user interaction forwarded from the client to a widget's handler.
@@ -161,4 +167,22 @@ func collectIDs(w Widget, m map[uint32]Widget) {
 	for _, child := range w.widgetChildren() {
 		collectIDs(child, m)
 	}
+}
+
+// walkChildren assigns ids to each child widget (depth-first, via the shared
+// counter) and returns their root ids — for the parent's Children field —
+// together with the flattened list of all descendant nodes.
+func walkChildren(children []Widget, counter *uint32) ([]uint32, []*fugov1.WidgetNode) {
+	var childIDs []uint32
+	var allNodes []*fugov1.WidgetNode
+
+	for _, child := range children {
+		subNodes := child.walkNodes(counter)
+		if len(subNodes) > 0 {
+			childIDs = append(childIDs, subNodes[0].GetId())
+			allNodes = append(allNodes, subNodes...)
+		}
+	}
+
+	return childIDs, allNodes
 }

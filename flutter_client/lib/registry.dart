@@ -12,7 +12,7 @@ class WidgetRegistry {
       case proto.WidgetType.CONTAINER:
         return _buildContainer(node, children);
       case proto.WidgetType.COLUMN:
-        return _buildColumn(children);
+        return _buildColumn(node, children);
       case proto.WidgetType.CENTER:
         return _buildCenter(children);
       case proto.WidgetType.BUTTON:
@@ -67,6 +67,18 @@ class WidgetRegistry {
         return _buildAnimatedPositioned(node, children);
       case proto.WidgetType.WINDOWDRAGAREA:
         return _buildWindowDragArea(children);
+      case proto.WidgetType.CARD:
+        return _buildCard(node, children);
+      case proto.WidgetType.SCAFFOLD:
+        return _buildScaffold(node, children);
+      case proto.WidgetType.FLOATINGACTIONBUTTON:
+        return _buildFab(node);
+      case proto.WidgetType.LISTTILE:
+        return _buildListTile(node);
+      case proto.WidgetType.CHIP:
+        return _buildChip(node);
+      case proto.WidgetType.PROGRESS:
+        return _buildProgress(node);
       default:
         return const SizedBox.shrink();
     }
@@ -89,18 +101,72 @@ class WidgetRegistry {
 
   Widget _buildButton(BuildContext context, proto.WidgetNode node) {
     final props = proto.ButtonProps.fromBuffer(node.props);
-    final radius = props.hasBorderRadius() ? props.borderRadius : 12.0;
-    return FilledButton(
-      style: FilledButton.styleFrom(
-        backgroundColor: props.hasBgColor() ? hexToColor(props.bgColor) : null,
-        textStyle: props.hasFontSize() ? TextStyle(fontSize: props.fontSize) : null,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
-      ),
-      onPressed: () => sendEvent(proto.ClientEvent(
-        nodeId: node.id.toString(),
-        eventType: 'onClick',
-      )),
-      child: Text(props.label),
+    final onPressed = props.enabled
+        ? () => sendEvent(proto.ClientEvent(
+              nodeId: node.id.toString(),
+              eventType: 'onClick',
+            ))
+        : null;
+    final style = _buttonStyle(props);
+    final hasIcon = props.icon.isNotEmpty;
+    final icon = hasIcon ? Icon(_mapIconData(props.icon)) : null;
+    final label = Text(props.label);
+
+    switch (props.variant) {
+      case proto.ButtonVariant.BUTTON_ICON:
+        return IconButton(
+          onPressed: onPressed,
+          icon: Icon(_mapIconData(props.icon)),
+          style: style,
+        );
+      case proto.ButtonVariant.BUTTON_FILLED_TONAL:
+        return hasIcon
+            ? FilledButton.tonalIcon(
+                onPressed: onPressed, icon: icon!, label: label, style: style)
+            : FilledButton.tonal(
+                onPressed: onPressed, style: style, child: label);
+      case proto.ButtonVariant.BUTTON_OUTLINED:
+        return hasIcon
+            ? OutlinedButton.icon(
+                onPressed: onPressed, icon: icon!, label: label, style: style)
+            : OutlinedButton(onPressed: onPressed, style: style, child: label);
+      case proto.ButtonVariant.BUTTON_TEXT:
+        return hasIcon
+            ? TextButton.icon(
+                onPressed: onPressed, icon: icon!, label: label, style: style)
+            : TextButton(onPressed: onPressed, style: style, child: label);
+      case proto.ButtonVariant.BUTTON_ELEVATED:
+        return hasIcon
+            ? ElevatedButton.icon(
+                onPressed: onPressed, icon: icon!, label: label, style: style)
+            : ElevatedButton(onPressed: onPressed, style: style, child: label);
+      default:
+        return hasIcon
+            ? FilledButton.icon(
+                onPressed: onPressed, icon: icon!, label: label, style: style)
+            : FilledButton(onPressed: onPressed, style: style, child: label);
+    }
+  }
+
+  // _buttonStyle returns explicit overrides only when the Go side set them;
+  // otherwise null, so the Material 3 ColorScheme styles the button natively.
+  ButtonStyle? _buttonStyle(proto.ButtonProps props) {
+    final hasBg = props.bgColor.isNotEmpty;
+    final hasRadius = props.borderRadius > 0;
+    final hasFont = props.fontSize > 0;
+    if (!hasBg && !hasRadius && !hasFont) {
+      return null;
+    }
+    return ButtonStyle(
+      backgroundColor:
+          hasBg ? WidgetStatePropertyAll(hexToColor(props.bgColor)) : null,
+      textStyle: hasFont
+          ? WidgetStatePropertyAll(TextStyle(fontSize: props.fontSize))
+          : null,
+      shape: hasRadius
+          ? WidgetStatePropertyAll(RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(props.borderRadius)))
+          : null,
     );
   }
 
@@ -134,10 +200,13 @@ class WidgetRegistry {
     );
   }
 
-  Widget _buildColumn(List<Widget> children) {
+  Widget _buildColumn(proto.WidgetNode node, List<Widget> children) {
+    final props = proto.ColumnProps.fromBuffer(node.props);
+
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisSize: _mapMainAxisSize(props.mainAxisSize),
+      mainAxisAlignment: _mapMainAlign(props.mainAlignment),
+      crossAxisAlignment: _mapCrossAlign(props.crossAlignment),
       children: children,
     );
   }
@@ -532,6 +601,106 @@ class WidgetRegistry {
     return DragToMoveArea(
       child: children.isNotEmpty ? children.first : const SizedBox.shrink(),
     );
+  }
+
+  Widget _buildCard(proto.WidgetNode node, List<Widget> children) {
+    final props = proto.CardProps.fromBuffer(node.props);
+    Widget? child = children.isNotEmpty ? children.first : null;
+    if (props.padding > 0 && child != null) {
+      child = Padding(padding: EdgeInsets.all(props.padding), child: child);
+    }
+
+    return Card(
+      elevation: props.elevation > 0 ? props.elevation : null,
+      shape: props.borderRadius > 0
+          ? RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(props.borderRadius))
+          : null,
+      child: child,
+    );
+  }
+
+  Widget _buildScaffold(proto.WidgetNode node, List<Widget> children) {
+    final props = proto.ScaffoldProps.fromBuffer(node.props);
+    final body = children.isNotEmpty ? children.first : null;
+    final fab = (props.hasFab && children.length > 1) ? children.last : null;
+
+    return Scaffold(
+      appBar: props.hasAppBar ? AppBar(title: Text(props.appBarTitle)) : null,
+      body: body,
+      floatingActionButton: fab,
+    );
+  }
+
+  Widget _buildFab(proto.WidgetNode node) {
+    final props = proto.FabProps.fromBuffer(node.props);
+    void onPressed() => sendEvent(proto.ClientEvent(
+          nodeId: node.id.toString(),
+          eventType: 'onClick',
+        ));
+    final icon = Icon(_mapIconData(props.icon));
+
+    if (props.label.isNotEmpty) {
+      return FloatingActionButton.extended(
+        onPressed: onPressed,
+        icon: icon,
+        label: Text(props.label),
+      );
+    }
+
+    return FloatingActionButton(
+      onPressed: onPressed,
+      mini: props.mini,
+      child: icon,
+    );
+  }
+
+  Widget _buildListTile(proto.WidgetNode node) {
+    final props = proto.ListTileProps.fromBuffer(node.props);
+
+    return ListTile(
+      title: Text(props.title),
+      subtitle: props.subtitle.isNotEmpty ? Text(props.subtitle) : null,
+      leading: props.leadingIcon.isNotEmpty
+          ? Icon(_mapIconData(props.leadingIcon))
+          : null,
+      trailing: props.trailingIcon.isNotEmpty
+          ? Icon(_mapIconData(props.trailingIcon))
+          : null,
+      onTap: () => sendEvent(proto.ClientEvent(
+        nodeId: node.id.toString(),
+        eventType: 'onTap',
+      )),
+    );
+  }
+
+  Widget _buildChip(proto.WidgetNode node) {
+    final props = proto.ChipProps.fromBuffer(node.props);
+
+    return FilterChip(
+      label: Text(props.label),
+      selected: props.selected,
+      onSelected: (v) => sendEvent(proto.ClientEvent(
+        nodeId: node.id.toString(),
+        eventType: 'onTap',
+        eventData: (v ? '1' : '0').codeUnits,
+      )),
+      onDeleted: props.deletable
+          ? () => sendEvent(proto.ClientEvent(
+                nodeId: node.id.toString(),
+                eventType: 'onDeleted',
+              ))
+          : null,
+    );
+  }
+
+  Widget _buildProgress(proto.WidgetNode node) {
+    final props = proto.ProgressProps.fromBuffer(node.props);
+    final value = props.value >= 0 ? props.value : null;
+
+    return props.linear
+        ? LinearProgressIndicator(value: value)
+        : CircularProgressIndicator(value: value);
   }
 
   IconData _mapIconData(String name) {

@@ -5,35 +5,33 @@ import 'registry.dart';
 
 class FugoApp extends StatelessWidget {
   final GlobalKey<FugoRendererState> rendererKey;
+  final Color seedColor;
+  final Brightness brightness;
 
-  const FugoApp({super.key, required this.rendererKey});
+  const FugoApp({
+    super.key,
+    required this.rendererKey,
+    required this.seedColor,
+    required this.brightness,
+  });
 
   @override
   Widget build(BuildContext context) {
-    const scheme = ColorScheme.dark(
-      primary: Color(0xFF3B82F6),
-      onPrimary: Colors.white,
-      secondary: Color(0xFF8B5CF6),
-      onSecondary: Colors.white,
-      surface: Color(0xFF16213E),
-      onSurface: Color(0xFFE5E7EB),
-      error: Color(0xFFEF4444),
-      onError: Colors.white,
-      outline: Color(0xFF6B7280),
-    );
-
+    // The Material 3 ColorScheme is derived entirely from the seed + brightness
+    // that Go sends (FUGO_THEME_SEED / FUGO_THEME_BRIGHTNESS), so widgets pick
+    // up native M3 colors unless a fugo widget sets an explicit override.
     final theme = ThemeData(
       useMaterial3: true,
-      colorScheme: scheme,
-      scaffoldBackgroundColor: const Color(0xFF1A1A2E),
-      visualDensity: VisualDensity.standard,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: seedColor,
+        brightness: brightness,
+      ),
     );
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: theme,
       home: Scaffold(
-        backgroundColor: const Color(0xFF1A1A2E),
         body: SafeArea(child: FugoRenderer(key: rendererKey)),
       ),
     );
@@ -105,15 +103,35 @@ class FugoRendererState extends State<FugoRenderer> {
     }
   }
 
+  // Root widget types that already occupy the whole viewport. A root of any
+  // other (intrinsically-sized) type is wrapped in a Center so simple content
+  // — e.g. a bare Column — lands in the middle of the window automatically.
+  static const _fillTypes = <WidgetType>{
+    WidgetType.SCAFFOLD,
+    WidgetType.CONTAINER,
+    WidgetType.LISTVIEW,
+    WidgetType.GRIDVIEW,
+    WidgetType.STACK,
+    WidgetType.ALIGN,
+    WidgetType.CENTER,
+    WidgetType.SCROLLVIEW,
+    WidgetType.EXPANDED,
+    WidgetType.ANIMATEDCONTAINER,
+  };
+
   @override
   Widget build(BuildContext context) {
     final rootId = _rootId;
     if (rootId == null) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
-    return _buildNode(rootId);
+
+    final root = _buildNode(rootId);
+    final rootType = _widgetMap[rootId]?.type;
+    if (rootType != null && _fillTypes.contains(rootType)) {
+      return root;
+    }
+    return Center(child: root);
   }
 
   Widget _buildNode(int id) {

@@ -41,7 +41,7 @@ make cli                 # builds bin/fugo.exe and bin/fugo-spike.exe
 cd myapp && fugo run           # go build → launch app → spawn Flutter; add --watch to rebuild on .go change
 ```
 
-`fugo doctor` checks for Go / Flutter / protoc / gofumpt. The Go process finds the Flutter binary via `FUGO_FLUTTER_BINARY`, then by searching up the tree for the fugo repo (see `findFlutterBinary` in `app.go` / `cmd/fugo-spike/main.go`). The gRPC address is `FUGO_ADDR` (default `127.0.0.1:9510`).
+`fugo doctor` checks for Go / Flutter / protoc / gofumpt. The Go process finds the Flutter binary via `FUGO_FLUTTER_BINARY`, then by searching up the tree for the fugo repo (see `findFlutterBinary` in `app.go` / `cmd/fugo-spike/main.go`). The gRPC address is `FUGO_ADDR` (default `127.0.0.1:9510`). The active `fg.Theme` is forwarded to the client as `FUGO_THEME_SEED` (primary color hex) + `FUGO_THEME_BRIGHTNESS` (`light`/`dark`), which seed the client's **Material 3** `ColorScheme.fromSeed` — **light by default** (call `fg.UseTheme(fg.DarkTheme())` before `RunStandalone` to change it).
 
 ### Regenerating protobuf code
 
@@ -94,6 +94,8 @@ buildUI(ctx) ──> fg.Widget tree (built ONCE, retained)
 `WidgetNode.props` is a `bytes` field containing a **protobuf-marshaled** per-widget props message (`TextProps`, `ButtonProps`, ...) — i.e. protobuf nested inside protobuf, marshaled with `proto.Marshal` on the Go side and decoded with `*.fromBuffer(node.props)` on the Dart side. The whole `RenderPayload` is a normal gRPC protobuf message. There is no FlatBuffers/vtprotobuf in the codebase despite README claims.
 
 When adding a widget you must touch **four places**: the proto (`WidgetType` enum + a `*Props` message), regenerate (`make proto`), add the Go widget in `fg/` (implement `walkNodes`, marshal props), and add the Dart builder in `flutter_client/lib/registry.dart`.
+
+**Material 3 / vanilla styling.** The client is M3-native, so widgets do **not** inject opinionated hex colors by default — `Text`, `Container`, and `Button` only marshal a color when the user calls a setter (tracked by a `*Set bool` flag; an unset color is sent as `""` so proto3 omits it and the M3 `ColorScheme` styles it). Button variants are separate constructors (`FilledButton`/`FilledTonalButton`/`OutlinedButton`/`TextButton`/`ElevatedButton`/`IconButton`; `Button` = filled) carried by `ButtonProps.variant`. Core Material widgets: `Card`, `Scaffold` (`.AppBar`/`.FAB`), `FloatingActionButton`, `ListTile`, `Chip`, `ProgressCircular`/`ProgressLinear`. The renderer auto-centers an intrinsically-sized root (e.g. a bare `Column`, which defaults to `MainAxisSize.min`); roots whose type fills the viewport (`Scaffold`, `Container`, `ListView`, …) are not wrapped — see `_fillTypes` in `fugo_renderer.dart`.
 
 ## Conventions & workflow
 

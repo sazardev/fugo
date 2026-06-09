@@ -132,22 +132,19 @@ func buildUI(ctx *fugo.Context) fg.Widget {
 	counter := 0
 	counterText := fg.Text("0").FontSize(48)
 
-	incBtn := fg.Button("+").
-		BgColor(fg.Hex("#10B981")).
-		FontSize(20).
-		OnClick(func(_ fg.Event) {
-			counter++
-			counterText.SetText(strconv.Itoa(counter))
-			ctx.Update()
-		})
+	incBtn := fg.FilledButton("+").OnClick(func(_ fg.Event) {
+		counter++
+		counterText.SetText(strconv.Itoa(counter))
+		ctx.Update()
+	})
 
-	return fg.Container(
-		fg.Column(
-			counterText,
-			fg.SizedBox(0, 16),
-			incBtn,
-		),
-	).BgColor(fg.Hex("#1A1A2E")).Pad(fg.EdgeAll(24))
+	// A bare Column auto-centers in the window; Material 3 (light) styles the
+	// button. Add color/padding only when you want to override the theme.
+	return fg.Column(
+		counterText,
+		fg.SizedBox(0, 16),
+		incBtn,
+	)
 }
 `
 

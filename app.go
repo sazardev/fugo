@@ -404,8 +404,11 @@ func enableAuthToken() {
 	flog.Infof("per-run auth token enabled (FUGO_AUTH=1)")
 }
 
-// exportWindowEnv forwards the window options to the Flutter client through the
-// environment (FUGO_TITLE/WIDTH/HEIGHT); the supervisor passes them along.
+// exportWindowEnv forwards the window options and the active theme to the
+// Flutter client through the environment (FUGO_TITLE/WIDTH/HEIGHT and
+// FUGO_THEME_SEED/BRIGHTNESS); the supervisor passes them along. The client
+// builds its Material 3 ColorScheme from the seed + brightness, so call
+// fg.UseTheme before RunStandalone to change it.
 func exportWindowEnv(opts AppOptions) {
 	if opts.Title != "" {
 		_ = os.Setenv("FUGO_TITLE", opts.Title)
@@ -418,6 +421,10 @@ func exportWindowEnv(opts AppOptions) {
 	if opts.Height > 0 {
 		_ = os.Setenv("FUGO_HEIGHT", strconv.Itoa(opts.Height))
 	}
+
+	theme := fg.CurrentTheme()
+	_ = os.Setenv("FUGO_THEME_SEED", theme.Colors.Primary.String())
+	_ = os.Setenv("FUGO_THEME_BRIGHTNESS", theme.Brightness())
 }
 
 func findFlutterBinary() string {

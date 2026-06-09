@@ -10,14 +10,19 @@ import (
 type TextWidget struct {
 	Value string
 	Style style.TextStyle
+	// colorSet records whether Color was set explicitly. When false the color
+	// is left unset on the wire so the Material 3 text theme styles it (so text
+	// reads correctly in both light and dark mode).
+	colorSet bool
 	baseWidget
 }
 
-// Text creates a text widget showing value, styled from the active Theme.
+// Text creates a text widget showing value. Its color is left to the active
+// Material 3 theme unless overridden with Color.
 func Text(value string) *TextWidget {
 	return &TextWidget{
 		Value: value,
-		Style: style.NewTextStyle(active.Typography.Body, active.Colors.OnSurface),
+		Style: style.NewTextStyle(active.Typography.Body, style.Color{}),
 	}
 }
 
@@ -36,6 +41,7 @@ func (t *TextWidget) FontSize(v float64) *TextWidget {
 // Color sets the text color and returns the widget for chaining.
 func (t *TextWidget) Color(c style.Color) *TextWidget {
 	t.Style.Color = c
+	t.colorSet = true
 
 	return t
 }
@@ -62,10 +68,15 @@ func (t *TextWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	*counter++
 	t.id = *counter
 
+	color := ""
+	if t.colorSet {
+		color = t.Style.Color.String()
+	}
+
 	props, _ := proto.Marshal(&fugov1.TextProps{
 		Value:      t.Value,
 		FontSize:   t.Style.FontSize,
-		Color:      t.Style.Color.String(),
+		Color:      color,
 		FontWeight: int32(t.Style.Weight), //nolint:gosec // bounded weight (100..900)
 		TextAlign:  int32(t.Style.Align),  //nolint:gosec // bounded align (0..2)
 	})
