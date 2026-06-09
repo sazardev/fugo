@@ -1,6 +1,6 @@
 # Fugo — agent guide
 
-**v0.1.0** · Local Server-Driven UI framework for desktop: app logic, state, and routing in
+**v0.4.2** · Local Server-Driven UI framework for desktop: app logic, state, and routing in
 **Go**; a precompiled **Flutter** binary renders over gRPC bidirectional streaming (TCP on
 Windows, UDS elsewhere). Go is the single source of truth.
 
@@ -10,6 +10,11 @@ The engine, widget API (`fg/`), transport, supervisor, CLI, and Flutter client a
 
 ## Layout
 
+- **Root (`fugo` package)** — `app.go`, `host.go`, `runtime_tuning.go`, `doc.go`: the public
+  `App` / `Context` / `RunStandalone` lifecycle. Go keeps tests beside the code they cover, so this
+  package's `*_test.go` (`app_test.go`, `app_component_test.go`, `host_test.go`) live in the root —
+  **not** in a separate `test/` directory. That's the language convention, not clutter; a same-package
+  test cannot be relocated without losing access to unexported symbols.
 - `fg/` — declarative widget API (`fg.Text`, `fg.Button`, `fg.Container`, …; prefix-free
   constructors returning `*fg.XxxWidget`) plus the `Theme` system (`fg.DarkTheme`/`LightTheme`,
   `fg.UseTheme`).
@@ -19,6 +24,14 @@ The engine, widget API (`fg/`), transport, supervisor, CLI, and Flutter client a
 - `supervisor/` — spawns/monitors the Flutter subprocess.
 - `cmd/fugo/` — CLI (`init`, `run` + `--watch`, `build`, `doctor`); `cmd/fugo-spike/` — demo.
 - `flutter_client/` — Dart render client.
+
+Top-level docs and config (`README.md`, `CLAUDE.md`, `SPEC.md`, `ROADMAP/`, `docs/`, `Makefile`,
+`.golangci.yml`, `lefthook.yml`, `VERSION`, `CHANGELOG.md`) round out the root.
+
+**Scratch stays out of the tree.** Throwaway `fugo init` demo projects, manual-test screenshots and
+captured run logs are gitignored — keep local experiments under **`.scratch/`** (and root-level
+`*.png` / `*.out` / `*.err` are ignored too). Never commit them; the committed root holds only the
+`fugo` package, its tests, and project docs/config.
 
 ## Commands
 

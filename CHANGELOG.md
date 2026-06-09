@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Repo hygiene: consolidated `.gitignore` so scratch artifacts never land in the tree — throwaway `fugo init` demo projects, manual-test screenshots and captured run logs belong under `.scratch/` (root-level `*.png` / `*.out` / `*.err` are ignored too). Documented the repository layout — including why Go tests live beside their package rather than in a separate folder — in `AGENTS.md`.
+
 ## [0.4.2] - 2026-06-09
 
 ### Added
