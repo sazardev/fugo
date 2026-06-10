@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-06-09
+
+### Added
+- `fugo doctor` now checks **project coherence**: it reads `go.mod`'s module path and `main.go`'s `<module>/ui` import and reports a precise ✗ when they don't match, when the imported `ui` package is missing, or when it has no exported `Build` — caught before the generic compile error.
+- `fugo doctor --fix` repairs the auto-fixable bits inside a project before diagnosing: writes a default `fugo.toml` if missing, runs `git init` if there's no repo, and `go mod tidy` to resolve dependencies.
+
+### Changed
+- **`fugo run` hot-reloads by default.** It now watches `.go` files and rebuilds/reconnects the Go server on every change while the Flutter window stays open — so edits to text, handlers, layout, etc. show up live (in-memory state resets across reloads). Pass `--no-watch` for a single build-and-run; the old `--watch` flag is now implied (hidden, no-op).
+
+### Fixed
+- Flutter render client: reconnection after a server restart (hot reload) no longer fails with "Bad state: Stream has already been listened to". The isolate now subscribes to its `ReceivePort` once and routes events to the active stream, and resets its backoff after a successful session so it reconnects within ~500ms.
+
 ## [0.16.0] - 2026-06-09
 
 ### Added

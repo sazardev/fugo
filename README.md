@@ -213,7 +213,7 @@ fg.Text("Title").FontSize(fg.TextSize.HeadlineMedium)  // the M3 type scale: .Di
 - [x] gRPC transport (UDS / TCP on Windows), health check, keepalive, opt-in auth token
 - [x] 36+ widgets in `fg/` with a fluent, prefix-free API + a `Theme` system
 - [x] Flutter render client (background gRPC isolate, widget registry, auto-reconnect)
-- [x] CLI: `fugo init` (templates) / `run` (`--watch`) / `build` / `doctor` / `widgets` / `upgrade` (self-update)
+- [x] CLI: `fugo init` (templates) / `run` (hot reload by default) / `build` / `doctor` (`--fix`) / `widgets` / `upgrade` (self-update)
 - [x] Runtime window control (`Context.Window()`), `window_manager`-backed
 - [x] OS host services: clipboard (`Context.Clipboard()`), native file dialogs (`Context.Files()`)
 - [x] Imperative overlays: `ctx.ShowSnackBar(...)`, `ctx.ShowDialog(...)`
@@ -244,8 +244,8 @@ fugo/                   # App, Context, lifecycle (RunStandalone, scheduler)
 
 ```bash
 fugo init <name>          # Scaffold a project (use --template app for a themed multi-page starter)
-fugo run                  # Build + run; auto-builds the Flutter client the first time if it's missing
-fugo run --watch          # Hot reload: rebuild the Go server on .go changes; the window stays open
+fugo run                  # Build + run; hot-reloads on .go changes (window stays open). Auto-builds the Flutter client the first time.
+fugo run --no-watch       # Build and run once, without hot reload
 fugo build                # Build + bundle the Flutter client into a self-contained dist/
 fugo doctor               # Check the toolchain; inside a project, validate fugo.toml + structure + that it compiles
 fugo upgrade              # Self-update the CLI to the latest release (go install ...@latest)
@@ -281,8 +281,10 @@ height = 600
 addr = "127.0.0.1:9510"   # fugo run uses this unless you pass --addr
 ```
 
-**Hot reload** keeps the Flutter window open and reconnects after each Go rebuild (the in-memory
-state still resets — full state restore would need a managed-state layer and is not implemented yet).
+**Hot reload is on by default**: `fugo run` watches `.go` files and rebuilds the Go server on every
+change while the Flutter window stays open and reconnects (~500ms), so your edits show up live. The
+in-memory state resets across reloads — full state restore would need a managed-state layer and is
+not implemented yet. Use `fugo run --no-watch` for a single build-and-run.
 
 **Stateful components** are an alternative to a buildUI closure — implement `Render(ctx)` and pass
 the value to `fugo.RunComponent`. **Routing** supports `:params` (e.g. `/user/:id`), read with
