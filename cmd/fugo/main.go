@@ -5,6 +5,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"io"
 	"io/fs"
 	"net"
@@ -359,22 +362,25 @@ func runCmd() *cli.Command {
 	var (
 		addr    string
 		flutter string
-		watch   bool
+		noWatch bool
+		watch   bool // deprecated: hot reload is the default now; kept so --watch still parses
 	)
 
 	return &cli.Command{
 		Name:  "run",
-		Usage: "Build and run the Fugo app in the current directory",
+		Usage: "Build and run the Fugo app, hot-reloading on .go changes",
 		Description: `Build the Go app in the current directory and launch it: the gRPC server
 starts, the Flutter render client is spawned (and built once if missing), and
 the window opens. Press Ctrl+C to stop.
 
-With --watch the Flutter window stays open while the Go server rebuilds and
-reconnects on every .go change (in-memory state resets across reloads).
+Hot reload is ON by default — the Flutter window stays open while the Go server
+rebuilds and reconnects on every .go change, so edits to text, handlers, layout,
+etc. show up live (in-memory state resets across reloads). Pass --no-watch for a
+single build-and-run.
 
 Examples:
-  fugo run
-  fugo run --watch
+  fugo run                  # build, launch, and hot-reload on changes
+  fugo run --no-watch       # build and run once (no auto-rebuild)
   fugo run --addr 127.0.0.1:9600
   fugo run -V               # verbose: trace the build and stream the app's logs`,
 		Flags: append([]cli.Flag{
@@ -390,10 +396,16 @@ Examples:
 				Usage:       "path to the Flutter render binary (auto-detected if empty)",
 			},
 			&cli.BoolFlag{
+				Name:        "no-watch",
+				Destination: &noWatch,
+				Usage:       "disable hot reload; build and run once",
+			},
+			&cli.BoolFlag{
 				Name:        "watch",
 				Aliases:     []string{"w"},
 				Destination: &watch,
-				Usage:       "rebuild the Go server on .go changes; keep the window open",
+				Hidden:      true,
+				Usage:       "(deprecated) hot reload is the default; this flag is a no-op",
 			},
 		}, verbosityFlags()...),
 		Action: func(ctx context.Context, c *cli.Command) error {
@@ -419,11 +431,11 @@ Examples:
 				ensureFlutterClient(ctx)
 			}
 
-			if watch {
-				return runWithWatch(ctx, addr, flutter)
+			if noWatch {
+				return buildAndRun(ctx, addr, flutter)
 			}
 
-			return buildAndRun(ctx, addr, flutter)
+			return runWithWatch(ctx, addr, flutter)
 		},
 	}
 }
@@ -882,11 +894,24 @@ fugo module resolves, whether the Flutter client is built, whether the
 configured address is free, and that the project compiles.
 
 Exits non-zero if there is a blocking issue (✗), so it works in scripts/CI.
-Use -V to trace each probe.`,
-		Flags: verbosityFlags(),
-		Action: func(ctx context.Context, _ *cli.Command) error {
+Use -V to trace each probe.
+
+With --fix it first repairs the auto-fixable bits inside a project: writes a
+default fugo.toml if missing, runs 'git init' if there's no repo, and 'go mod
+tidy' to resolve dependencies — then re-runs the diagnosis.`,
+		Flags: append([]cli.Flag{
+			&cli.BoolFlag{
+				Name:  "fix",
+				Usage: "auto-repair what it can (fugo.toml, git init, go mod tidy) before checking",
+			},
+		}, verbosityFlags()...),
+		Action: func(ctx context.Context, c *cli.Command) error {
 			setupUI()
 			out.heading("Fugo Doctor")
+
+			if c.Bool("fix") && inProject() {
+				doctorFix(ctx)
+			}
 
 			rep := &doctorReport{}
 			doctorToolchain(ctx, rep)
@@ -1001,15 +1026,17 @@ func doctorProject(ctx context.Context, rep *doctorReport) {
 
 	// Structure.
 	doctorPath(rep, "main.go", true, "missing — not a Fugo project root?")
-	doctorPath(rep, "ui", false, "no ui/ package (older/flat layout) — fine if screens live elsewhere")
 	doctorPath(rep, "go.mod", true, "missing — run 'go mod init <name>'")
 
 	// The fugo module must resolve (honoring any replace directive).
 	if repo := fugoModuleDir(ctx); repo != "" {
 		rep.ok("fugo module", repo)
 	} else {
-		rep.fail("fugo module", "github.com/sazardev/fugo not resolved — run 'go mod tidy'")
+		rep.fail("fugo module", "github.com/sazardev/fugo not resolved — run 'go mod tidy' (or 'fugo doctor --fix')")
 	}
+
+	// Coherence: go.mod module ↔ main.go's ui import ↔ ui.Build.
+	doctorCoherence(rep)
 
 	// Flutter render client: built, or buildable on first run.
 	if dir := flutterBundleDir(ctx); dir != "" {
@@ -1058,6 +1085,139 @@ func doctorAddr(ctx context.Context, addr string, rep *doctorReport) {
 	}
 	_ = ln.Close()
 	rep.ok("server addr", addr+" (free)")
+}
+
+// doctorCoherence checks that the scaffolded wiring still lines up: go.mod's
+// module path, main.go's `<module>/ui` import, and a Build func in that package.
+// It only reports when main.go actually imports a `/ui` subpackage, so flat or
+// custom layouts are left alone.
+func doctorCoherence(rep *doctorReport) {
+	module := goModModule("go.mod")
+	if module == "" {
+		return // go.mod absence is already reported by the structure check.
+	}
+
+	uiImport := ""
+	for _, imp := range goImports("main.go") {
+		if strings.HasSuffix(imp, "/ui") {
+			uiImport = imp
+
+			break
+		}
+	}
+	if uiImport == "" {
+		return // not using a ui subpackage — nothing to reconcile.
+	}
+
+	if !strings.HasPrefix(uiImport, module+"/") {
+		rep.fail("ui import", fmt.Sprintf("main.go imports %q but go.mod module is %q — make them match", uiImport, module))
+
+		return
+	}
+
+	rel := strings.TrimPrefix(uiImport, module+"/")
+	if _, err := os.Stat(rel); err != nil {
+		rep.fail("ui package", fmt.Sprintf("main.go imports %s but ./%s is missing", uiImport, rel))
+
+		return
+	}
+	if !hasBuildFunc(rel) {
+		rep.fail("ui.Build", fmt.Sprintf("package %s has no exported Build(ctx) — main.go calls ui.Build", uiImport))
+
+		return
+	}
+
+	rep.ok("ui import", uiImport+" → ./"+rel)
+}
+
+// goModModule returns the module path declared in a go.mod file ("" if absent).
+func goModModule(path string) string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+
+	for _, line := range strings.Split(string(data), "\n") {
+		if line = strings.TrimSpace(line); strings.HasPrefix(line, "module ") {
+			return strings.TrimSpace(strings.TrimPrefix(line, "module"))
+		}
+	}
+
+	return ""
+}
+
+// goImports returns the import paths of a single Go file ("nil" if it can't be
+// parsed); only the import block is read.
+func goImports(path string) []string {
+	f, err := parser.ParseFile(token.NewFileSet(), path, nil, parser.ImportsOnly)
+	if err != nil {
+		return nil
+	}
+
+	paths := make([]string, 0, len(f.Imports))
+	for _, imp := range f.Imports {
+		paths = append(paths, strings.Trim(imp.Path.Value, `"`))
+	}
+
+	return paths
+}
+
+// hasBuildFunc reports whether any non-test .go file in dir declares a
+// receiver-less exported func named Build.
+func hasBuildFunc(dir string) bool {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return false
+	}
+
+	fset := token.NewFileSet()
+	for _, e := range entries {
+		name := e.Name()
+		if e.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
+			continue
+		}
+
+		f, err := parser.ParseFile(fset, filepath.Join(dir, name), nil, 0)
+		if err != nil {
+			continue
+		}
+		for _, d := range f.Decls {
+			if fn, ok := d.(*ast.FuncDecl); ok && fn.Recv == nil && fn.Name.Name == "Build" {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// doctorFix repairs the auto-fixable parts of a project before diagnosis: a
+// missing fugo.toml, a missing git repo, and unresolved dependencies.
+func doctorFix(ctx context.Context) {
+	out.printf("\n%s\n", out.paint(cBold, "Fixing"))
+
+	if _, err := os.Stat(config.DefaultName); err != nil {
+		name := goModModule("go.mod")
+		if name == "" {
+			name = projectName()
+		}
+		content := fmt.Sprintf(configTemplate, filepath.Base(name), filepath.Base(name), 800, 600)
+		if writeErr := os.WriteFile(config.DefaultName, []byte(content), 0o644); writeErr == nil {
+			out.successf("wrote %s", config.DefaultName)
+		} else {
+			out.warnf("could not write %s: %v", config.DefaultName, writeErr)
+		}
+	}
+
+	if _, err := os.Stat(".git"); err != nil {
+		if _, lookErr := exec.LookPath("git"); lookErr == nil {
+			_ = out.runStep("git init", exec.CommandContext(ctx, "git", "init", "-q"))
+		}
+	}
+
+	if _, err := os.Stat("go.mod"); err == nil {
+		_ = out.runStep("go mod tidy", exec.CommandContext(ctx, "go", "mod", "tidy"))
+	}
 }
 
 // upgradeCmd updates the fugo CLI itself to the latest published release.
