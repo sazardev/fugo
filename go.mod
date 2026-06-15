@@ -5,9 +5,9 @@ go 1.26.3
 tool github.com/evilmartians/lefthook/v2
 
 require (
-	github.com/urfave/cli/v3 v3.9.0
-	golang.org/x/sys v0.43.0
-	golang.org/x/term v0.41.0
+	github.com/urfave/cli/v3 v3.10.0
+	golang.org/x/sys v0.46.0
+	golang.org/x/term v0.44.0
 	google.golang.org/grpc v1.81.1
 	google.golang.org/protobuf v1.36.11
 )
