@@ -187,18 +187,26 @@ func extractTarGz(r io.Reader, destDir string) error {
 			return err
 		}
 
-		target := filepath.Join(cleanDest, filepath.Clean(hdr.Name))
-		if target != cleanDest && !strings.HasPrefix(target, cleanDest+string(os.PathSeparator)) {
-			return fmt.Errorf("tar entry escapes destination: %s", hdr.Name)
-		}
-
-		if err := extractTarEntry(tr, hdr, target); err != nil {
+		if err := extractTarEntry(tr, hdr, cleanDest); err != nil {
 			return err
 		}
 	}
 }
 
-func extractTarEntry(tr *tar.Reader, hdr *tar.Header, target string) error {
+// extractTarEntry validates hdr.Name resolves to a path inside cleanDest
+// (rejecting zip-slip escapes via ".." or an absolute path) and only then
+// performs the corresponding file system operation — the validation and the
+// operations it guards live in the same function on purpose, immediately
+// next to each other, so there is no path between untrusted archive input
+// and a file system sink that skips the check.
+func extractTarEntry(tr *tar.Reader, hdr *tar.Header, cleanDest string) error {
+	target := filepath.Join(cleanDest, filepath.Clean(hdr.Name))
+
+	rel, err := filepath.Rel(cleanDest, target)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return fmt.Errorf("tar entry escapes destination: %s", hdr.Name)
+	}
+
 	switch hdr.Typeflag {
 	case tar.TypeDir:
 		return os.MkdirAll(target, 0o755)
