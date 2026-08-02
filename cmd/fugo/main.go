@@ -26,16 +26,27 @@ import (
 )
 
 var (
-	version = "0.1.0"
+	version = unresolvedVersion
 	commit  = "unknown"
 	date    = "unknown"
 )
 
 const (
 	osWindows   = "windows"
+	osLinux     = "linux"
 	subcmdBuild = "build"
 	fugoModule  = "github.com/sazardev/fugo"
 	versionFlag = "--version"
+	distDir     = "dist"
+
+	// unresolvedVersion is the unresolved placeholder in `var version` (see
+	// below) — a plain `go build` of this repo without make's -ldflags, not a
+	// real tagged release.
+	unresolvedVersion = "0.1.0"
+
+	templateCounter  = "counter"
+	templateApp      = "app"
+	templateShowcase = "showcase"
 )
 
 func main() {
@@ -91,7 +102,7 @@ func resolvedVersion() string {
 	v := version
 
 	info, ok := debug.ReadBuildInfo()
-	if ok && v == "0.1.0" && info.Main.Version != "" && info.Main.Version != "(devel)" {
+	if ok && v == unresolvedVersion && info.Main.Version != "" && info.Main.Version != "(devel)" {
 		v = strings.TrimPrefix(info.Main.Version, "v")
 	}
 
@@ -171,7 +182,7 @@ Examples:
 			&cli.StringFlag{
 				Name:        "template",
 				Aliases:     []string{"t"},
-				Value:       "counter",
+				Value:       templateCounter,
 				Destination: &template,
 				Usage:       "starter template: counter | app | showcase",
 			},
@@ -221,7 +232,7 @@ Examples:
 				organization = w.ask("Organization (reverse-DNS, e.g. com.acme, optional)", "")
 			}
 			if interactive && !c.IsSet("template") {
-				template = w.askChoice("Template", []string{"counter", "app", "showcase"}, template)
+				template = w.askChoice("Template", []string{templateCounter, templateApp, templateShowcase}, template)
 			}
 			if interactive && !c.IsSet("theme") {
 				theme = w.askChoice("Theme", []string{"light", "dark"}, "")
@@ -653,7 +664,7 @@ func newWatcher() (*fsnotify.Watcher, error) {
 
 func isWatchExcluded(path string) bool {
 	switch filepath.Base(path) {
-	case ".git", "bin", "dist", "logs", "vendor":
+	case ".git", "bin", distDir, "logs", "vendor":
 		return true
 	default:
 		return false
@@ -795,7 +806,7 @@ Examples:
 				return errors.New("no main.go in the current directory — run 'fugo init <name>' first")
 			}
 
-			outDir := "dist"
+			outDir := distDir
 			appOut := filepath.Join(outDir, projectName()+exeSuffix())
 
 			build := exec.CommandContext(ctx, "go", subcmdBuild, "-ldflags=-s -w", "-o", appOut, ".")
@@ -994,7 +1005,7 @@ func ensureFlutterClient(ctx context.Context) {
 	// not a real tagged release. Skip straight to the local-build fallback
 	// instead of trying (and failing) a real network request against a
 	// release that doesn't exist.
-	if v := resolvedVersion(); v != "0.1.0" {
+	if v := resolvedVersion(); v != unresolvedVersion {
 		dir, err := downloadFlutterClient(ctx, v)
 		if err == nil {
 			out.successf("downloaded the precompiled Flutter client %s", out.paint(cDim, "("+dir+")"))
@@ -1039,7 +1050,7 @@ func flutterTarget() string {
 		return "windows"
 	}
 
-	return "linux"
+	return osLinux
 }
 
 // copyDir recursively copies the contents of src into dst.
@@ -1229,7 +1240,7 @@ func doctorToolchain(ctx context.Context, rep *doctorReport) {
 // this checks for notify-send (part of the libnotify-bin/libnotify-tools
 // package on most distros) as a proxy for "libnotify is installed".
 func doctorNotifications(ctx context.Context, rep *doctorReport) {
-	if runtime.GOOS != "linux" {
+	if runtime.GOOS != osLinux {
 		return
 	}
 
@@ -1360,7 +1371,7 @@ func doctorProject(ctx context.Context, rep *doctorReport) {
 	switch {
 	case flutterBundleDir(ctx) != "":
 		rep.ok("flutter client", "ready")
-	case resolvedVersion() != "0.1.0":
+	case resolvedVersion() != unresolvedVersion:
 		rep.note("flutter client", "not built yet — 'fugo run' downloads the precompiled client on first launch")
 	case lookErr == nil:
 		rep.note("flutter client", "not built yet — 'fugo run' builds it locally on first launch")

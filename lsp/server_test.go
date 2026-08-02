@@ -31,7 +31,7 @@ func TestServeInitializeRoundTrip(t *testing.T) {
 
 	var in bytes.Buffer
 	req := &Message{
-		JSONRPC: "2.0",
+		JSONRPC: jsonrpcVersion,
 		ID:      json.RawMessage(`42`),
 		Method:  "initialize",
 		Params:  json.RawMessage(`{"processId":7,"rootUri":"file:///tmp/proj"}`),
@@ -91,7 +91,7 @@ func TestServeMethodNotFound(t *testing.T) {
 	srv := NewServer()
 
 	var in bytes.Buffer
-	req := &Message{JSONRPC: "2.0", ID: json.RawMessage(`1`), Method: "textDocument/hover"}
+	req := &Message{JSONRPC: jsonrpcVersion, ID: json.RawMessage(`1`), Method: "textDocument/hover"}
 	if err := WriteMessage(&in, req); err != nil {
 		t.Fatalf("WriteMessage: %v", err)
 	}
@@ -122,12 +122,12 @@ func TestServeNotificationNoResponse(t *testing.T) {
 	srv := NewServer()
 
 	called := make(chan struct{}, 1)
-	srv.HandleNotification("textDocument/didOpen", func(_ context.Context, _ json.RawMessage) {
+	srv.HandleNotification(didOpenMethod, func(_ context.Context, _ json.RawMessage) {
 		called <- struct{}{}
 	})
 
 	var in bytes.Buffer
-	note := &Message{JSONRPC: "2.0", Method: "textDocument/didOpen", Params: json.RawMessage(`{}`)}
+	note := &Message{JSONRPC: jsonrpcVersion, Method: didOpenMethod, Params: json.RawMessage(`{}`)}
 	if err := WriteMessage(&in, note); err != nil {
 		t.Fatalf("WriteMessage: %v", err)
 	}

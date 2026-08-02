@@ -33,7 +33,7 @@ func lspPositionToByteOffset(content string, pos lsp.Position) int {
 	// Byte offset of the start of `line`: sum of all previous lines' byte
 	// lengths plus one '\n' each.
 	offset := 0
-	for i := 0; i < line; i++ {
+	for i := range line {
 		offset += len(lines[i]) + 1 // +1 for the '\n' separator
 	}
 
@@ -83,7 +83,7 @@ func byteOffsetToLSPPosition(content string, offset int) lsp.Position {
 	// Find the line containing offset by counting '\n' bytes before it.
 	line := 0
 	lineStart := 0
-	for i := 0; i < offset; i++ {
+	for i := range offset {
 		if content[i] == '\n' {
 			line++
 			lineStart = i + 1

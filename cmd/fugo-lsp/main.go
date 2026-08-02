@@ -58,13 +58,13 @@ func main() {
 		os.Exit(0)
 	})
 
-	srv.HandleNotification("textDocument/didOpen", func(_ context.Context, params json.RawMessage) {
+	srv.HandleNotification("textDocument/didOpen", func(ctx context.Context, params json.RawMessage) {
 		var p lsp.DidOpenTextDocumentParams
 		_ = json.Unmarshal(params, &p)
 		logger.Printf("didOpen: %s", p.TextDocument.URI)
 
 		state.docs.set(p.TextDocument.URI, p.TextDocument.Text)
-		go state.publishDiagnostics(lsp.FilePath(p.TextDocument.URI))
+		go state.publishDiagnostics(context.WithoutCancel(ctx), lsp.FilePath(p.TextDocument.URI))
 	})
 
 	srv.HandleNotification("textDocument/didChange", func(_ context.Context, params json.RawMessage) {
@@ -77,12 +77,12 @@ func main() {
 		}
 	})
 
-	srv.HandleNotification("textDocument/didSave", func(_ context.Context, params json.RawMessage) {
+	srv.HandleNotification("textDocument/didSave", func(ctx context.Context, params json.RawMessage) {
 		var p lsp.DidSaveTextDocumentParams
 		_ = json.Unmarshal(params, &p)
 		logger.Printf("didSave: %s", p.TextDocument.URI)
 
-		go state.publishDiagnostics(lsp.FilePath(p.TextDocument.URI))
+		go state.publishDiagnostics(context.WithoutCancel(ctx), lsp.FilePath(p.TextDocument.URI))
 	})
 
 	srv.HandleNotification("textDocument/didClose", func(_ context.Context, params json.RawMessage) {

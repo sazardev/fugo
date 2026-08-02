@@ -13,6 +13,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/format"
@@ -24,34 +25,42 @@ import (
 	"strings"
 )
 
+// Catalog group names, shared between fileGroup and groupOrder below.
+const (
+	groupLayout    = "Layout"
+	groupInput     = "Input"
+	groupScrolling = "Scrolling & lists"
+	groupRouting   = "Routing"
+)
+
 // fileGroup maps a source file in fg/ to the catalog group its constructors
 // belong to. Files not listed fall back to "Other". Kept intentionally small
 // — the main goal of this generator is a complete, accurate widget list, not
 // a perfect taxonomy.
 var fileGroup = map[string]string{
-	"layout.go":    "Layout",
-	"container.go": "Layout",
-	"sizedbox.go":  "Layout",
-	"padding.go":   "Layout",
+	"layout.go":    groupLayout,
+	"container.go": groupLayout,
+	"sizedbox.go":  groupLayout,
+	"padding.go":   groupLayout,
 
-	"textfield.go": "Input",
-	"checkbox.go":  "Input",
-	"switch.go":    "Input",
-	"slider.go":    "Input",
-	"radio.go":     "Input",
-	"dropdown.go":  "Input",
-	"button.go":    "Input",
+	"textfield.go": groupInput,
+	"checkbox.go":  groupInput,
+	"switch.go":    groupInput,
+	"slider.go":    groupInput,
+	"radio.go":     groupInput,
+	"dropdown.go":  groupInput,
+	"button.go":    groupInput,
 
-	"listview.go": "Scrolling & lists",
-	"gridview.go": "Scrolling & lists",
-	"scroll.go":   "Scrolling & lists",
+	"listview.go": groupScrolling,
+	"gridview.go": groupScrolling,
+	"scroll.go":   groupScrolling,
 
-	"router.go": "Routing",
+	"router.go": groupRouting,
 }
 
 // groupOrder fixes the print order of known groups; anything else (i.e.
 // "Other") is appended last.
-var groupOrder = []string{"Layout", "Input", "Scrolling & lists", "Routing"}
+var groupOrder = []string{groupLayout, groupInput, groupScrolling, groupRouting}
 
 type widgetInfo struct {
 	ctor string
@@ -72,7 +81,7 @@ func run() error {
 	}
 
 	if len(widgets) == 0 {
-		return fmt.Errorf("no widget constructors found in fg/")
+		return errors.New("no widget constructors found in fg/")
 	}
 
 	if err := writeGo(widgets); err != nil {

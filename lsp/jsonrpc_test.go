@@ -7,11 +7,15 @@ import (
 	"testing"
 )
 
+// didOpenMethod is the notification method name used throughout these tests
+// and server_test.go.
+const didOpenMethod = "textDocument/didOpen"
+
 func TestWriteReadMessageRoundTrip(t *testing.T) {
 	var buf bytes.Buffer
 
 	original := &Message{
-		JSONRPC: "2.0",
+		JSONRPC: jsonrpcVersion,
 		ID:      json.RawMessage(`1`),
 		Method:  "initialize",
 		Params:  json.RawMessage(`{"processId":123}`),
@@ -58,8 +62,8 @@ func TestWriteReadMessageRoundTrip(t *testing.T) {
 func TestReadMessageMultipleMessages(t *testing.T) {
 	var buf bytes.Buffer
 
-	msg1 := &Message{JSONRPC: "2.0", Method: "textDocument/didOpen", Params: json.RawMessage(`{"a":1}`)}
-	msg2 := &Message{JSONRPC: "2.0", ID: json.RawMessage(`"abc"`), Method: "shutdown"}
+	msg1 := &Message{JSONRPC: jsonrpcVersion, Method: didOpenMethod, Params: json.RawMessage(`{"a":1}`)}
+	msg2 := &Message{JSONRPC: jsonrpcVersion, ID: json.RawMessage(`"abc"`), Method: "shutdown"}
 
 	if err := WriteMessage(&buf, msg1); err != nil {
 		t.Fatalf("WriteMessage msg1: %v", err)
@@ -74,7 +78,7 @@ func TestReadMessageMultipleMessages(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadMessage msg1: %v", err)
 	}
-	if got1.Method != "textDocument/didOpen" {
+	if got1.Method != didOpenMethod {
 		t.Errorf("msg1 Method = %q", got1.Method)
 	}
 

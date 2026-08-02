@@ -85,7 +85,7 @@ func TestWatcherIgnoresNonGoFiles(t *testing.T) {
 func TestIsWatchExcluded(t *testing.T) {
 	t.Parallel()
 
-	for _, dir := range []string{".git", "bin", "dist", "logs", "vendor"} {
+	for _, dir := range []string{".git", "bin", distDir, "logs", "vendor"} {
 		if !isWatchExcluded(filepath.Join("project", dir)) {
 			t.Errorf("isWatchExcluded(%q) = false, want true", dir)
 		}

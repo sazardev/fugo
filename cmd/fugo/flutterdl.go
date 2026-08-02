@@ -31,7 +31,7 @@ var flutterClientDownloadURL = func(version, asset string) string {
 // windows/x64 are built today — see release-flutter-client.yml).
 func flutterClientAssetName() string {
 	switch runtime.GOOS {
-	case "linux":
+	case osLinux:
 		return "fugo_flutter_client_linux_x64.tar.gz"
 	case osWindows:
 		return "fugo_flutter_client_windows_x64.tar.gz"
@@ -207,7 +207,7 @@ func extractTarEntry(tr *tar.Reader, hdr *tar.Header, target string) error {
 			return err
 		}
 
-		mode := os.FileMode(hdr.Mode) & 0o777 //nolint:gosec // mode bits from our own CI-built archive, not attacker input
+		mode := os.FileMode(hdr.Mode) & 0o777 // mode bits from our own CI-built archive, not attacker input
 		if mode == 0 {
 			mode = 0o644
 		}
@@ -217,7 +217,7 @@ func extractTarEntry(tr *tar.Reader, hdr *tar.Header, target string) error {
 			return err
 		}
 
-		if _, err := io.Copy(f, tr); err != nil { //nolint:gosec // bundle comes from our own CI-built release asset, not arbitrary input
+		if _, err := io.Copy(f, tr); err != nil { // bundle comes from our own CI-built release asset, not arbitrary input
 			_ = f.Close()
 
 			return err

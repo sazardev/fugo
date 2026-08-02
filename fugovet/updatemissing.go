@@ -84,7 +84,9 @@ func runUpdateMissing(pass *analysis.Pass) (any, error) {
 // parameter that is in scope there, which may belong to an outer function
 // (closures capture it). Returns ("", nil) if no such parameter is found
 // anywhere up the stack.
-func resolveCtxScope(pass *analysis.Pass, stack []ast.Node) (ctxName string, innerBody *ast.BlockStmt) {
+func resolveCtxScope(pass *analysis.Pass, stack []ast.Node) (string, *ast.BlockStmt) {
+	var innerBody *ast.BlockStmt
+
 	haveInner := false
 	for i := len(stack) - 2; i >= 0; i-- {
 		var ft *ast.FuncType

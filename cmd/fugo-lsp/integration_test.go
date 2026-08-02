@@ -14,10 +14,10 @@ import (
 // writePlainFixture creates a minimal, dependency-free Go module in a temp
 // dir (no import of fg) for testing hover/definition against plain
 // identifiers, without needing network access or the fugo module's own
-// dependency graph.
-func writePlainFixture(t *testing.T) (dir, filePath string) {
+// dependency graph. Returns the fixture's main.go path.
+func writePlainFixture(t *testing.T) string {
 	t.Helper()
-	dir = t.TempDir()
+	dir := t.TempDir()
 
 	goMod := "module fixture\n\ngo 1.26\n"
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(goMod), 0o644); err != nil {
@@ -39,12 +39,12 @@ func main() {
 	_ = msg
 }
 `
-	filePath = filepath.Join(dir, "main.go")
+	filePath := filepath.Join(dir, "main.go")
 	if err := os.WriteFile(filePath, []byte(src), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
-	return dir, filePath
+	return filePath
 }
 
 func newTestState() *lspState {
@@ -52,7 +52,7 @@ func newTestState() *lspState {
 }
 
 func TestHover_ResolvesFunction(t *testing.T) {
-	_, filePath := writePlainFixture(t)
+	filePath := writePlainFixture(t)
 	src, err := os.ReadFile(filePath)
 	if err != nil {
 		t.Fatal(err)
@@ -95,7 +95,7 @@ func TestHover_ResolvesFunction(t *testing.T) {
 }
 
 func TestDefinition_PointsAtDeclaration(t *testing.T) {
-	_, filePath := writePlainFixture(t)
+	filePath := writePlainFixture(t)
 	src, err := os.ReadFile(filePath)
 	if err != nil {
 		t.Fatal(err)
@@ -167,7 +167,7 @@ func main() {
 	}
 
 	// go mod tidy so the module graph resolves against the replace target.
-	cmd := exec.Command("go", "mod", "tidy")
+	cmd := exec.CommandContext(context.Background(), "go", "mod", "tidy")
 	cmd.Dir = dir
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("go mod tidy: %v\n%s", err, out)

@@ -14,7 +14,7 @@ import (
 // for the declaring identifier itself). Returns nil, nil if there is no
 // identifier at that position or it doesn't resolve to anything (e.g. it's
 // a package name, or the file has type errors around it).
-func resolveIdentAt(pkg *packages.Package, fset *token.FileSet, file *ast.File, byteOffset int) (*ast.Ident, types.Object) {
+func resolveIdentAt(pkg *packages.Package, _ *token.FileSet, file *ast.File, byteOffset int) (*ast.Ident, types.Object) {
 	if file == nil {
 		return nil, nil
 	}

@@ -70,7 +70,7 @@ func (s *Server) Notify(method string, params any) error {
 		return err
 	}
 	msg := &Message{
-		JSONRPC: "2.0",
+		JSONRPC: jsonrpcVersion,
 		Method:  method,
 		Params:  raw,
 	}
@@ -140,12 +140,12 @@ func (s *Server) dispatch(ctx context.Context, msg *Message) {
 		s.mu.RUnlock()
 
 		if !ok {
-			s.writeMessage(&Message{
-				JSONRPC: "2.0",
+			_ = s.writeMessage(&Message{
+				JSONRPC: jsonrpcVersion,
 				ID:      msg.ID,
 				Error: &RPCError{
 					Code:    MethodNotFound,
-					Message: fmt.Sprintf("method not found: %s", msg.Method),
+					Message: "method not found: " + msg.Method,
 				},
 			})
 
@@ -158,8 +158,8 @@ func (s *Server) dispatch(ctx context.Context, msg *Message) {
 			if !errors.As(err, &rpcErr) {
 				rpcErr = &RPCError{Code: InternalError, Message: err.Error()}
 			}
-			s.writeMessage(&Message{
-				JSONRPC: "2.0",
+			_ = s.writeMessage(&Message{
+				JSONRPC: jsonrpcVersion,
 				ID:      msg.ID,
 				Error:   rpcErr,
 			})
@@ -169,8 +169,8 @@ func (s *Server) dispatch(ctx context.Context, msg *Message) {
 
 		raw, err := json.Marshal(result)
 		if err != nil {
-			s.writeMessage(&Message{
-				JSONRPC: "2.0",
+			_ = s.writeMessage(&Message{
+				JSONRPC: jsonrpcVersion,
 				ID:      msg.ID,
 				Error: &RPCError{
 					Code:    InternalError,
@@ -181,8 +181,8 @@ func (s *Server) dispatch(ctx context.Context, msg *Message) {
 			return
 		}
 
-		s.writeMessage(&Message{
-			JSONRPC: "2.0",
+		_ = s.writeMessage(&Message{
+			JSONRPC: jsonrpcVersion,
 			ID:      msg.ID,
 			Result:  raw,
 		})

@@ -108,6 +108,19 @@ linters:
       - path: fg/(checkbox|switch)listtile\.go
         linters:
           - dupl
+      # (nil, nil) is the idiomatic "no result" return for optional lookups in
+      # the LSP server (hover/definition/formatting on a position with
+      # nothing there) and in fugovet's AST-walking helpers (nothing found
+      # while climbing/resolving) — the LSP spec itself uses a null result for
+      # "nothing here", so inventing a sentinel error for it would be less
+      # idiomatic, not more.
+      - path: cmd/fugo-lsp/
+        linters:
+          - nilerr
+          - nilnil
+      - path: fugovet/
+        linters:
+          - nilnil
 
 formatters:
   enable:

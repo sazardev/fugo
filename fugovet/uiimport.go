@@ -38,8 +38,8 @@ func runUIImport(pass *analysis.Pass) (any, error) {
 			}
 
 			obj := pkg.Scope().Lookup("Build")
-			switch {
-			case obj == nil:
+			switch obj {
+			case nil:
 				pass.Reportf(imp.Pos(), "package %q is imported as a UI root but has no exported Build function", path)
 			default:
 				if _, ok := obj.(*types.Func); !ok {

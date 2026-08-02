@@ -38,7 +38,7 @@ func loadPackage(ctx context.Context, path string, overlay map[string][]byte) (*
 	}
 	if len(pkgs[0].Errors) > 0 && len(pkgs[0].Syntax) == 0 {
 		// Couldn't even parse — nothing useful to return.
-		return pkgs[0], fset, fmt.Errorf("package failed to load: %v", pkgs[0].Errors[0])
+		return pkgs[0], fset, fmt.Errorf("package failed to load: %w", pkgs[0].Errors[0])
 	}
 
 	return pkgs[0], fset, nil

@@ -2,6 +2,11 @@ package fg
 
 import "strconv"
 
+// changeEventType is the EventType every synthetic value-carrying Event below
+// uses, matching the "change" wire event checkbox/text/slider/etc. widgets
+// dispatch on.
+const changeEventType = "change"
+
 // This file is Fugo's supported testing surface: synthetic Event constructors
 // that make the wire format of Event.Data explicit, so a Go test can drive a
 // widget's Handle method without guessing the ad-hoc string convention each
@@ -27,21 +32,21 @@ func BoolEvent(v bool) Event {
 		data = "1"
 	}
 
-	return Event{EventType: "change", Data: []byte(data)}
+	return Event{EventType: changeEventType, Data: []byte(data)}
 }
 
 // TextEvent returns a synthetic Event carrying a plain string value, matching
 // the wire format TextField, Dropdown, and Autocomplete use — their OnChange
 // handlers read the new value directly as string(e.Data).
 func TextEvent(s string) Event {
-	return Event{EventType: "change", Data: []byte(s)}
+	return Event{EventType: changeEventType, Data: []byte(s)}
 }
 
 // FloatEvent returns a synthetic Event carrying a decimal string, matching the
 // wire format Slider uses — its OnChange handler parses the new value with
 // strconv.ParseFloat(string(e.Data), 64).
 func FloatEvent(v float64) Event {
-	return Event{EventType: "change", Data: []byte(strconv.FormatFloat(v, 'f', -1, 64))}
+	return Event{EventType: changeEventType, Data: []byte(strconv.FormatFloat(v, 'f', -1, 64))}
 }
 
 // RangeEvent returns a synthetic Event carrying a "start,end" pair, matching
@@ -51,5 +56,5 @@ func FloatEvent(v float64) Event {
 func RangeEvent(start, end float64) Event {
 	data := strconv.FormatFloat(start, 'f', 2, 64) + "," + strconv.FormatFloat(end, 'f', 2, 64)
 
-	return Event{EventType: "change", Data: []byte(data)}
+	return Event{EventType: changeEventType, Data: []byte(data)}
 }

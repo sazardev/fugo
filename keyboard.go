@@ -116,7 +116,7 @@ func (a *App) dispatchFileDrop(data string) {
 	}
 }
 
-func parseSize(s string) (width, height float64, ok bool) {
+func parseSize(s string) (float64, float64, bool) {
 	parts := strings.SplitN(s, "x", 2)
 	if len(parts) != 2 {
 		return 0, 0, false

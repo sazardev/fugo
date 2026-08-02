@@ -50,9 +50,11 @@ var posRe = regexp.MustCompile(`^(.+):(\d+):(\d+)$`)
 // publishDiagnostics runs a full type-check + fugovet pass for the package
 // containing path and publishes textDocument/publishDiagnostics for every
 // file it touches (including files that now have zero diagnostics, so the
-// client clears stale markers).
-func (s *lspState) publishDiagnostics(path string) {
-	ctx := context.Background()
+// client clears stale markers). Callers run this in a detached goroutine (the
+// analysis can outlive the didOpen/didSave notification that triggered it),
+// so ctx is typically context.Background() from the call site rather than
+// the notification's own (soon-cancelled) context.
+func (s *lspState) publishDiagnostics(ctx context.Context, path string) {
 	pkg, fset, loadErr := loadPackage(ctx, path, s.docs.overlay())
 
 	byFile := make(map[string][]lsp.Diagnostic)
@@ -109,7 +111,7 @@ func (s *lspState) publishDiagnostics(path string) {
 		if diags == nil {
 			diags = []lsp.Diagnostic{}
 		}
-		s.srv.Notify("textDocument/publishDiagnostics", lsp.PublishDiagnosticsParams{
+		_ = s.srv.Notify("textDocument/publishDiagnostics", lsp.PublishDiagnosticsParams{
 			URI:         uri,
 			Diagnostics: diags,
 		})
@@ -118,7 +120,7 @@ func (s *lspState) publishDiagnostics(path string) {
 
 	for _, uri := range prevURIs {
 		if !seen[uri] {
-			s.srv.Notify("textDocument/publishDiagnostics", lsp.PublishDiagnosticsParams{
+			_ = s.srv.Notify("textDocument/publishDiagnostics", lsp.PublishDiagnosticsParams{
 				URI:         uri,
 				Diagnostics: []lsp.Diagnostic{},
 			})

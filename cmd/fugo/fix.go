@@ -117,7 +117,7 @@ func gofumptProject(ctx context.Context) error {
 	if _, err := exec.LookPath("gofumpt"); err != nil {
 		out.warnf("gofumpt not on PATH — skipping formatting (install: go install mvdan.cc/gofumpt@latest)")
 
-		return nil
+		return nil //nolint:nilerr // intentional: a missing optional tool degrades to a warning, not a failed 'fugo fix'
 	}
 
 	cmd := exec.CommandContext(ctx, "gofumpt", "-w", ".")

@@ -170,7 +170,11 @@ func fgPackageCompletions(pkg *packages.Package) []lsp.CompletionItem {
 // expression text (which may not even be valid Go while the user is
 // mid-edit) and locating it precisely in the AST. Scope: single identifier
 // only, to keep this correct and simple rather than broad and fragile.
-func memberCompletions(pkg *packages.Package, fset *token.FileSet, file *ast.File, content string, pos lsp.Position, prefix string) []lsp.CompletionItem {
+//
+// Prefix filtering is left to the LSP client (the standard division of
+// labor — most clients fuzzy-filter completion items themselves), so the
+// prefix argument is currently unused here.
+func memberCompletions(pkg *packages.Package, fset *token.FileSet, file *ast.File, content string, pos lsp.Position, _ string) []lsp.CompletionItem {
 	offset := lspPositionToByteOffset(content, pos)
 	// Point somewhere inside the identifier that precedes the dot: the
 	// dot sits at offset-1, so offset-2 lands on the identifier's last
@@ -195,7 +199,7 @@ func memberCompletions(pkg *packages.Package, fset *token.FileSet, file *ast.Fil
 		ptrType = types.NewPointer(typ)
 	}
 	mset := types.NewMethodSet(ptrType)
-	for i := 0; i < mset.Len(); i++ {
+	for i := range mset.Len() {
 		sel := mset.At(i)
 		fn, ok := sel.Obj().(*types.Func)
 		if !ok || !fn.Exported() {
@@ -215,7 +219,7 @@ func memberCompletions(pkg *packages.Package, fset *token.FileSet, file *ast.Fil
 		underlying = p.Elem()
 	}
 	if st, ok := underlying.Underlying().(*types.Struct); ok {
-		for i := 0; i < st.NumFields(); i++ {
+		for i := range st.NumFields() {
 			f := st.Field(i)
 			if !f.Exported() {
 				continue

@@ -9,11 +9,16 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
 	"strings"
 )
+
+// jsonrpcVersion is the "jsonrpc" field every Message carries, per the
+// JSON-RPC 2.0 spec (LSP doesn't use any other version).
+const jsonrpcVersion = "2.0"
 
 // Message is a JSON-RPC 2.0 message as used by LSP. Depending on which
 // fields are set it represents a request (ID+Method), a notification
@@ -89,7 +94,7 @@ func ReadMessage(r *bufio.Reader) (*Message, error) {
 	}
 
 	if !haveLength {
-		return nil, fmt.Errorf("lsp: message missing Content-Length header")
+		return nil, errors.New("lsp: message missing Content-Length header")
 	}
 
 	body := make([]byte, contentLength)
@@ -115,7 +120,7 @@ func ReadMessage(r *bufio.Reader) (*Message, error) {
 // its own writer).
 func WriteMessage(w io.Writer, msg *Message) error {
 	if msg.JSONRPC == "" {
-		msg.JSONRPC = "2.0"
+		msg.JSONRPC = jsonrpcVersion
 	}
 
 	body, err := json.Marshal(msg)

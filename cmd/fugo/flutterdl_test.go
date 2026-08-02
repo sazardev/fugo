@@ -12,20 +12,24 @@ import (
 	"testing"
 )
 
+// testClientBinary is the fake render-client executable name used throughout
+// these tests, standing in for the real fugo_flutter_client(.exe) binary.
+const testClientBinary = "fugo_flutter_client"
+
 func TestIsReleaseVersion(t *testing.T) {
 	t.Parallel()
 
 	cases := map[string]bool{
-		"1.2.3":       true,
-		"v1.2.3":      true,
-		"0.1.0":       true,
-		"1.2.3-dev":   true, // pseudo-version suffix stripped before checking
-		"":            false,
-		"devel":       false,
-		"1.2":         false,
-		"1.2.3.4":     false,
-		"v1.2.x":      false,
-		"1.2.3-0.202": true,
+		"1.2.3":           true,
+		"v1.2.3":          true,
+		unresolvedVersion: true,
+		"1.2.3-dev":       true, // pseudo-version suffix stripped before checking
+		"":                false,
+		"devel":           false,
+		"1.2":             false,
+		"1.2.3.4":         false,
+		"v1.2.x":          false,
+		"1.2.3-0.202":     true,
 	}
 
 	for v, want := range cases {
@@ -48,7 +52,7 @@ func buildTestTarGz(t *testing.T, files map[string]string) []byte {
 
 	for name, content := range files {
 		mode := int64(0o644)
-		if name == "fugo_flutter_client" {
+		if name == testClientBinary {
 			mode = 0o755
 		}
 
@@ -75,7 +79,7 @@ func TestExtractTarGz(t *testing.T) {
 	t.Parallel()
 
 	archive := buildTestTarGz(t, map[string]string{
-		"fugo_flutter_client":                    "binary-content",
+		testClientBinary:                         "binary-content",
 		"data/flutter_assets/AssetManifest.json": "{}",
 	})
 
@@ -84,7 +88,7 @@ func TestExtractTarGz(t *testing.T) {
 		t.Fatalf("extractTarGz: %v", err)
 	}
 
-	got, err := os.ReadFile(filepath.Join(dest, "fugo_flutter_client"))
+	got, err := os.ReadFile(filepath.Join(dest, testClientBinary))
 	if err != nil {
 		t.Fatalf("read extracted binary: %v", err)
 	}
@@ -92,7 +96,7 @@ func TestExtractTarGz(t *testing.T) {
 		t.Errorf("binary content = %q, want %q", got, "binary-content")
 	}
 
-	info, err := os.Stat(filepath.Join(dest, "fugo_flutter_client"))
+	info, err := os.Stat(filepath.Join(dest, testClientBinary))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,10 +132,10 @@ func TestDownloadFlutterClientCachesAndSkipsRedownload(t *testing.T) {
 	// seam and the process-wide cache dir env vars.
 
 	requests := 0
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		requests++
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(buildTestTarGz(t, map[string]string{"fugo_flutter_client": "v1"}))
+		_, _ = w.Write(buildTestTarGz(t, map[string]string{testClientBinary: "v1"}))
 	}))
 	defer srv.Close()
 
@@ -161,7 +165,7 @@ func TestDownloadFlutterClientCachesAndSkipsRedownload(t *testing.T) {
 		t.Fatalf("first download: %v", err)
 	}
 
-	if _, err := os.Stat(filepath.Join(dir, "fugo_flutter_client")); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, testClientBinary)); err != nil {
 		t.Fatalf("extracted binary missing: %v", err)
 	}
 	if requests != 1 {

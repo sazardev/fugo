@@ -16,9 +16,9 @@ type projectFiles struct {
 // where a template needs it.
 func filesFor(template, title string) projectFiles {
 	switch template {
-	case "app":
+	case templateApp:
 		return projectFiles{theme: "Dark", uiHome: appUI, width: 900, height: 640}
-	case "showcase":
+	case templateShowcase:
 		return projectFiles{theme: "Dark", uiHome: showcaseUI, width: 980, height: 760}
 	default:
 		return projectFiles{theme: "Light", uiHome: fmt.Sprintf(counterUI, title), width: 800, height: 600}

@@ -39,20 +39,20 @@ Examples:
 				Name:  "enable",
 				Usage: "Launch this app at login",
 				Flags: verbosityFlags(),
-				Action: func(_ context.Context, _ *cli.Command) error {
+				Action: func(ctx context.Context, _ *cli.Command) error {
 					setupUI()
 
-					return setAutostart(true)
+					return setAutostart(ctx, true)
 				},
 			},
 			{
 				Name:  "disable",
 				Usage: "Stop launching this app at login",
 				Flags: verbosityFlags(),
-				Action: func(_ context.Context, _ *cli.Command) error {
+				Action: func(ctx context.Context, _ *cli.Command) error {
 					setupUI()
 
-					return setAutostart(false)
+					return setAutostart(ctx, false)
 				},
 			},
 		},
@@ -61,10 +61,10 @@ Examples:
 
 // setAutostart writes or removes the platform-specific autostart entry for
 // the current project's built binary.
-func setAutostart(enable bool) error {
+func setAutostart(ctx context.Context, enable bool) error {
 	name := projectName()
 
-	binPath, err := filepath.Abs(filepath.Join("dist", name+exeSuffix()))
+	binPath, err := filepath.Abs(filepath.Join(distDir, name+exeSuffix()))
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func setAutostart(enable bool) error {
 	}
 
 	if runtime.GOOS == osWindows {
-		return setAutostartWindows(name, binPath, enable)
+		return setAutostartWindows(ctx, name, binPath, enable)
 	}
 
 	return setAutostartLinux(name, binPath, enable)
@@ -124,14 +124,14 @@ X-GNOME-Autostart-enabled=true
 
 // setAutostartWindows adds (or removes) a per-user Run registry key via reg.exe,
 // avoiding a direct registry-package dependency for a single CLI feature.
-func setAutostartWindows(name, binPath string, enable bool) error {
+func setAutostartWindows(ctx context.Context, name, binPath string, enable bool) error {
 	const runKey = `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`
 
 	var cmd *exec.Cmd
 	if enable {
-		cmd = exec.Command("reg", "add", runKey, "/v", name, "/t", "REG_SZ", "/d", binPath, "/f")
+		cmd = exec.CommandContext(ctx, "reg", "add", runKey, "/v", name, "/t", "REG_SZ", "/d", binPath, "/f")
 	} else {
-		cmd = exec.Command("reg", "delete", runKey, "/v", name, "/f")
+		cmd = exec.CommandContext(ctx, "reg", "delete", runKey, "/v", name, "/f")
 	}
 
 	regOut, err := cmd.CombinedOutput()

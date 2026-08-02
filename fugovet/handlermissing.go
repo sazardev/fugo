@@ -98,9 +98,10 @@ func isButtonConstructor(pass *analysis.Pass, call *ast.CallExpr) bool {
 // button constructor call (e.g. fg.Button("x").BgColor(c).OnClick(h)),
 // returning the outermost call in that chain and whether OnClick appears
 // anywhere along it. outerIdx is the stack index of the outermost call.
-func climbChainForOnClick(stack []ast.Node, call *ast.CallExpr) (outer ast.Expr, outerIdx int, hasOnClick bool) {
+func climbChainForOnClick(stack []ast.Node, call *ast.CallExpr) (ast.Expr, int, bool) {
 	cur := ast.Expr(call)
 	idx := len(stack) - 1 // index of `call` itself
+	hasOnClick := false
 
 	for idx-2 >= 0 {
 		sel, ok := stack[idx-1].(*ast.SelectorExpr)
@@ -125,10 +126,12 @@ func climbChainForOnClick(stack []ast.Node, call *ast.CallExpr) (outer ast.Expr,
 // expression at stack[outerIdx] is assigned to, and the stack index of the
 // nearest enclosing *ast.BlockStmt to search for a later OnClick call. Returns
 // ("", -1) if the expression isn't a direct assignment/declaration RHS.
-func assignedVar(stack []ast.Node, outerIdx int, outer ast.Expr) (name string, blockIdx int) {
+func assignedVar(stack []ast.Node, outerIdx int, outer ast.Expr) (string, int) {
 	if outerIdx-1 < 0 {
 		return "", -1
 	}
+
+	var name string
 
 	switch p := stack[outerIdx-1].(type) {
 	case *ast.AssignStmt:
