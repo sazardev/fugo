@@ -1,0 +1,72 @@
+name: Bug report
+description: Something in Fugo isn't working as expected
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug. What did you expect instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps, ideally with a small `fg` snippet that shows the issue.
+      placeholder: |
+        1. `fugo init demo && cd demo`
+        2. Add `fg.Button(...)` with ...
+        3. `fugo run`
+        4. Click the button — see ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Paste from `logs/run.log`, terminal output, or `fugo doctor` output. This is rendered as code automatically.
+      render: shell
+
+  - type: input
+    id: go-version
+    attributes:
+      label: Go version
+      placeholder: go version
+    validations:
+      required: true
+
+  - type: input
+    id: fugo-version
+    attributes:
+      label: Fugo version
+      placeholder: fugo --version
+    validations:
+      required: true
+
+  - type: input
+    id: flutter-version
+    attributes:
+      label: Flutter version (if `fugo run`/`build` is involved)
+      placeholder: flutter --version
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      options:
+        - Linux
+        - Windows
+        - macOS
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I ran `fugo doctor` and it didn't flag this
+        - label: I searched existing issues and this isn't a duplicate

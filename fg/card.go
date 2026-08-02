@@ -58,10 +58,23 @@ func (c *CardWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 
 	childIDs, allNodes := walkChildren(c.widgetChildren(), counter)
 
+	// A zero elevation/radius means the caller never called Elevation/
+	// BorderRadius explicitly (0 is never a value someone actually wants for
+	// either), so fall back to the active theme's per-component defaults.
+	elevation := c.elevation
+	if elevation == 0 {
+		elevation = CurrentTheme().Components.CardElevation
+	}
+
+	borderRadius := c.borderRadius
+	if borderRadius == 0 {
+		borderRadius = CurrentTheme().Components.CardRadius
+	}
+
 	props, _ := proto.Marshal(&fugov1.CardProps{
-		Elevation:    c.elevation,
+		Elevation:    elevation,
 		Padding:      c.padding,
-		BorderRadius: c.borderRadius,
+		BorderRadius: borderRadius,
 	})
 
 	self := &fugov1.WidgetNode{

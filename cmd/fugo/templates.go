@@ -313,11 +313,12 @@ func card(t fg.Theme, title string, body ...fg.Widget) fg.Widget {
 `
 
 // configTemplate is the generated fugo.toml.
-// %[1]s = module/name, %[2]s = window title, %[3]d/%[4]d = width/height.
+// %[1]s = module/name, %[2]s = window title, %[3]d/%[4]d = width/height,
+// %[5]s = the optional [app] block from appConfigBlock.
 const configTemplate = `# Fugo project configuration.
 # Read by 'fugo run' / 'fugo build' and by the app at startup.
 name = "%[1]s"
-
+%[5]s
 [window]
 title  = "%[2]s"
 width  = %[3]d
@@ -327,6 +328,17 @@ height = %[4]d
 # gRPC address the Go server listens on and the Flutter client dials.
 addr = "127.0.0.1:9510"
 `
+
+// appConfigBlock renders the optional [app] section of fugo.toml — omitted
+// entirely (returns "") when organization is blank, so a skipped wizard
+// prompt doesn't clutter the file with an empty section.
+func appConfigBlock(organization string) string {
+	if organization == "" {
+		return ""
+	}
+
+	return fmt.Sprintf("\n[app]\norganization = %q\n", organization)
+}
 
 // gitignoreTemplate is the generated .gitignore.
 const gitignoreTemplate = `# Build output

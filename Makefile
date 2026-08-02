@@ -21,7 +21,7 @@ else
 	DART_PROTOC_PLUGIN := $(HOME)/.pub-cache/bin/protoc-gen-dart
 endif
 
-.PHONY: help test bench build clean lint vet version changelog release install install-tools push pr pr-merge pr-list pr-update proto proto-tools flutter-build spike run run-spike cli cli-test install-cli
+.PHONY: help test bench build clean lint vet version changelog release release-flutter install install-tools push pr pr-merge pr-list pr-update proto proto-tools gen-widgets flutter-build spike run run-spike cli cli-test install-cli
 
 help:
 	@grep -E '^[a-zA-Z/_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -52,33 +52,43 @@ clean: ## Remove build artifacts
 changelog: ## Show unreleased changes
 	@awk '/^## \[Unreleased\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md | sed '/^$$/d' || true
 
-release: ## Create release: make release TYPE=patch|minor|major MSG="description"
-	@$(eval TYPE := $(TYPE))
-	@$(eval MSG := $(MSG))
+release: ## Fugo-only release against the same Flutter version: make release MSG="description"
 	@if [ -z "$(MSG)" ]; then \
-		echo "ERROR: MSG is required. Usage: make release TYPE=patch MSG='description'"; \
-		exit 1; \
-	fi
-	@if [ "$(TYPE)" != "patch" ] && [ "$(TYPE)" != "minor" ] && [ "$(TYPE)" != "major" ]; then \
-		echo "ERROR: TYPE must be patch, minor, or major. Usage: make release TYPE=patch MSG='description'"; \
+		echo "ERROR: MSG is required. Usage: make release MSG='description'"; \
 		exit 1; \
 	fi
 	@current=$$(cat VERSION); \
-	newver=$$(awk -F. -v type="$(TYPE)" ' \
-		{ if (type == "patch") print $$1"."$$2"."$$3+1; \
-		  else if (type == "minor") print $$1"."$$2+1".0"; \
-		  else print $$1+1".0.0"; }' VERSION); \
-	echo "=== Release v$$newver ==="; \
+	base=$${current%-fugo.*}; \
+	buildnum=$${current##*-fugo.}; \
+	newver="$$base-fugo.$$((buildnum + 1))"; \
+	echo "=== Release v$$newver (Flutter $$base unchanged) ==="; \
 	echo "$$newver" > VERSION; \
 	date=$$(date -u '+%Y-%m-%d'); \
 	entry="## [$$newver] - $$date"; \
 	sed -i "s/^## \[Unreleased\]$$/## [Unreleased]\n\n$$entry\n\n### Added\n- $(MSG)/" CHANGELOG.md; \
 	git add VERSION CHANGELOG.md; \
 	git commit -m "release: v$$newver"; \
-	git tag "v$$newver"; \
 	echo ""; \
-	echo "=== Release v$$newver created ==="; \
-	echo "Run: git push --follow-tags origin main"
+	echo "=== Committed v$$newver ==="; \
+	echo "Run: git push origin main   (tag-release.yml tags + publishes automatically — no manual git tag)"
+
+release-flutter: ## Bump the targeted Flutter version: make release-flutter FLUTTER=3.45.0 MSG="description"
+	@if [ -z "$(FLUTTER)" ] || [ -z "$(MSG)" ]; then \
+		echo "ERROR: FLUTTER and MSG are required. Usage: make release-flutter FLUTTER=3.45.0 MSG='description'"; \
+		exit 1; \
+	fi
+	@newver="$(FLUTTER)-fugo.0"; \
+	echo "=== Release v$$newver (Flutter $(FLUTTER)) ==="; \
+	echo "$(FLUTTER)" > FLUTTER_VERSION; \
+	echo "$$newver" > VERSION; \
+	date=$$(date -u '+%Y-%m-%d'); \
+	entry="## [$$newver] - $$date"; \
+	sed -i "s/^## \[Unreleased\]$$/## [Unreleased]\n\n$$entry\n\n### Changed\n- Bump the targeted Flutter version to $(FLUTTER). $(MSG)/" CHANGELOG.md; \
+	git add VERSION FLUTTER_VERSION CHANGELOG.md; \
+	git commit -m "release: v$$newver (Flutter $(FLUTTER))"; \
+	echo ""; \
+	echo "=== Committed v$$newver ==="; \
+	echo "Run: git push origin main   (tag-release.yml tags + publishes automatically — no manual git tag)"
 
 install: ## Install lefthook hooks
 	go tool lefthook install
@@ -177,6 +187,10 @@ proto: proto-tools ## Generate protobuf code (Go + Dart)
 		--plugin=protoc-gen-dart=$(DART_PROTOC_PLUGIN) \
 		fugo/v1/fugo.proto
 	@echo "=== Proto generation complete ==="
+
+gen-widgets: ## Regenerate cmd/fugo/widgets_gen.go from the fg package source
+	go run ./cmd/gen-widgets
+	gofumpt -w cmd/fugo/widgets_gen.go
 
 flutter-build: ## Build Flutter client for the current OS
 	@echo "=== Building Flutter client ($(FLUTTER_BUILD_ARGS)) ==="

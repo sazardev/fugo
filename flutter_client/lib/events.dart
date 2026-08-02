@@ -5,7 +5,14 @@ import 'generated/fugo/v1/fugo.pb.dart';
 
 SendPort? _sendPort;
 
-final _immediateEvents = {'onClick', 'onTap', 'onSubmit', 'onLongPress', 'host'};
+final _immediateEvents = {
+  'onClick',
+  'onTap',
+  'onSubmit',
+  'onLongPress',
+  'host',
+  'filedrop',
+};
 final _debounceTimers = <String, Timer>{};
 const _debounceInterval = Duration(milliseconds: 16);
 

@@ -8,9 +8,10 @@ import (
 // DropdownWidget is a select control over a list of string items. Build one
 // with Dropdown.
 type DropdownWidget struct {
-	handler func(Event)
-	Value   string
-	Items   []string
+	handler   func(Event)
+	Value     string
+	Items     []string
+	errorText string
 	baseWidget
 }
 
@@ -34,6 +35,14 @@ func (d *DropdownWidget) OnChange(handler func(Event)) *DropdownWidget {
 	return d
 }
 
+// SetError sets the validation error shown below the dropdown (owned entirely
+// by Go); empty clears it. Returns the widget for chaining.
+func (d *DropdownWidget) SetError(msg string) *DropdownWidget {
+	d.errorText = msg
+
+	return d
+}
+
 func (d *DropdownWidget) isWidget()                {}
 func (d *DropdownWidget) widgetChildren() []Widget { return nil }
 
@@ -52,8 +61,9 @@ func (d *DropdownWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 	d.id = *counter
 
 	props, _ := proto.Marshal(&fugov1.DropdownProps{
-		Items: d.Items,
-		Value: d.Value,
+		Items:     d.Items,
+		Value:     d.Value,
+		ErrorText: d.errorText,
 	})
 
 	return []*fugov1.WidgetNode{{

@@ -101,6 +101,13 @@ linters:
         linters:
           - forbidigo
           - gosec
+      # CheckboxListTile/SwitchListTile (and RadioListTile) are intentionally
+      # near-identical Material list-tile variants — the duplication is the
+      # point (each is its own widget type/constructor), not an extraction
+      # that got missed.
+      - path: fg/(checkbox|switch)listtile\.go
+        linters:
+          - dupl
 
 formatters:
   enable:

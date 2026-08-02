@@ -117,6 +117,21 @@ func (r *Reconciler) SendOverlayCommand(cmd *fugov1.OverlayCommand) {
 	})
 }
 
+// SendShortcutsCommand replaces the app-wide set of keyboard shortcuts the
+// client watches for. A match fires a "shortcut" ClientEvent back.
+func (r *Reconciler) SendShortcutsCommand(cmd *fugov1.ShortcutsCommand) {
+	r.send(&fugov1.RenderPayload{
+		Payload: &fugov1.RenderPayload_Shortcuts{Shortcuts: cmd},
+	})
+}
+
+// SendFocusCommand asks the client to move keyboard focus to the given node.
+func (r *Reconciler) SendFocusCommand(cmd *fugov1.FocusCommand) {
+	r.send(&fugov1.RenderPayload{
+		Payload: &fugov1.RenderPayload_Focus{Focus: cmd},
+	})
+}
+
 func (r *Reconciler) send(payload *fugov1.RenderPayload) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

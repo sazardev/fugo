@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-i18n="contribMeta.title">Contribuir — Fugo</title>
+<meta name="description" data-i18n-attr="content" data-i18n="contribMeta.description" content="Cómo configurar el entorno, el estilo de código, los tests y el flujo de pull request para contribuir a Fugo.">
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css?v=10">
+</head>
+<body>
+
+<a class="skip-link" href="#main" data-i18n="a11y.skip">Saltar al contenido</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/logo.svg" alt="" width="26" height="26">
+      <span>fugo</span>
+      <span class="brand-version">v3.44.8-fugo.0</span>
+    </a>
+    <button class="nav-toggle" id="navToggle" data-i18n-attr="aria-label" data-i18n="a11y.openNav" aria-label="Abrir navegación" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="topnav">
+      <button class="palette-trigger" id="paletteTrigger" data-i18n-attr="aria-label|title" data-i18n="a11y.search|a11y.searchTitle" aria-label="Buscar / saltar a sección" title="Buscar (Ctrl K)">
+        <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.3-4.3" stroke-linecap="round"/></svg>
+        <span data-i18n="nav.search">Buscar</span>
+        <kbd>Ctrl K</kbd>
+      </button>
+      <a href="https://github.com/sazardev/fugo" target="_blank" rel="noopener">GitHub</a>
+      <a href="changelog.html" data-i18n="nav.changelog">Changelog</a>
+      <a href="contributing.html" data-i18n="side.contribuir">Contribuir</a>
+      <button class="lang-toggle" id="langToggle" aria-label="Switch language / cambiar idioma" title="ES / EN">
+        <span id="langLabel">EN</span>
+      </button>
+      <button class="theme-toggle" id="themeToggle" data-i18n-attr="aria-label|title" data-i18n="a11y.theme|a11y.theme" aria-label="Cambiar tema" title="Cambiar tema claro/oscuro">
+        <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" stroke-linecap="round"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <nav class="side-nav" data-i18n-attr="aria-label" data-i18n="a11y.sections" aria-label="Secciones">
+      <div class="side-group" data-i18n="contrib.group1">En esta página</div>
+      <a href="#antes" data-i18n="contrib.sAntes">Antes de empezar</a>
+      <a href="#setup" data-i18n="contrib.sSetup">Entorno de desarrollo</a>
+      <a href="#estilo" data-i18n="contrib.sEstilo">Estilo de código</a>
+      <a href="#tests" data-i18n="contrib.sTests">Tests</a>
+      <a href="#flujo-pr" data-i18n="contrib.sFlujo">Commit &amp; pull request</a>
+      <a href="#releases" data-i18n="contrib.sReleases">Releases</a>
+      <a href="#reportar" data-i18n="contrib.sReportar">Reportar bugs / seguridad</a>
+      <a href="#conducta" data-i18n="contrib.sConducta">Código de conducta</a>
+      <div class="side-group" data-i18n="side.group3">Proyecto abierto</div>
+      <a href="index.html#open-source" data-i18n="side.openSource">Código abierto y contribución</a>
+      <a href="changelog.html" data-i18n="nav.changelog">Changelog</a>
+      <a href="index.html" data-i18n="contrib.backHome">← Volver al inicio</a>
+    </nav>
+  </aside>
+
+  <main id="main">
+
+    <section class="hero" id="top">
+      <img class="hero-mark" src="assets/logo.svg" alt="Fugo" width="56" height="56">
+      <span class="eyebrow" data-i18n="contrib.eyebrow">Open source · MIT</span>
+      <h1 data-i18n="contrib.h1">Contribuir a Fugo</h1>
+      <p class="page-lead" data-i18n="contrib.lead">Fugo es un proyecto abierto bajo licencia MIT. Esto es todo lo que necesitas para configurar el entorno, seguir el estilo de código y abrir un pull request que pase la puerta de CI a la primera.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="https://github.com/sazardev/fugo/fork" target="_blank" rel="noopener" data-i18n="contrib.fork">Hacer fork en GitHub</a>
+        <a class="btn btn-ghost" href="https://github.com/sazardev/fugo/issues" target="_blank" rel="noopener" data-i18n="contrib.issues">Ver issues abiertos</a>
+      </div>
+    </section>
+
+    <section id="antes">
+      <h2 data-i18n="contrib.antesH">Antes de empezar</h2>
+      <p data-i18n="contrib.antesP1">Lee primero <code>CLAUDE.md</code> en la raíz del repositorio — es el documento de arquitectura canónico (paquetes, flujo de datos, formato de cable, convenciones) y se mantiene al día con el código, a diferencia de algunos documentos de diseño más antiguos en español bajo <code>ROADMAP/</code>.</p>
+      <p data-i18n="contrib.antesP2">Para cualquier cambio no trivial (un widget nuevo, un cambio de transporte, un comando de CLI), abre primero un issue o discussion — ahorra retrabajo si el enfoque necesita ajustes. Fixes pequeños (typos, docs, un bug claro con test de regresión) pueden ir directo a un PR.</p>
+    </section>
+
+    <section id="setup">
+      <h2 data-i18n="contrib.setupH">Entorno de desarrollo</h2>
+      <p data-i18n="contrib.setupP1">Requiere <strong>Go 1.26+</strong>. Los bindings de protobuf generados están commiteados, así que <code>go build ./...</code> funciona de inmediato sin <code>protoc</code>.</p>
+      <pre><code>git clone https://github.com/sazardev/fugo &amp;&amp; cd fugo
+make install        # instala los git hooks de Lefthook
+go build ./...
+make test            # go test ./... -count=1 -race -shuffle=on -v</code></pre>
+      <p data-i18n="contrib.setupP2">Si vas a tocar <code>transport/proto/fugo/v1/fugo.proto</code>, además necesitas <code>protoc</code>, <code>protoc-gen-go</code>, <code>protoc-gen-go-grpc</code> y <code>protoc-gen-dart</code> (el plugin de Dart debe ser <code>protoc_plugin</code> 21.1.x — ver <code>CLAUDE.md</code>).</p>
+      <p data-i18n="contrib.setupP3">Si vas a tocar <code>flutter_client/</code> (el cliente Dart), necesitas el SDK de Flutter fijado en <code>FLUTTER_VERSION</code> — ver <code>flutter_client/README.md</code>.</p>
+    </section>
+
+    <section id="estilo">
+      <h2 data-i18n="contrib.estiloH">Estilo de código</h2>
+      <ul class="checklist">
+        <li data-i18n="contrib.estilo1">El formateador es <code>gofumpt</code>, no <code>gofmt</code> — corre <code>gofumpt -w .</code> antes de commitear (Lefthook lo hace automáticamente en los archivos en stage)</li>
+        <li data-i18n="contrib.estilo2"><code>make lint</code> corre <code>golangci-lint</code> (80+ linters en <code>.golangci.yml</code>) y <code>staticcheck</code> — ambos deben pasar limpio, sin umbral de tolerancia</li>
+        <li data-i18n="contrib.estilo3"><code>make vet</code> (<code>go vet ./...</code>) debe pasar</li>
+        <li data-i18n="contrib.estilo4">Cambios acotados: un bug fix no debería traer un refactor sin relación. Sin abstracciones especulativas para necesidades hipotéticas futuras</li>
+        <li data-i18n="contrib.estilo5">Los widgets siguen las convenciones de <code>fg/</code>: constructores sin prefijo (<code>fg.Text</code>, no <code>NewText</code>), setters encadenables, una bandera <code>*Set bool</code> para props opcionales</li>
+      </ul>
+    </section>
+
+    <section id="tests">
+      <h2 data-i18n="contrib.testsH">Tests</h2>
+      <p data-i18n="contrib.testsP1"><code>make test</code> corre la suite completa con <code>-race -shuffle=on</code>. El código nuevo necesita cobertura de tests; los bug fixes necesitan un test de regresión que falle antes del fix y pase después.</p>
+      <p data-i18n="contrib.testsP2">Los tests table-driven son el estilo de la casa en el lado Go. Los benchmarks viven en <code>*_bench_test.go</code> (<code>engine/</code> tiene las puertas de rendimiento que CI verifica en cada push — no las regresiones sin una buena razón documentada en el PR).</p>
+    </section>
+
+    <section id="flujo-pr">
+      <h2 data-i18n="contrib.flujoH">Commit &amp; pull request</h2>
+      <ol class="steps">
+        <li data-i18n="contrib.paso1">Crea una rama a partir de <code>main</code>.</li>
+        <li data-i18n="contrib.paso2">Haz tu cambio, con commits acotados.</li>
+        <li data-i18n="contrib.paso3"><code>gofumpt -w .</code>, <code>make lint</code>, <code>make vet</code>, <code>make test</code>, <code>go mod tidy</code> — todo limpio.</li>
+        <li data-i18n="contrib.paso4">Actualiza <code>CHANGELOG.md</code> bajo <code>[Unreleased]</code> si el cambio es visible para el usuario.</li>
+        <li data-i18n="contrib.paso5">Abre el PR — <code>.github/pull_request_template.md</code> te pedirá el checklist anterior. <code>make pr MSG="type: description"</code> automatiza el branch/push/apertura del PR si estás trabajando directo desde <code>main</code>.</li>
+      </ol>
+      <p data-i18n="contrib.flujoP">CI corre lint, vet, build, test (<code>-race -shuffle=on</code>), un chequeo de formato con gofumpt, el perf gate/benchmarks, y el job de Dart (<code>flutter analyze</code> + <code>flutter test</code>) en cada push y PR — todo debe pasar antes de mergear. CodeQL corre semanalmente y en cada push para análisis de seguridad.</p>
+    </section>
+
+    <section id="releases">
+      <h2 data-i18n="contrib.releasesH">Releases</h2>
+      <p data-i18n="contrib.releasesP">No edites a mano <code>VERSION</code>, <code>FLUTTER_VERSION</code>, ni <code>CHANGELOG.md</code> — son responsabilidad de quien mantiene el proyecto vía <code>make release</code> / <code>make release-flutter</code>. Ver el <a href="changelog.html#versionamiento" data-i18n="contrib.releasesLink">esquema de versionamiento</a> para los detalles.</p>
+    </section>
+
+    <section id="reportar">
+      <h2 data-i18n="contrib.reportarH">Reportar bugs / seguridad</h2>
+      <p data-i18n="contrib.reportarP1">Usa las <a href="https://github.com/sazardev/fugo/issues/new/choose" target="_blank" rel="noopener">plantillas de issue</a> — piden el contexto correcto de entrada (pasos de reproducción, versiones de Go/Flutter, comportamiento esperado vs. real).</p>
+      <p class="callout callout-flame" data-i18n="contrib.reportarP2">Para vulnerabilidades de seguridad usa un <a href="https://github.com/sazardev/fugo/security/advisories/new" target="_blank" rel="noopener">security advisory privado</a> en lugar de un issue público — ver <a href="https://github.com/sazardev/fugo/blob/main/SECURITY.md" target="_blank" rel="noopener">SECURITY.md</a>.</p>
+    </section>
+
+    <section id="conducta">
+      <h2 data-i18n="contrib.conductaH">Código de conducta</h2>
+      <p data-i18n="contrib.conductaP">Este proyecto sigue el <a href="https://github.com/sazardev/fugo/blob/main/CODE_OF_CONDUCT.md" target="_blank" rel="noopener">Contributor Covenant</a>. Al participar, se espera que lo respetes.</p>
+    </section>
+
+    <footer class="page-footer">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <div class="footer-h" data-i18n="footer.colProject">Proyecto</div>
+          <a href="https://github.com/sazardev/fugo" target="_blank" rel="noopener" data-i18n="footer.repo">Repositorio</a>
+          <a href="https://github.com/sazardev/fugo/issues" target="_blank" rel="noopener" data-i18n="footer.issues">Issues</a>
+          <a href="https://github.com/sazardev/fugo/pulls" target="_blank" rel="noopener" data-i18n="footer.prs">Pull requests</a>
+          <a href="https://github.com/sazardev/fugo/discussions" target="_blank" rel="noopener" data-i18n="footer.discussions">Discussions</a>
+        </div>
+        <div class="footer-col">
+          <div class="footer-h" data-i18n="footer.colDocs">Documentación</div>
+          <a href="changelog.html" data-i18n="nav.changelog">Changelog</a>
+          <a href="contributing.html" data-i18n="side.contribuir">Contribuir</a>
+          <a href="https://github.com/sazardev/fugo/blob/main/SECURITY.md" target="_blank" rel="noopener" data-i18n="side.seguridad">Seguridad</a>
+          <a href="https://github.com/sazardev/fugo/blob/main/LICENSE" target="_blank" rel="noopener" data-i18n="side.licencia">Licencia</a>
+        </div>
+        <div class="footer-col">
+          <div class="footer-h" data-i18n="footer.colSupport">Apoyar</div>
+          <a href="https://github.com/sazardev/fugo" target="_blank" rel="noopener" data-i18n="footer.star">★ Star en GitHub</a>
+          <a href="https://github.com/sazardev/fugo/releases" target="_blank" rel="noopener" data-i18n="footer.releases">Releases</a>
+        </div>
+      </div>
+      <p class="page-footer-sub" data-i18n="footer.p1">Fugo — hecho con Go + Flutter. <a href="https://github.com/sazardev/fugo" target="_blank" rel="noopener">github.com/sazardev/fugo</a></p>
+    </footer>
+
+  </main>
+</div>
+
+<div class="palette-overlay" id="paletteOverlay" hidden>
+  <div class="palette" role="dialog" aria-modal="true" data-i18n-attr="aria-label" data-i18n="a11y.paletteLabel" aria-label="Paleta de comandos">
+    <div class="palette-input-row">
+      <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.3-4.3" stroke-linecap="round"/></svg>
+      <input type="text" id="paletteInput" data-i18n-attr="placeholder" data-i18n="palette.placeholder" placeholder="Ir a una sección…" autocomplete="off" spellcheck="false">
+      <kbd>Esc</kbd>
+    </div>
+    <ul class="palette-results" id="paletteResults"></ul>
+  </div>
+</div>
+
+<script src="i18n.js?v=10"></script>
+<script src="script.js?v=10"></script>
+</body>
+</html>

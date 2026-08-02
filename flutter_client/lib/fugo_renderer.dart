@@ -1,5 +1,7 @@
+import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 
+import 'events.dart';
 import 'generated/fugo/v1/fugo.pb.dart';
 import 'registry.dart';
 
@@ -9,6 +11,17 @@ class FugoApp extends StatelessWidget {
   final GlobalKey<NavigatorState> navigatorKey;
   final Color seedColor;
   final Brightness brightness;
+  // followSystem (FUGO_THEME_FOLLOW_SYSTEM=1) makes the app track the OS's
+  // light/dark setting live via MaterialApp's own themeMode: ThemeMode.system
+  // — no custom brightness-change plumbing needed, Flutter already rebuilds
+  // reactively when the platform brightness changes. brightness above is
+  // still used as the *initial* value and as the fixed value when this is
+  // false (today's behavior, preserved exactly).
+  final bool followSystem;
+  // fontFamily names a font already installed on the OS (Flutter resolves it
+  // by family name via the system font-matching Skia falls back on — Fugo
+  // does not bundle/load custom font assets); null keeps Flutter's default.
+  final String? fontFamily;
 
   const FugoApp({
     super.key,
@@ -17,10 +30,11 @@ class FugoApp extends StatelessWidget {
     required this.navigatorKey,
     required this.seedColor,
     required this.brightness,
+    this.followSystem = false,
+    this.fontFamily,
   });
 
-  @override
-  Widget build(BuildContext context) {
+  ThemeData _theme(Brightness brightness) {
     // The Material 3 ColorScheme is derived from the seed + brightness that Go
     // sends (FUGO_THEME_SEED / FUGO_THEME_BRIGHTNESS). We flatten the
     // seed-tinted surfaces to a clean neutral background for a minimal look —
@@ -32,8 +46,10 @@ class FugoApp extends StatelessWidget {
     final background = brightness == Brightness.light
         ? Colors.white
         : const Color(0xFF111315);
-    final theme = ThemeData(
+
+    return ThemeData(
       useMaterial3: true,
+      fontFamily: fontFamily,
       colorScheme: scheme.copyWith(surface: background),
       scaffoldBackgroundColor: background,
       appBarTheme: AppBarTheme(
@@ -42,19 +58,44 @@ class FugoApp extends StatelessWidget {
         scrolledUnderElevation: 0,
       ),
     );
+  }
 
+  @override
+  Widget build(BuildContext context) {
     // The outer surface is a plain Material (not a Scaffold) so an app that
     // uses fg.Scaffold isn't nested inside a second Scaffold — nested Scaffolds
     // misroute a FloatingActionButton's gestures. A Scaffold-less app still
     // gets a Material ancestor (for ink/buttons) and the themed background.
+    // Its color is fixed to the *initial* brightness's background even in
+    // followSystem mode — reading MediaQuery here would need this to become
+    // a separate builder; today's static choice matches prior behavior and
+    // MaterialApp's own Scaffold/AppBar defaults already follow themeMode.
+    final background =
+        brightness == Brightness.light ? Colors.white : const Color(0xFF111315);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       scaffoldMessengerKey: messengerKey,
       navigatorKey: navigatorKey,
-      theme: theme,
+      themeMode: followSystem
+          ? ThemeMode.system
+          : (brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light),
+      theme: _theme(Brightness.light),
+      darkTheme: _theme(Brightness.dark),
       home: Material(
         color: background,
-        child: SafeArea(child: FugoRenderer(key: rendererKey)),
+        // DropTarget reports files the OS drops anywhere on the window — the
+        // one channel back for Go to learn about a drag-and-drop from outside
+        // the app, same fire-and-forget shape as resize/shortcuts.
+        child: DropTarget(
+          onDragDone: (details) => sendEvent(ClientEvent(
+            nodeId: '0',
+            eventType: 'filedrop',
+            eventData:
+                details.files.map((f) => f.path).join('\n').codeUnits,
+          )),
+          child: SafeArea(child: FugoRenderer(key: rendererKey)),
+        ),
       ),
     );
   }
@@ -140,6 +181,7 @@ class FugoRendererState extends State<FugoRenderer> {
     WidgetType.EXPANDED,
     WidgetType.ANIMATEDCONTAINER,
     WidgetType.TABS,
+    WidgetType.ROUTER,
   };
 
   @override

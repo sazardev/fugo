@@ -15,7 +15,26 @@ message RenderPayload {
     WindowCommand window = 3;
     HostCommand host = 4;
     OverlayCommand overlay = 5;
+    ShortcutsCommand shortcuts = 6;
+    FocusCommand focus = 7;
   }
+}
+
+// FocusCommand asks the client to move keyboard focus to the widget
+// identified by node_id (currently only meaningful for TextField). There is
+// no reply — the request is fire-and-forget, same as WindowCommand.
+message FocusCommand {
+  uint32 node_id = 1;
+}
+
+// ShortcutsCommand replaces the app-wide set of keyboard shortcuts the client
+// should watch for. Bindings are lowercase, "+"-joined modifier+key strings
+// (e.g. "ctrl+s", "ctrl+shift+z", "escape") — the client normalizes physical
+// key events to this same format before matching, so Go never sees raw key
+// codes. A match fires a ClientEvent{event_type: "shortcut", event_data: the
+// matched binding} — there is no reply/ack.
+message ShortcutsCommand {
+  repeated string bindings = 1;
 }
 
 message PatchList {
@@ -106,6 +125,28 @@ enum WidgetType {
   RICHTEXT = 49;
   DATATABLE = 50;
   STEPPER = 51;
+  CHECKBOXLISTTILE = 52;
+  RADIOLISTTILE = 53;
+  SWITCHLISTTILE = 54;
+  NAVIGATIONRAIL = 55;
+  PAGEVIEW = 56;
+  TABLE = 57;
+  CONSTRAINEDBOX = 58;
+  FRACTIONALLYSIZEDBOX = 59;
+  VERTICALDIVIDER = 60;
+  RANGESLIDER = 61;
+  AUTOCOMPLETE = 62;
+  SCROLLBAR = 63;
+  REFRESHINDICATOR = 64;
+  SEMANTICS = 65;
+  CANVAS = 66;
+  ROUTER = 67;
+  FORM = 68;
+  DISMISSIBLE = 69;
+  SLIVERSCAFFOLD = 70;
+  RESPONSIVE = 71;
+  DRAGGABLE = 72;
+  DRAGTARGET = 73;
 }
 
 // ButtonVariant selects which Material 3 button widget renders. The Flutter
@@ -130,12 +171,14 @@ enum WindowOp {
 }
 
 // HostOp identifies an out-of-band request to the host OS that the Flutter
-// client fulfills on Go's behalf (clipboard access, native file dialogs).
+// client fulfills on Go's behalf (clipboard access, native file dialogs,
+// notifications).
 enum HostOp {
   HOST_CLIPBOARD_WRITE = 0;
   HOST_CLIPBOARD_READ = 1;
   HOST_FILE_OPEN = 2;
   HOST_FILE_SAVE = 3;
+  HOST_NOTIFICATION = 4;
 }
 
 // OverlayOp identifies a transient UI overlay the client shows imperatively
@@ -175,6 +218,11 @@ message TextProps {
   string color = 3;
   int32 font_weight = 4; // numeric weight 100..900 (400 = normal, 700 = bold)
   int32 text_align = 5;  // 0 = left, 1 = center, 2 = right
+  int32 max_lines = 6;     // 0 = unlimited
+  int32 overflow = 7;      // 0 = clip, 1 = ellipsis, 2 = fade, 3 = visible
+  int32 decoration = 8;    // 0 = none, 1 = underline, 2 = lineThrough, 3 = overline
+  double letter_spacing = 9; // 0 = default
+  bool italic = 10;
 }
 
 message ButtonProps {
@@ -196,6 +244,19 @@ message ContainerProps {
   double pad_right = 4;
   double pad_bottom = 5;
   double pad_left = 6;
+  // Margin per edge in logical pixels; 0 = none.
+  double margin_top = 7;
+  double margin_right = 8;
+  double margin_bottom = 9;
+  double margin_left = 10;
+  // Uniform border; empty color = no border.
+  string border_color = 11;
+  double border_width = 12;
+  // Box shadow; empty color = no shadow.
+  string shadow_color = 13;
+  double shadow_blur = 14;
+  double shadow_offset_x = 15;
+  double shadow_offset_y = 16;
 }
 
 message RowProps {
@@ -242,6 +303,13 @@ message TextFieldProps {
   string placeholder = 2;
   double font_size = 3;
   bool obscure = 4;
+  // error_text is validation state owned entirely by Go (set it from an
+  // OnChange handler); empty = no error shown.
+  string error_text = 5;
+  int32 max_lines = 6;      // 0 or 1 = single line (default); >1 = multiline
+  string prefix_icon = 7;   // icon name; empty = none
+  string suffix_icon = 8;   // icon name; empty = none
+  int32 keyboard_type = 9;  // 0 = text, 1 = number, 2 = email, 3 = multiline, 4 = phone
 }
 
 message PositionedProps {
@@ -336,6 +404,8 @@ message RadioProps {
 message DropdownProps {
   repeated string items = 1;
   string value = 2;
+  // error_text is validation state owned entirely by Go; empty = no error shown.
+  string error_text = 3;
 }
 
 message CardProps {
@@ -443,6 +513,11 @@ message DataRow {
 message DataTableProps {
   repeated string columns = 1;
   repeated DataRow rows = 2;
+  bool sortable = 3;           // true = header taps emit a "sort" event
+  int32 sort_column_index = 4; // -1 = no column currently sorted
+  bool sort_ascending = 5;
+  bool selectable = 6;          // true = shows a leading checkbox column
+  repeated bool selected_rows = 7; // parallel to rows; only meaningful when selectable
 }
 
 // StepperProps backs a Material Stepper. titles names each step; the children
@@ -454,11 +529,19 @@ message StepperProps {
 
 // AppBarProps backs a Material AppBar. Children are the leading widget (first,
 // when has_leading is set) followed by the action widgets.
+// AppBarProps backs a Material AppBar. Children are, in order: the leading
+// widget (first, when has_leading is set), the action widgets, and finally
+// the bottom widget (last, when has_bottom is set) — the number of action
+// widgets is however many children remain once leading/bottom are accounted
+// for, so it needs no separate count.
 message AppBarProps {
   string title = 1;
   bool center_title = 2;
   bool has_leading = 3;
   string bg_color = 4; // empty = the M3 default surface
+  double elevation = 5; // 0 = the M3 default
+  string foreground_color = 6; // empty = the M3 default (title/icon color)
+  bool has_bottom = 7; // e.g. a Tabs widget docked under the title row
 }
 
 message FabProps {
@@ -485,15 +568,245 @@ message ProgressProps {
   double value = 2; // < 0 = indeterminate; 0..1 = determinate
 }
 
+// CheckboxListTileProps backs a Material CheckboxListTile: a full-width row
+// combining a ListTile's title/subtitle with a trailing checkbox; tapping
+// anywhere in the row toggles it.
+message CheckboxListTileProps {
+  string title = 1;
+  string subtitle = 2;
+  bool checked = 3;
+  string secondary_icon = 4; // optional leading icon
+}
+
+// RadioListTileProps backs a Material RadioListTile — see CheckboxListTileProps;
+// the radio semantics (value/group_value) match RadioProps.
+message RadioListTileProps {
+  string title = 1;
+  string subtitle = 2;
+  string value = 3;
+  string group_value = 4;
+  string secondary_icon = 5;
+}
+
+// SwitchListTileProps backs a Material SwitchListTile — see CheckboxListTileProps.
+message SwitchListTileProps {
+  string title = 1;
+  string subtitle = 2;
+  bool value = 3;
+  string secondary_icon = 4;
+}
+
+// NavigationRailProps backs a Material NavigationRail — the desktop/tablet
+// analogue of NavigationBar, laid out vertically. icons and labels are
+// parallel arrays, one destination each.
+message NavigationRailProps {
+  repeated string icons = 1;
+  repeated string labels = 2;
+  int32 selected_index = 3;
+  bool extended = 4; // show labels beside icons instead of below them
+}
+
+// PageViewProps backs a PageView; children are the pages, in order. Page
+// swiping is handled entirely on the client (no round-trip to Go).
+message PageViewProps {
+  int32 initial_page = 1;
+  int32 scroll_direction = 2; // 0 = horizontal (default), 1 = vertical
+}
+
+// TableProps backs a Table: children fill cells left-to-right, top-to-bottom;
+// len(children) must be a multiple of column_count. columns optionally names a
+// header row (empty = no header row).
+message TableProps {
+  repeated string columns = 1;
+  int32 column_count = 2;
+}
+
+message ConstrainedBoxProps {
+  double min_width = 1;
+  double max_width = 2;  // 0 = unconstrained
+  double min_height = 3;
+  double max_height = 4; // 0 = unconstrained
+}
+
+// FractionallySizedBoxProps sizes child as a fraction of the available space;
+// 0 leaves that axis unconstrained.
+message FractionallySizedBoxProps {
+  double width_factor = 1;
+  double height_factor = 2;
+}
+
+message VerticalDividerProps {
+  double thickness = 1;
+  string color = 2;
+}
+
+message RangeSliderProps {
+  double start = 1;
+  double end = 2;
+  double min = 3;
+  double max = 4;
+}
+
+// AutocompleteProps backs a text field that suggests matches from options as
+// the user types; selecting a suggestion (or committing free text) reports
+// the final value the same way TextFieldProps.value's OnChange does.
+message AutocompleteProps {
+  repeated string options = 1;
+  string value = 2;
+  string placeholder = 3;
+}
+
+// ScrollbarProps wraps a single scrollable child with an explicit scrollbar.
+message ScrollbarProps {
+  bool always_visible = 1;
+}
+
+// RefreshIndicatorProps wraps a single scrollable child with Material
+// pull-to-refresh; pulling fires an "onRefresh" event on the child (fire-and-
+// forget — Go updates state and calls Context.Update() on its own time; the
+// indicator does not block waiting for a reply).
+message RefreshIndicatorProps {}
+
+// SemanticsProps wraps a single child with an explicit accessibility
+// annotation (a screen-reader label/hint/role) — for cases the underlying
+// Flutter widget can't infer one for on its own (icon-only buttons, images,
+// custom compositions of several widgets that read as one control).
+message SemanticsProps {
+  string label = 1;
+  string hint = 2;
+  bool button = 3; // announce this subtree as a single button control
+  bool header = 4; // announce this subtree as a heading
+}
+
+// ShapeKind selects which primitive a ShapeSpec draws.
+enum ShapeKind {
+  SHAPE_LINE = 0;
+  SHAPE_RECT = 1;
+  SHAPE_CIRCLE = 2;
+  SHAPE_PATH = 3; // polyline through points, in order
+  SHAPE_FILLED_PATH = 4; // closed polygon through points, filled
+}
+
+message Point {
+  double x = 1;
+  double y = 2;
+}
+
+// ShapeSpec is one primitive drawn onto a Canvas. points holds two points for
+// SHAPE_LINE (start/end), the top-left + bottom-right for SHAPE_RECT, one
+// point (center) for SHAPE_CIRCLE (radius carries the size), or the ordered
+// vertices for SHAPE_PATH/SHAPE_FILLED_PATH.
+message ShapeSpec {
+  ShapeKind kind = 1;
+  repeated Point points = 2;
+  double radius = 3;         // SHAPE_CIRCLE only
+  string color = 4;          // stroke color; empty = a sensible default
+  string fill_color = 5;     // SHAPE_RECT/SHAPE_CIRCLE/SHAPE_FILLED_PATH; empty = no fill
+  double stroke_width = 6;   // 0 = a 1px default
+}
+
+// CanvasProps backs a small drawing surface (sparklines, gauges, simple
+// charts) — a bounded, declarative subset of Canvas, not general-purpose
+// custom painting. shapes are drawn in order, so later ones paint over
+// earlier ones.
+message CanvasProps {
+  double width = 1;
+  double height = 2;
+  repeated ShapeSpec shapes = 3;
+}
+
+// GestureDetectorProps declares which gesture families the client should
+// recognize on this subtree, beyond the always-on single tap. Each accepted
+// gesture reports back as a ClientEvent on the GestureDetector's own node,
+// event_type one of: "onTap", "onDoubleTap", "onLongPress", "onPanStart",
+// "onPanUpdate" (event_data "dx,dy" delta since the last update),
+// "onPanEnd", "onScaleStart", "onScaleUpdate" (event_data "scale,dx,dy"),
+// "onScaleEnd".
+message GestureDetectorProps {
+  bool has_double_tap = 1;
+  bool has_long_press = 2;
+  bool has_pan = 3;
+  bool has_scale = 4;
+}
+
+// RouterProps is empty — Router carries no configuration of its own, but has
+// its own WidgetType (rather than reusing CONTAINER) so the client can
+// recognize a route change and animate the transition between the old and
+// new child.
+message RouterProps {}
+
+// FormProps backs a Form: a plain vertical layout of children (typically
+// fields + a submit button) plus an optional form-level error banner, owned
+// entirely by Go (e.g. set after Validate() fails).
+message FormProps {
+  string error_text = 1;
+}
+
+// DismissibleProps backs a Dismissible: wraps a single child in a swipe-to-
+// dismiss gesture. direction restricts which swipe directions dismiss it.
+message DismissibleProps {
+  // 0 = horizontal (either way, default), 1 = start-to-end only,
+  // 2 = end-to-start only, 3 = vertical (either way), 4 = up only, 5 = down only
+  int32 direction = 1;
+  string background_color = 2; // revealed behind the child while swiping; "" = theme error color
+  string icon = 3;             // icon shown in the background; "" = a default delete icon
+}
+
+// SliverScaffoldProps backs a scrollable screen with a collapsing app bar
+// (CustomScrollView + SliverAppBar + SliverList). Children are the scrollable
+// body content; when has_flexible_background is set, the first child instead
+// renders inside the collapsing header's flexible space (e.g. a background
+// image), and the remaining children make up the body.
+message SliverScaffoldProps {
+  string title = 1;
+  double expanded_height = 2; // 0 = a plain, non-collapsing app bar
+  bool pinned = 3;            // app bar stays visible (collapsed) once scrolled past
+  bool floating = 4;          // app bar reappears as soon as the user scrolls up
+  bool has_flexible_background = 5;
+}
+
+// ResponsiveProps backs a widget that picks one of several prebuilt children
+// based on the actual available width, decided entirely client-side via a
+// LayoutBuilder — no round trip to Go, since Go builds the tree once and
+// isn't in the loop for layout the way it is for everything else. breakpoints
+// is parallel to children: the entry with the largest breakpoint value that
+// is <= the available width wins (a 0 breakpoint always matches, acting as
+// the default/smallest case).
+message ResponsiveProps {
+  repeated double breakpoints = 1;
+}
+
+// DraggableProps backs a Draggable: wraps a single child that the user can
+// drag onto a DragTarget elsewhere in the tree. data is an opaque payload
+// carried to whatever DragTarget accepts the drop (handlers on both sides
+// stay untyped strings, matching the rest of Fugo's wire format).
+message DraggableProps {
+  string data = 1;
+}
+
+// DragTargetProps backs a DragTarget: wraps a single child and accepts drops
+// from a Draggable. A successful drop fires a "drop" ClientEvent carrying the
+// dragged Draggable's data.
+message DragTargetProps {}
+
 // OverlayCommand asks the client to show a transient overlay: a SnackBar
-// (message only) or an AlertDialog (title + message, dismissed with OK).
+// (message only), an AlertDialog, or a BottomSheet (title + message, plus
+// optional custom actions instead of a single default "OK"/dismiss button).
+// When actions is non-empty the client replies with the chosen action's label
+// via the request_id reply channel (same mechanism date/time pickers use);
+// when empty, the overlay behaves as before (dismiss-only, no reply expected
+// unless request_id is set).
 message OverlayCommand {
   OverlayOp op = 1;
   string title = 2;
   string message = 3;
-  // Correlates a reply for overlays that return a value (date/time pickers);
-  // 0 for fire-and-forget overlays. The client answers with a "host" ClientEvent.
+  // Correlates a reply for overlays that return a value (date/time pickers,
+  // or a dialog/bottom sheet with custom actions); 0 for fire-and-forget
+  // overlays. The client answers with a "host" ClientEvent.
   uint64 request_id = 4;
+  // Custom action button labels, in display order. Empty = the overlay's
+  // default single dismiss button ("OK") with no reply.
+  repeated string actions = 5;
 }
 
 message WindowCommand {
@@ -511,9 +824,10 @@ message WindowCommand {
 message HostCommand {
   HostOp op = 1;
   uint64 request_id = 2; // correlates the reply; 0 = fire-and-forget (no reply)
-  string text = 3;       // clipboard payload (write) or dialog title (file ops)
+  string text = 3;       // clipboard payload (write), dialog title (file ops), or notification body
   string default_name = 4; // suggested file name for save dialogs
   repeated string extensions = 5; // allowed extensions for file dialogs, no dot (e.g. "txt")
+  string title = 6; // notification title (HOST_NOTIFICATION only)
 }
 
 message ClientEvent {

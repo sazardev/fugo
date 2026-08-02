@@ -28,10 +28,19 @@ const DefaultAddr = "127.0.0.1:9510"
 type Config struct {
 	// Name is the project/binary name (root-level `name = "..."`).
 	Name string
+	// App holds the [app] section.
+	App App
 	// Window holds the [window] section.
 	Window Window
 	// Server holds the [server] section.
 	Server Server
+}
+
+// App is the [app] section: authorship metadata, not read by the runtime
+// today, but reserved for future packaging (installer publisher, desktop
+// entry, etc.) — set once at 'fugo init' and otherwise left alone.
+type App struct {
+	Organization string
 }
 
 // Window is the [window] section.
@@ -146,6 +155,10 @@ func assign(cfg *Config, section, key, val string) {
 	case "":
 		if key == "name" {
 			cfg.Name = val
+		}
+	case "app":
+		if key == "organization" {
+			cfg.App.Organization = val
 		}
 	case "window":
 		switch key {

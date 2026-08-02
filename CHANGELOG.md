@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `Context.Notifications().Show(title, body)` — native OS notifications (toast / notification center), backed by `local_notifier` on the client.
+- `DataTable` gained `.Sortable(handler)`/`.SetSort` (tappable, sortable column headers) and `.Selectable(handler)`/`.SetSelected` (a leading checkbox column) — Go still owns reordering/selection state.
+- `fg.Form(items...)` — aggregates per-field validation via `.AddField(validate func() string)` + `.Validate() bool`, plus a form-level `.SetError` banner; a plain layout wrapper, since Fugo has no client-owned FormField state to orchestrate.
+- `fg.Dismissible(child)` — swipe-to-dismiss, with `.Direction`, `.BgColor`, `.Icon`, and `.OnDismissed(handler)`.
+- `fg.SliverScaffold(title, body...)` — a scrollable screen with a collapsing `SliverAppBar` (`.ExpandedHeight`, `.Pinned`, `.Floating`, `.FlexibleBackground`) over a `SliverList` body.
+
+- `fg.Store[S]` — an opt-in, generic, mutex-protected piece of shared state (`Get`/`Update(fn)`/`Subscribe`) for apps where several widgets react to the same data; composes with `Context`/`Update()`/the retained tree rather than replacing them.
+- `Context.RequestFocus(w fg.Focusable)` — asks the client to move keyboard focus to a widget (today, `TextField`); useful to jump back to a field after a validation error.
+- `fg.Responsive(base).At(minWidth, child)` — picks one of several prebuilt children based on the actual available width, decided entirely client-side via a `LayoutBuilder` (no round trip to Go).
+- `fg.Draggable(child).Data(...)` / `fg.DragTarget(child).OnAccept(handler)` — drag-and-drop between widgets.
+- `Context.OnFileDrop(func(paths []string))` — reports files dragged from the OS onto the client window, backed by `desktop_drop`.
+- `Theme.FollowSystem` — tracks the OS's light/dark setting live (wires up the previously-orphaned `FUGO_THEME_FOLLOW_SYSTEM` the client already read). `Theme.Typography.Family` is now actually forwarded to the client (`FUGO_THEME_FONT_FAMILY`) and applied via `ThemeData.fontFamily` (a system-installed font by name — Fugo doesn't bundle font assets).
+- `AppBar` gained `.Elevation`, `.ForegroundColor`, and `.Bottom(widget)` (a fixed-height strip docked under the title row, e.g. a search field or filter chips).
+- `fugo autostart enable`/`disable` — registers the built `dist/` app to launch at login (XDG autostart `.desktop` entry on Linux, a `Run` registry key on Windows).
+- `fugo build` now also writes Linux packaging next to the binary: an XDG `.desktop` entry, a per-user `install.sh` (no root needed), and an AUR `PKGBUILD` template.
+- `fugo doctor` checks for `notify-send`/libnotify on Linux (used by `Context.Notifications`), as a non-blocking warning.
+
+### Fixed
+- `TextField`/`Dropdown` actually wire up `.SetError` now (the proto's `error_text` field existed and the Flutter client already rendered it, but the Go widgets never exposed a setter or marshaled it).
+- Native file dialogs (`Context.Files().Open`/`.Save`) actually work on Linux now. The client used `file_picker`, which has no Linux platform implementation at all (only android/ios/web/macos/windows) — it built fine but threw at runtime the moment a Linux user opened a dialog. Replaced with `file_selector` (Flutter-official, federated), which has real native implementations for Linux, Windows, and macOS alike.
+
+## [3.44.8-fugo.0] - 2026-08-02
+
+### Added
+- 13 new widgets: `CheckboxListTile`, `RadioListTile`, `SwitchListTile`, `NavigationRail`, `PageView`, `Table`, `ConstrainedBox`, `FractionallySizedBox`, `VerticalDivider`, `RangeSlider`, `Autocomplete`, `Scrollbar`, `RefreshIndicator`.
+- `fg.Semantics(child)` — accessibility annotations (label/hint/button/header) for screen readers.
+- `fg.Canvas(w, h)` with `.Line`/`.Rect`/`.Circle`/`.Path`/`.FilledPath` — a bounded, declarative drawing surface for sparklines/gauges/simple charts.
+- `Context.RegisterShortcuts(map[string]func())` — app-wide keyboard shortcuts (e.g. `"ctrl+s"`), matched client-side independent of focus.
+- `Context.OnResize(func(width, height float64))` — the one channel back for Go to learn the client's viewport size.
+- `GestureDetector` gained `OnDoubleTap`, `OnLongPress`, `OnPanStart/Update/End`, `OnScaleStart/Update/End`.
+- `Router` gained `.OnBeforeLeave(func() bool)` (veto a navigation, e.g. "discard unsaved changes?") and now animates route transitions client-side; it also has its own `WidgetType` instead of reusing `CONTAINER`.
+- `TextField`/`Dropdown` gained `.SetError(msg)` for Go-owned validation state.
+- `Context.ShowDialogActions`/`ShowBottomSheetActions` — dialogs/bottom sheets with custom action buttons (not just a single "OK"), reusing the same reply channel as the date/time pickers.
+- `Container` gained `.Margin`, `.Border`, `.Shadow`; `Text` gained `.MaxLines`, `.Overflow`, `.Decoration`, `.LetterSpacing`, `.Italic`; `TextField` gained `.MaxLines`, `.PrefixIcon`, `.SuffixIcon`, `.KeyboardType`.
+- `Theme.Components` (`CardRadius`, `CardElevation`, `ButtonRadius`) — per-component theme defaults, Flutter's `CardTheme`/`ElevatedButtonThemeData` equivalent.
+- `fg` testing kit (`ClickEvent`, `BoolEvent`, `TextEvent`, `FloatEvent`, `RangeEvent`) and `BuildTree` documented as the supported way to test a Fugo UI without gRPC/Flutter.
+- `FUGO_THEME_FOLLOW_SYSTEM=1` makes the client track the OS light/dark setting live via `ThemeMode.system`.
+- The Flutter client now maps ~30 `Curves` (was 4), warning on an unrecognized name instead of silently falling back to `ease`.
+
 ## [0.17.0] - 2026-06-09
 
 ### Added

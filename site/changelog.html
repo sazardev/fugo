@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-i18n="chMeta.title">Changelog — Fugo</title>
+<meta name="description" data-i18n-attr="content" data-i18n="chMeta.description" content="Historial completo de versiones de Fugo y el esquema de versionamiento ligado a Flutter.">
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css?v=10">
+</head>
+<body>
+
+<a class="skip-link" href="#main" data-i18n="a11y.skip">Saltar al contenido</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/logo.svg" alt="" width="26" height="26">
+      <span>fugo</span>
+      <span class="brand-version">v3.44.8-fugo.0</span>
+    </a>
+    <button class="nav-toggle" id="navToggle" data-i18n-attr="aria-label" data-i18n="a11y.openNav" aria-label="Abrir navegación" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="topnav">
+      <button class="palette-trigger" id="paletteTrigger" data-i18n-attr="aria-label|title" data-i18n="a11y.search|a11y.searchTitle" aria-label="Buscar / saltar a sección" title="Buscar (Ctrl K)">
+        <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.3-4.3" stroke-linecap="round"/></svg>
+        <span data-i18n="nav.search">Buscar</span>
+        <kbd>Ctrl K</kbd>
+      </button>
+      <a href="https://github.com/sazardev/fugo" target="_blank" rel="noopener">GitHub</a>
+      <a href="changelog.html" data-i18n="nav.changelog">Changelog</a>
+      <a href="contributing.html" data-i18n="side.contribuir">Contribuir</a>
+      <button class="lang-toggle" id="langToggle" aria-label="Switch language / cambiar idioma" title="ES / EN">
+        <span id="langLabel">EN</span>
+      </button>
+      <button class="theme-toggle" id="themeToggle" data-i18n-attr="aria-label|title" data-i18n="a11y.theme|a11y.theme" aria-label="Cambiar tema" title="Cambiar tema claro/oscuro">
+        <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" stroke-linecap="round"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <nav class="side-nav" data-i18n-attr="aria-label" data-i18n="a11y.sections" aria-label="Secciones">
+      <div class="side-group" data-i18n="contrib.group1">En esta página</div>
+      <a href="#versionamiento" data-i18n="ch.sVersion">Versionamiento</a>
+      <a href="#historial" data-i18n="ch.sHistorial">Historial de versiones</a>
+      <div class="side-group" data-i18n="side.group3">Proyecto abierto</div>
+      <a href="contributing.html" data-i18n="side.contribuir">Contribuir</a>
+      <a href="index.html#estado" data-i18n="side.estado">Estado y progreso</a>
+      <a href="index.html" data-i18n="contrib.backHome">← Volver al inicio</a>
+    </nav>
+  </aside>
+
+  <main id="main">
+
+    <section class="hero" id="top">
+      <img class="hero-mark" src="assets/logo.svg" alt="Fugo" width="56" height="56">
+      <span class="eyebrow" data-i18n="ch.eyebrow">Version history</span>
+      <h1 data-i18n="ch.h1">Changelog</h1>
+      <p class="page-lead" data-i18n="ch.lead">Historial completo de Fugo, versión por versión — traducido del <code>CHANGELOG.md</code> del repositorio.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="https://github.com/sazardev/fugo/blob/main/CHANGELOG.md" target="_blank" rel="noopener" data-i18n="ch.viewSource">Ver CHANGELOG.md en GitHub</a>
+        <a class="btn btn-ghost" href="https://github.com/sazardev/fugo/releases" target="_blank" rel="noopener" data-i18n="ch.viewReleases">Ver releases</a>
+      </div>
+    </section>
+
+    <section id="versionamiento">
+      <h2 data-i18n="ch.versionH">Versionamiento</h2>
+      <p data-i18n="ch.versionP1">La versión de Fugo sigue intencionalmente a Flutter: <code>VERSION</code> es <code>&lt;versión-de-flutter&gt;-fugo.&lt;build&gt;</code> (por ejemplo <code>3.44.8-fugo.0</code>) — los primeros tres números siempre son la versión exacta del SDK de Flutter contra la que están compilados el cliente precompilado y <code>flutter_client/</code>, así que nunca hay ambigüedad entre un release de Fugo y el Flutter con el que renderiza.</p>
+      <p data-i18n="ch.versionP2"><code>FLUTTER_VERSION</code> es la única fuente de verdad para ese pin: <code>release-flutter-client.yml</code> compila exactamente contra esa versión (no un canal flotante como <code>stable</code>), y <code>fugo doctor</code> avisa (no falla — el SDK de Flutter es opcional) si tu Flutter instalado no coincide.</p>
+      <p data-i18n="ch.versionP3">Un workflow semanal, <code>check-flutter-version.yml</code>, revisa si hay una versión estable de Flutter más reciente y abre un PR para actualizar el pin — Fugo está pensado para seguir a Flutter de forma continua, no quedarse atrás. Ese PR nunca se mergea automáticamente, porque una actualización de Flutter puede romper el código Dart de <code>flutter_client/</code>.</p>
+      <p data-i18n="ch.versionP4">Dos comandos cubren un release, ninguno edita <code>VERSION</code>/<code>CHANGELOG.md</code> a mano: <code>make release MSG="..."</code> sube solo el sufijo <code>-fugo.N</code> (un fix de Fugo contra la misma versión de Flutter); <code>make release-flutter FLUTTER=&lt;version&gt; MSG="..."</code> sube la versión de Flutter objetivo (reinicia a <code>-fugo.0</code>). Ya no existe <code>TYPE=patch|minor|major</code> — mayor/menor no significan nada bajo este esquema.</p>
+    </section>
+
+    <section id="historial">
+      <h2 data-i18n="ch.historialH">Historial de versiones</h2>
+      <p class="page-lead" data-i18n="ch.historialLead">Formato basado en <a href="https://keepachangelog.com/en/1.1.0/" target="_blank" rel="noopener">Keep a Changelog</a>. Traducido del <a href="https://github.com/sazardev/fugo/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a> original en inglés.</p>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version unreleased" data-i18n="ch.unreleased">Sin publicar</span></header>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">3.44.8-fugo.0</span><span class="release-date">2026-08-02</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpChanged">Cambiado</h4>
+          <ul>
+            <li data-i18n="ch.hist.r2.c1"><strong>La versión de Fugo ahora sigue exactamente la versión del SDK de Flutter que usa.</strong> <code>VERSION</code> es <code>&lt;versión-de-flutter&gt;-fugo.&lt;build&gt;</code> (ej. <code>3.44.8-fugo.0</code>) — los primeros tres números siempre indican exactamente contra qué versión de Flutter están compilados el cliente precompilado y <code>flutter_client/</code>, así que nunca hay ambigüedad entre un release de Fugo y el Flutter con el que renderiza. <code>FLUTTER_VERSION</code> es la nueva fuente única de verdad para ese pin: CI (<code>release-flutter-client.yml</code>) compila exactamente contra esa versión en vez de un canal flotante <code>channel: stable</code>, y <code>fugo doctor</code> avisa si tu SDK de Flutter instalado no coincide.</li>
+            <li data-i18n="ch.hist.r2.c2"><code>make release MSG="..."</code> ahora solo sube el sufijo de build <code>-fugo.N</code> (un fix de Fugo contra la misma versión de Flutter) — <code>TYPE=patch|minor|major</code> desapareció, ya que mayor/menor no significan nada bajo este esquema. Subir la versión de Flutter objetivo es un paso separado y explícito: <code>make release-flutter FLUTTER=&lt;version&gt; MSG="..."</code>.</li>
+            <li data-i18n="ch.hist.r2.c3">Un nuevo workflow programado (<code>check-flutter-version.yml</code>) revisa semanalmente si hay una versión estable de Flutter más nueva y abre un PR que sube <code>FLUTTER_VERSION</code> — Fugo está pensado para seguir a Flutter actual, no quedarse atrás. Ese PR siempre necesita revisión y merge humano (una actualización de Flutter puede afectar el código Dart de <code>flutter_client/</code>), nunca se auto-mergea.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">0.17.0</span><span class="release-date">2026-06-09</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpAdded">Añadido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r3.a1"><code>fugo doctor</code> ahora verifica <strong>coherencia del proyecto</strong>: lee la ruta del módulo de <code>go.mod</code> y el import <code>&lt;module&gt;/ui</code> de <code>main.go</code>, y reporta un ✗ preciso cuando no coinciden, cuando falta el paquete <code>ui</code> importado, o cuando no tiene un <code>Build</code> exportado — detectado antes del error de compilación genérico.</li>
+            <li data-i18n="ch.hist.r3.a2"><code>fugo doctor --fix</code> repara las partes auto-corregibles dentro de un proyecto antes de diagnosticar: escribe un <code>fugo.toml</code> por defecto si falta, corre <code>git init</code> si no hay repo, y <code>go mod tidy</code> para resolver dependencias.</li>
+          </ul>
+          <h4 data-i18n="ch.grpChanged">Cambiado</h4>
+          <ul>
+            <li data-i18n="ch.hist.r3.c1"><strong><code>fugo run</code> hace hot-reload por defecto.</strong> Ahora vigila los archivos <code>.go</code> y reconstruye/reconecta el servidor Go en cada cambio mientras la ventana de Flutter permanece abierta — así que los cambios en texto, handlers, layout, etc. se ven en vivo (el estado en memoria se reinicia entre recargas). Pasa <code>--no-watch</code> para un solo build-and-run; el antiguo flag <code>--watch</code> ahora está implícito (oculto, no-op).</li>
+          </ul>
+          <h4 data-i18n="ch.grpFixed">Corregido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r3.f1">Cliente de render Flutter: la reconexión tras un reinicio del servidor (hot reload) ya no falla con "Bad state: Stream has already been listened to". El isolate ahora se suscribe a su <code>ReceivePort</code> una sola vez y enruta eventos al stream activo, y reinicia su backoff tras una sesión exitosa para reconectar en ~500ms.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">0.16.0</span><span class="release-date">2026-06-09</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpAdded">Añadido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r4.a1"><code>fugo doctor</code> ahora es un chequeo de salud en dos partes. <strong>Toolchain</strong>: Go, Flutter, git, protoc, gofumpt (Go/Flutter son requeridos → ✗; el resto son advertencias) más la plataforma. <strong>Proyecto</strong> (al correr dentro de un proyecto Fugo): importa <code>fugo.toml</code> y reporta la ventana/dirección resuelta, verifica que la dirección gRPC configurada esté libre (o sea un unix socket), verifica la estructura (<code>main.go</code>, <code>ui/</code>, <code>go.mod</code>), que el módulo <code>github.com/sazardev/fugo</code> resuelva, si el cliente Flutter está compilado (o es compilable), y finalmente compila el proyecto (<code>go build ./...</code>).</li>
+          </ul>
+          <h4 data-i18n="ch.grpChanged">Cambiado</h4>
+          <ul>
+            <li data-i18n="ch.hist.r4.c1"><code>fugo doctor</code> ahora sale con código distinto de cero cuando hay un problema bloqueante (falta una herramienta requerida, un módulo sin resolver, o un proyecto que no compila), para poder usarlo como gate en scripts/CI. Las advertencias por sí solas mantienen un código de salida cero.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">0.15.0</span><span class="release-date">2026-06-09</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpAdded">Añadido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r5.a1"><code>fugo init</code> ahora genera una estructura de proyecto recomendada en vez de un <code>main.go</code> solitario: un entrypoint <code>main.go</code> delgado, un paquete <code>ui</code> para tus pantallas (<code>ui.Build</code>), una config <code>fugo.toml</code>, un <code>README.md</code>, un <code>.gitignore</code>, y <code>logs/</code> (con <code>bin/</code>/<code>dist/</code> reservados para la salida del build). También corre <code>git init</code> y hace un commit inicial (omítelo con <code>--no-git</code>).</li>
+            <li data-i18n="ch.hist.r5.a2"><code>fugo.toml</code> — configuración declarativa de proyecto leída por el CLI <strong>y</strong> la app: <code>[window] title/width/height</code> y <code>[server] addr</code>. El <code>main.go</code> generado lo carga vía el nuevo <code>fugo.ConfigOptions("fugo.toml")</code>; <code>fugo run</code> usa <code>[server] addr</code> como dirección por defecto (aún se puede sobreescribir con <code>--addr</code>), y <code>fugo build</code> incluye <code>fugo.toml</code> en <code>dist/</code>.</li>
+            <li data-i18n="ch.hist.r5.a3">Nuevo paquete <code>config</code> libre de dependencias (<code>github.com/sazardev/fugo/config</code>) que carga <code>fugo.toml</code> (un subconjunto pequeño y fijo de TOML), compartido entre el runtime y el CLI.</li>
+            <li data-i18n="ch.hist.r5.a4"><code>fugo run</code> ahora copia los logs de runtime de la app a <code>logs/run.log</code> (además de seguir mostrándolos en la consola).</li>
+          </ul>
+          <h4 data-i18n="ch.grpChanged">Cambiado</h4>
+          <ul>
+            <li data-i18n="ch.hist.r5.c1">Las plantillas iniciales <code>app</code> y <code>showcase</code> ahora viven en el paquete <code>ui</code> generado (<code>ui.Build</code>); el tema se configura en <code>main.go</code> antes de <code>RunStandalone</code>.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">0.14.0</span><span class="release-date">2026-06-09</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpAdded">Añadido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r6.a1"><code>fg.RichText(fg.Span("a").Bold(), fg.Span("b").Color(...).Size(...))</code> — un párrafo de fragmentos de texto con estilos mixtos.</li>
+            <li data-i18n="ch.hist.r6.a2"><code>fg.DataTable().Columns(...).Row(...)</code> — una tabla de datos Material (con scroll horizontal).</li>
+            <li data-i18n="ch.hist.r6.a3"><code>fg.Stepper().Step(title, content).Active(i).OnStep(fn)</code> — un asistente paso a paso.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">0.13.0</span><span class="release-date">2026-06-09</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpAdded">Añadido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r7.a1">Más overlays imperativos desde Go: <code>ctx.ShowBottomSheet(title, message)</code> (bottom sheet modal) y los selectores nativos <code>ctx.PickDate(func(date string))</code> / <code>ctx.PickTime(func(t string))</code>, que devuelven el valor elegido (ISO <code>YYYY-MM-DD</code> / 24 horas <code>HH:MM</code>) a un callback — vacío si se cancela.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">0.12.0</span><span class="release-date">2026-06-09</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpAdded">Añadido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r8.a1">Ayudantes de layout: <code>fg.AspectRatio(ratio, child)</code>, <code>fg.ClipRRect(radius, child)</code>, <code>fg.FittedBox(child)</code>, y <code>fg.Flexible(child).Flex(n)</code>.</li>
+            <li data-i18n="ch.hist.r8.a2"><code>fg.ExpansionTile(title)</code> — un acordeón colapsable (<code>.Subtitle</code>, <code>.Leading</code>, <code>.Children</code>, <code>.InitiallyExpanded</code>).</li>
+            <li data-i18n="ch.hist.r8.a3"><code>fg.PopupMenuButton(icon)</code> — un menú contextual/overflow (<code>.Item(value, label)</code>, <code>.OnSelected</code>).</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">0.11.0</span><span class="release-date">2026-06-09</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpAdded">Añadido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r9.a1">Más widgets Material comunes: <code>fg.Tooltip</code>, <code>fg.Badge(child).Label(...)</code>, <code>fg.CircleAvatar</code> (<code>.Text</code> / <code>.Icon</code> / <code>.BgColor</code> / <code>.Radius</code>), y <code>fg.SegmentedButton</code>.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">0.10.0</span><span class="release-date">2026-06-09</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpAdded">Añadido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r10.a1">Overlays imperativos manejados desde Go sobre el canal de comandos fuera de banda: <code>ctx.ShowSnackBar(text)</code> y <code>ctx.ShowDialog(title, message)</code>.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">0.9.0</span><span class="release-date">2026-06-09</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpAdded">Añadido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r11.a1"><code>fg.Tabs</code> — una barra de pestañas Material con una vista por pestaña (<code>.Tab(label, content)</code>, <code>.InitialIndex</code>). El cambio de pestaña se maneja en el cliente, así que no necesita ida y vuelta a Go.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">0.8.0</span><span class="release-date">2026-06-09</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpAdded">Añadido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r12.a1"><code>Scaffold.Drawer(widget)</code> — un panel lateral deslizante. Con un app bar presente y sin leading explícito, el botón de menú que lo abre aparece automáticamente.</li>
+            <li data-i18n="ch.hist.r12.a2"><code>fg.NavigationBar</code> — una barra de navegación inferior Material 3, conectada vía <code>Scaffold.BottomBar(...)</code>.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">0.7.0</span><span class="release-date">2026-06-09</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpAdded">Añadido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r13.a1"><code>fg.AppBar</code> — un app bar Material completo: un título más un widget <code>.Leading</code> opcional, <code>.Actions(...)</code> al final, <code>.CenterTitle</code>, y <code>.BgColor</code>.</li>
+          </ul>
+          <h4 data-i18n="ch.grpChanged">Cambiado</h4>
+          <ul>
+            <li data-i18n="ch.hist.r13.c1"><strong>Cambio incompatible:</strong> <code>Scaffold.AppBar</code> ahora recibe un widget <code>*fg.AppBar</code> en vez de un string de título. Migra <code>fg.Scaffold(body).AppBar("X")</code> → <code>fg.Scaffold(body).AppBar(fg.AppBar("X"))</code>.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">0.6.0</span><span class="release-date">2026-06-09</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpAdded">Añadido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r14.a1">Bancos de constantes al estilo Flutter: <strong><code>fg.Icons.*</code></strong> (~2.200 iconos base), <strong><code>fg.Colors.*</code></strong> (la paleta Material), <strong><code>fg.TextSize.*</code></strong> (la escala tipográfica de Material 3).</li>
+            <li data-i18n="ch.hist.r14.a2"><code>cmd/gen-icons</code>: una herramienta de desarrollo que regenera <code>fg/icons_gen.go</code> y <code>flutter_client/lib/icons_gen.dart</code> desde el SDK de Flutter instalado.</li>
+          </ul>
+          <h4 data-i18n="ch.grpChanged">Cambiado</h4>
+          <ul>
+            <li data-i18n="ch.hist.r14.c1">El cliente Flutter resuelve nombres de íconos a través de la tabla generada <code>materialIcons</code> en vez de un switch mantenido a mano de ~20 íconos.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">0.5.0</span><span class="release-date">2026-06-09</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpAdded">Añadido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r15.a1"><code>fugo upgrade</code> — auto-actualiza el CLI al último release vía <code>go install …@latest</code> (pasa una versión para fijarla, ej. <code>fugo upgrade v0.4.2</code>). En Windows el binario en ejecución se mueve a un lado (<code>&lt;exe&gt;.old</code>) para que <code>go install</code> pueda reemplazarlo.</li>
+          </ul>
+          <h4 data-i18n="ch.grpChanged">Cambiado</h4>
+          <ul>
+            <li data-i18n="ch.hist.r15.c1">Higiene del repositorio: se consolidó <code>.gitignore</code> para que los artefactos de prueba nunca lleguen al árbol. Se documentó la estructura del repositorio en <code>AGENTS.md</code>.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">0.4.2</span><span class="release-date">2026-06-09</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpAdded">Añadido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r16.a1"><code>FloatingActionButton</code> ahora usa un hero tag único por nodo, así una app puede mostrar múltiples FABs sin colisión de hero tag. Se añadió el ícono <code>remove</code> (menos).</li>
+          </ul>
+          <h4 data-i18n="ch.grpChanged">Cambiado</h4>
+          <ul>
+            <li data-i18n="ch.hist.r16.c1">La plantilla de <code>fugo init</code> ahora es un contador mínimo y elegante: un conteo centrado, un app bar titulado "Fugo", y dos FABs (decrementar / incrementar).</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">0.4.1</span><span class="release-date">2026-06-09</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpFixed">Corregido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r17.f1">Un <code>FloatingActionButton</code> disparaba su <code>OnClick</code> repetidamente por su cuenta — el cliente envolvía cada app en un <code>Scaffold</code> exterior, desviando los gestos del FAB anidado. La superficie exterior ahora es un <code>Material</code> plano.</li>
+          </ul>
+          <h4 data-i18n="ch.grpChanged">Cambiado</h4>
+          <ul>
+            <li data-i18n="ch.hist.r17.c1">Look más limpio y plano: el cliente aplana las superficies con tinte de seed de Material 3 a un fondo neutro; el seed sigue coloreando los elementos interactivos.</li>
+            <li data-i18n="ch.hist.r17.c2">La plantilla de contador de <code>fugo init</code> ahora es la app Material responsiva canónica.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">0.4.0</span><span class="release-date">2026-06-09</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpAdded">Añadido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r18.a1">Renderizado nativo <strong>Material 3</strong>, claro por defecto, sembrado vía <code>ColorScheme.fromSeed</code> desde el <code>fg.Theme</code> activo.</li>
+            <li data-i18n="ch.hist.r18.a2">Variantes de botón Material como constructores separados: <code>fg.FilledButton</code>, <code>fg.FilledTonalButton</code>, <code>fg.OutlinedButton</code>, <code>fg.TextButton</code>, <code>fg.ElevatedButton</code>, <code>fg.IconButton</code>.</li>
+            <li data-i18n="ch.hist.r18.a3">Widgets Material centrales: <code>fg.Card</code>, <code>fg.Scaffold</code>, <code>fg.FloatingActionButton</code>, <code>fg.ListTile</code>, <code>fg.Chip</code>, <code>fg.ProgressCircular</code> / <code>fg.ProgressLinear</code>.</li>
+            <li data-i18n="ch.hist.r18.a4">Controles de alineación de <code>fg.Column</code>: <code>.MainAlign</code>, <code>.CrossAlign</code>, <code>.MainAxisSize</code>, <code>.Expand</code>.</li>
+          </ul>
+          <h4 data-i18n="ch.grpChanged">Cambiado</h4>
+          <ul>
+            <li data-i18n="ch.hist.r18.c1">El renderer auto-centra una raíz de tamaño intrínseco; las raíces que llenan el viewport se dejan igual.</li>
+            <li data-i18n="ch.hist.r18.c2">Los widgets ya no inyectan colores hex predeterminados — heredan el <code>ColorScheme</code> de Material 3 a menos que se llame un setter de color.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">0.3.2</span><span class="release-date">2026-06-09</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpAdded">Añadido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r19.a1">Archivo <code>LICENSE</code> (MIT) — restaura la documentación renderizada en pkg.go.dev.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">0.3.1</span><span class="release-date">2026-06-09</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpFixed">Corregido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r20.f1"><code>fugo --version</code> ahora reporta la versión correcta al instalarse con <code>go install</code>, usando como respaldo la versión del módulo y los datos de VCS de <code>runtime/debug.ReadBuildInfo()</code>.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">0.3.0</span><span class="release-date">2026-06-09</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpAdded">Añadido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r21.a1"><strong>Instalable vía <code>go install</code></strong>: los bindings de protobuf de Go generados están commiteados, así que un fetch limpio compila el CLI sin <code>protoc</code>.</li>
+            <li data-i18n="ch.hist.r21.a2">Servicios nativos del SO: portapapeles (<code>Context.Clipboard()</code>) y diálogos de archivo nativos (<code>Context.Files().Open/Save</code>).</li>
+            <li data-i18n="ch.hist.r21.a3">Control de ventana en tiempo de ejecución vía <code>Context.Window()</code>.</li>
+            <li data-i18n="ch.hist.r21.a4">Nuevos widgets: <code>fg.AnimatedPositioned</code> y <code>fg.WindowDragArea</code>.</li>
+            <li data-i18n="ch.hist.r21.a5">Ruta de prioridad inmediata del scheduler: <code>Context.UpdateNow()</code>.</li>
+          </ul>
+          <h4 data-i18n="ch.grpChanged">Cambiado</h4>
+          <ul>
+            <li data-i18n="ch.hist.r21.c1">Los bindings de protobuf de Go generados ya no están en gitignore — commiteados y mantenidos limpios con gofumpt.</li>
+            <li data-i18n="ch.hist.r21.c2">Rendimiento: mapa de búsqueda de diff con pool de objetos, ajuste de GC, benchmarks Go + Dart detrás de un gate de regresión de rendimiento en CI.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">0.2.0</span><span class="release-date">2026-06-08</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpAdded">Añadido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r22.a1">Renovación de DX del CLI: logging verbose/quiet nivelado, pasos animados, ayuda enriquecida, un catálogo de widgets, <code>FUGO_LOG</code>.</li>
+          </ul>
+          <h4 data-i18n="ch.grpFixed">Corregido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r22.f1">Data race en <code>App.handlers</code> entre el scheduler y las goroutines de transporte (ahora protegido con mutex).</li>
+            <li data-i18n="ch.hist.r22.f2">Desincronización de diff con keys — la identidad del nodo ahora es posicional por id, así que cada patch es aplicable en el cliente.</li>
+            <li data-i18n="ch.hist.r22.f3">Propiedades de Text y Container que se podían configurar pero nunca llegaban al cable.</li>
+          </ul>
+          <h4 data-i18n="ch.grpChanged">Cambiado</h4>
+          <ul>
+            <li data-i18n="ch.hist.r22.c1">Se re-establecieron los presupuestos de rendimiento sobre protobuf estándar con un gate de diff determinista de cero-allocs.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="release">
+        <header class="release-head"><span class="release-version">0.1.0</span><span class="release-date">2026-06-07</span></header>
+        <div class="release-body">
+          <h4 data-i18n="ch.grpAdded">Añadido</h4>
+          <ul>
+            <li data-i18n="ch.hist.r23.a1">Declaración del paquete raíz, git hooks de Lefthook, CI de GitHub Actions (lint/vet/build/test/format), <code>.golangci.yml</code> con 80+ linters, <code>Makefile</code>, <code>VERSION</code>, <code>CHANGELOG.md</code>.</li>
+          </ul>
+          <h4 data-i18n="ch.grpInfra">Infraestructura</h4>
+          <ul>
+            <li data-i18n="ch.hist.r23.i1">Módulo Go inicializado en <code>github.com/sazardev/fugo</code> (Go 1.26.3).</li>
+          </ul>
+        </div>
+      </article>
+    </section>
+
+    <footer class="page-footer">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <div class="footer-h" data-i18n="footer.colProject">Proyecto</div>
+          <a href="https://github.com/sazardev/fugo" target="_blank" rel="noopener" data-i18n="footer.repo">Repositorio</a>
+          <a href="https://github.com/sazardev/fugo/issues" target="_blank" rel="noopener" data-i18n="footer.issues">Issues</a>
+          <a href="https://github.com/sazardev/fugo/pulls" target="_blank" rel="noopener" data-i18n="footer.prs">Pull requests</a>
+          <a href="https://github.com/sazardev/fugo/discussions" target="_blank" rel="noopener" data-i18n="footer.discussions">Discussions</a>
+        </div>
+        <div class="footer-col">
+          <div class="footer-h" data-i18n="footer.colDocs">Documentación</div>
+          <a href="changelog.html" data-i18n="nav.changelog">Changelog</a>
+          <a href="contributing.html" data-i18n="side.contribuir">Contribuir</a>
+          <a href="https://github.com/sazardev/fugo/blob/main/SECURITY.md" target="_blank" rel="noopener" data-i18n="side.seguridad">Seguridad</a>
+          <a href="https://github.com/sazardev/fugo/blob/main/LICENSE" target="_blank" rel="noopener" data-i18n="side.licencia">Licencia</a>
+        </div>
+        <div class="footer-col">
+          <div class="footer-h" data-i18n="footer.colSupport">Apoyar</div>
+          <a href="https://github.com/sazardev/fugo" target="_blank" rel="noopener" data-i18n="footer.star">★ Star en GitHub</a>
+          <a href="https://github.com/sazardev/fugo/releases" target="_blank" rel="noopener" data-i18n="footer.releases">Releases</a>
+        </div>
+      </div>
+      <p class="page-footer-sub" data-i18n="footer.p1">Fugo — hecho con Go + Flutter. <a href="https://github.com/sazardev/fugo" target="_blank" rel="noopener">github.com/sazardev/fugo</a></p>
+    </footer>
+
+  </main>
+</div>
+
+<div class="palette-overlay" id="paletteOverlay" hidden>
+  <div class="palette" role="dialog" aria-modal="true" data-i18n-attr="aria-label" data-i18n="a11y.paletteLabel" aria-label="Paleta de comandos">
+    <div class="palette-input-row">
+      <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.3-4.3" stroke-linecap="round"/></svg>
+      <input type="text" id="paletteInput" data-i18n-attr="placeholder" data-i18n="palette.placeholder" placeholder="Ir a una sección…" autocomplete="off" spellcheck="false">
+      <kbd>Esc</kbd>
+    </div>
+    <ul class="palette-results" id="paletteResults"></ul>
+  </div>
+</div>
+
+<script src="i18n.js?v=10"></script>
+<script src="script.js?v=10"></script>
+</body>
+</html>

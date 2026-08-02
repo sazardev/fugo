@@ -7,14 +7,21 @@ import (
 
 // AppBarWidget is a Material 3 top app bar. Build one with AppBar and pass it to
 // Scaffold().AppBar(...). It carries a title plus an optional leading widget
-// (e.g. a menu icon button) and trailing action widgets.
+// (e.g. a menu icon button), trailing action widgets, and an optional bottom
+// widget docked under the title row (a fixed-height strip — e.g. a search
+// field or a row of filter chips; not a place to embed a full Tabs, whose
+// TabBarView content belongs in the Scaffold body instead).
 type AppBarWidget struct {
-	title       string
-	leading     Widget
-	actions     []Widget
-	bgColor     Color
-	centerTitle bool
-	bgColorSet  bool
+	title           string
+	leading         Widget
+	actions         []Widget
+	bottom          Widget
+	bgColor         Color
+	foregroundColor Color
+	elevation       float64
+	centerTitle     bool
+	bgColorSet      bool
+	foregroundSet   bool
 	baseWidget
 }
 
@@ -38,6 +45,14 @@ func (a *AppBarWidget) Actions(ws ...Widget) *AppBarWidget {
 	return a
 }
 
+// Bottom sets a fixed-height widget docked under the title row (e.g. a search
+// field or a row of filter chips) and returns the widget for chaining.
+func (a *AppBarWidget) Bottom(w Widget) *AppBarWidget {
+	a.bottom = w
+
+	return a
+}
+
 // CenterTitle centers the title and returns the widget for chaining.
 func (a *AppBarWidget) CenterTitle(v bool) *AppBarWidget {
 	a.centerTitle = v
@@ -53,16 +68,41 @@ func (a *AppBarWidget) BgColor(c Color) *AppBarWidget {
 	return a
 }
 
+// ForegroundColor overrides the title/icon color (otherwise the M3 default)
+// and returns the widget for chaining.
+func (a *AppBarWidget) ForegroundColor(c Color) *AppBarWidget {
+	a.foregroundColor = c
+	a.foregroundSet = true
+
+	return a
+}
+
+// Elevation sets the shadow depth in logical pixels (0 = the M3 default) and
+// returns the widget for chaining.
+func (a *AppBarWidget) Elevation(v float64) *AppBarWidget {
+	a.elevation = v
+
+	return a
+}
+
 func (a *AppBarWidget) isWidget() {}
 
-// widgetChildren returns the leading widget (when set) followed by the actions.
+// widgetChildren returns, in order: the leading widget (when set), the
+// actions, and finally the bottom widget (when set) — this fixed order is
+// what lets the client tell them apart without a separate count.
 func (a *AppBarWidget) widgetChildren() []Widget {
 	var children []Widget
 	if a.leading != nil {
 		children = append(children, a.leading)
 	}
 
-	return append(children, a.actions...)
+	children = append(children, a.actions...)
+
+	if a.bottom != nil {
+		children = append(children, a.bottom)
+	}
+
+	return children
 }
 
 func (a *AppBarWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
@@ -76,11 +116,19 @@ func (a *AppBarWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 		bgColor = a.bgColor.String()
 	}
 
+	foregroundColor := ""
+	if a.foregroundSet {
+		foregroundColor = a.foregroundColor.String()
+	}
+
 	props, _ := proto.Marshal(&fugov1.AppBarProps{
-		Title:       a.title,
-		CenterTitle: a.centerTitle,
-		HasLeading:  a.leading != nil,
-		BgColor:     bgColor,
+		Title:           a.title,
+		CenterTitle:     a.centerTitle,
+		HasLeading:      a.leading != nil,
+		BgColor:         bgColor,
+		Elevation:       a.elevation,
+		ForegroundColor: foregroundColor,
+		HasBottom:       a.bottom != nil,
 	})
 
 	self := &fugov1.WidgetNode{

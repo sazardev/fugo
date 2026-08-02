@@ -8,19 +8,23 @@
 **Server-Driven UI framework for desktop applications — write your logic in Go, render with Flutter.**
 
 [![Go Version](https://img.shields.io/badge/Go-1.26.3-blue?logo=go)](https://go.dev)
-[![Flutter](https://img.shields.io/badge/Flutter-3.24+-blue?logo=flutter)](https://flutter.dev)
+[![Flutter](https://img.shields.io/badge/Flutter-3.44.8-blue?logo=flutter)](FLUTTER_VERSION)
 [![gRPC](https://img.shields.io/badge/gRPC-bidirectional-purple)](https://grpc.io)
 [![Protobuf](https://img.shields.io/badge/Protobuf-typed-orange)](https://protobuf.dev)
 [![UDS](https://img.shields.io/badge/UDS-5%E2%80%9310%C2%B5s-brightgreen)](#)
 [![License](https://img.shields.io/badge/license-MIT-green)](#)
-[![Version](https://img.shields.io/badge/version-0.4.0-brightgreen)](VERSION)
+[![Version](https://img.shields.io/badge/version-3.44.8--fugo.0-brightgreen)](VERSION)
 [![go install](https://img.shields.io/badge/go%20install-cmd%2Ffugo-00ADD8?logo=go)](#installation)
+
+> Fugo's version tracks the exact Flutter release it targets — `X.Y.Z` always matches the Flutter SDK the precompiled client is built against, with a `-fugo.N` suffix for fugo-only fixes against that same Flutter version. See `FLUTTER_VERSION` / `CLAUDE.md` for details.
 
 ---
 
 ## What is Fugo?
 
 Fugo is a **local Server-Driven UI (SDUI)** framework that lets you build native desktop applications writing **exclusively in Go**. Business logic, state management, and routing live entirely in a Go process, while a precompiled Flutter engine acts as a pure rendering terminal — communicating over **Unix Domain Sockets** (TCP on Windows) via **gRPC** with **Protocol Buffers**.
+
+> 📖 **[docs/FUGO_IDIOMATICO.md](docs/FUGO_IDIOMATICO.md)** (Spanish) is the complete, code-verified guide: architecture, the full widget catalog, theming, idiomatic state management, host services, platform support, and packaging.
 
 ```
 ┌──────────────────────┐     IPC (UDS/TCP)   ┌──────────────────────┐
@@ -193,13 +197,23 @@ fg.Text("Title").FontSize(fg.TextSize.HeadlineMedium)  // the M3 type scale: .Di
 | Layer | Technology | Why |
 |-------|-----------|-----|
 | **Language** | Go 1.26+ | Goroutines, strong ecosystem, systems-level performance |
-| **Rendering** | Flutter 3.24+ / Impeller | 60/120 fps native, world-class layout engine |
+| **Rendering** | Flutter (pinned, see `FLUTTER_VERSION`) / Impeller | 60/120 fps native, world-class layout engine |
 | **IPC Transport** | Unix Domain Sockets (TCP fallback on Windows) | 5-10µs latency, kernel-level throughput |
 | **RPC** | gRPC bidirectional streaming | Typed contracts, health checking, keepalive |
 | **Serialization** | Protocol Buffers (`google.golang.org/protobuf`) | Per-widget props marshaled as nested protobuf inside each node |
 | **Wire updates** | Tree diff (ID/positional) | Only changed nodes stream as patches, never the full tree |
 | **Process Mgmt** | `os/exec` + signals | Subprocess lifecycle, zombie prevention |
 | **Window Mgmt** | `window_manager` | Cross-platform frameless windows, custom chrome |
+
+### Platform support
+
+| Platform | Status |
+|---|---|
+| Linux (X11) | ✅ Supported |
+| Linux (Wayland — Hyprland, Sway, GNOME, etc.) | ✅ Works via XWayland (verified on Hyprland); Flutter's Linux embedder isn't natively Wayland yet |
+| Windows | ✅ Supported |
+| macOS | Untested, should build (UDS transport, same as Linux) |
+| Android / iOS | ❌ Out of scope — the subprocess + Unix-socket architecture doesn't fit a mobile sandbox |
 
 ---
 
@@ -246,8 +260,10 @@ fugo/                   # App, Context, lifecycle (RunStandalone, scheduler)
 fugo init <name>          # Scaffold a project (use --template app for a themed multi-page starter)
 fugo run                  # Build + run; hot-reloads on .go changes (window stays open). Auto-builds the Flutter client the first time.
 fugo run --no-watch       # Build and run once, without hot reload
-fugo build                # Build + bundle the Flutter client into a self-contained dist/
+fugo build                # Build + bundle the Flutter client into a self-contained dist/ (Linux: also writes a
+                          #   .desktop entry, install.sh, and an AUR PKGBUILD template alongside it)
 fugo doctor               # Check the toolchain; inside a project, validate fugo.toml + structure + that it compiles
+fugo autostart enable     # Launch this app at login (XDG autostart on Linux, Run key on Windows)
 fugo upgrade              # Self-update the CLI to the latest release (go install ...@latest)
 fugo --version            # Print version information
 ```

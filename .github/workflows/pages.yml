@@ -1,0 +1,53 @@
+# Publishes site/ (the project presentation page) to GitHub Pages on every
+# push to main that touches it. Uses the official GitHub Pages Actions flow
+# (configure-pages / upload-pages-artifact / deploy-pages) — no gh-pages
+# branch, no personal access token: auth is short-lived OIDC scoped to the
+# "github-pages" deployment environment.
+#
+# One-time manual step (repo settings, not something a workflow can do):
+# Settings → Pages → Build and deployment → Source → "GitHub Actions".
+name: Deploy Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one Pages deployment at a time; let an in-flight run finish rather
+# than cancelling it mid-publish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate routes & i18n coverage
+        run: node site/validate.js
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment

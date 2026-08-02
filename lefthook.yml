@@ -6,8 +6,10 @@ pre-commit:
   jobs:
     - name: golangci-lint
       glob: "*.go"
-      run: golangci-lint run --fast --fix {staged_files}
-      stage_fixed: true
+      # Runs on ./... rather than {staged_files}: golangci-lint's file-list mode
+      # requires every named file to live in the same directory, which breaks
+      # the moment a commit touches more than one package.
+      run: golangci-lint run --fast-only --fix ./...
       fail_text: "golangci-lint failed. Run 'golangci-lint run --fix' to fix issues."
 
     - name: go-vet

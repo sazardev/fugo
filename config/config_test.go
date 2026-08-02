@@ -17,6 +17,9 @@ func TestLoadFull(t *testing.T) {
 	body := `# project config
 name = "demo"
 
+[app]
+organization = "com.acme"
+
 [window]
 title  = "My Demo"   # inline comment
 width  = 1024
@@ -36,6 +39,9 @@ addr = "127.0.0.1:9600"
 
 	if cfg.Name != "demo" {
 		t.Errorf("name = %q, want demo", cfg.Name)
+	}
+	if cfg.App.Organization != "com.acme" {
+		t.Errorf("organization = %q, want com.acme", cfg.App.Organization)
 	}
 	if cfg.Window.Title != "My Demo" {
 		t.Errorf("title = %q, want My Demo", cfg.Window.Title)

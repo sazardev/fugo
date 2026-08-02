@@ -1,0 +1,48 @@
+name: Feature request
+description: Propose a widget, CLI command, or capability for Fugo
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: What are you trying to build that Fugo can't do today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed API / behavior
+      description: |
+        If this is a widget or `fg` API change, sketch the Go call site the way you'd want
+        to write it (prefix-free constructor, chainable setters — see `CLAUDE.md`).
+      render: go
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - fg/ (widget API)
+        - engine/ (diffing, scheduler)
+        - transport/ (gRPC, wire format)
+        - cmd/fugo (CLI)
+        - flutter_client/ (Dart render client)
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any workaround you're using today, or other approaches you weighed.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I checked `CLAUDE.md` and the `ROADMAP/` docs — this isn't already planned or implemented
+        - label: I searched existing issues and this isn't a duplicate
