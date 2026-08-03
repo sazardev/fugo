@@ -60,7 +60,7 @@
         li2: "Material&nbsp;3 nativo (claro por defecto), variantes de botón, Card/Scaffold/FAB/ListTile/Chip/Progress",
         li3: "Motor de diffing, reconciliador, scheduler de 60&nbsp;fps con prioridad (<code>Update</code> / <code>UpdateNow</code>)",
         li4: "Transporte gRPC (UDS / TCP en Windows), health check, keepalive, token de autenticación opcional",
-        li5: "36+ widgets en <code>fg/</code> con API fluida y prefix-free, más un sistema de <code>Theme</code>",
+        li5: "83 widgets en <code>fg/</code> con API fluida y prefix-free, un sistema de <code>Theme</code>, y un <code>fg.Store[S]</code> opcional para estado compartido",
         li6: "Cliente Flutter (isolate gRPC en segundo plano, registro de widgets, reconexión automática)",
         li7: "CLI: <code>fugo init</code> / <code>run</code> (hot reload por defecto) / <code>build</code> / <code>doctor</code> (<code>--fix</code>) / <code>widgets</code> / <code>upgrade</code>",
         li8: "Control de ventana en tiempo de ejecución, portapapeles, diálogos de archivo nativos",
@@ -134,9 +134,9 @@
       },
       footer: {
         p1: "Fugo — hecho con Go + Flutter. <a href=\"https://github.com/sazardev/fugo\" target=\"_blank\" rel=\"noopener\">github.com/sazardev/fugo</a>",
-        p2: "Esta página aún no incluye la documentación de la API — llegará bajo esta misma estructura.",
+        p2: "La guía completa del framework (arquitectura, catálogo de widgets, theming, estado) vive en docs/FUGO_IDIOMATICO.md — ver el enlace \"Guía completa\" arriba.",
         colProject: "Proyecto", repo: "Repositorio", issues: "Issues", prs: "Pull requests", discussions: "Discussions",
-        colDocs: "Documentación",
+        colDocs: "Documentación", guide: "Guía completa",
         colSupport: "Apoyar", star: "★ Star en GitHub", releases: "Releases"
       },
       palette: {
@@ -365,7 +365,7 @@
         li2: "Native Material&nbsp;3 (light by default), button variants, Card/Scaffold/FAB/ListTile/Chip/Progress",
         li3: "Diffing engine, reconciler, 60&nbsp;fps scheduler with priority (<code>Update</code> / <code>UpdateNow</code>)",
         li4: "gRPC transport (UDS / TCP on Windows), health check, keepalive, opt-in auth token",
-        li5: "36+ widgets in <code>fg/</code> with a fluent, prefix-free API, plus a <code>Theme</code> system",
+        li5: "83 widgets in <code>fg/</code> with a fluent, prefix-free API, a <code>Theme</code> system, and an opt-in <code>fg.Store[S]</code> for shared state",
         li6: "Flutter render client (background gRPC isolate, widget registry, auto-reconnect)",
         li7: "CLI: <code>fugo init</code> / <code>run</code> (hot reload by default) / <code>build</code> / <code>doctor</code> (<code>--fix</code>) / <code>widgets</code> / <code>upgrade</code>",
         li8: "Runtime window control, clipboard, native file dialogs",
@@ -439,9 +439,9 @@
       },
       footer: {
         p1: "Fugo — built with Go + Flutter. <a href=\"https://github.com/sazardev/fugo\" target=\"_blank\" rel=\"noopener\">github.com/sazardev/fugo</a>",
-        p2: "This page doesn't include API documentation yet — it'll land under this same structure.",
+        p2: "The complete framework guide (architecture, widget catalog, theming, state) lives in docs/FUGO_IDIOMATICO.md — see the \"Complete guide\" link above.",
         colProject: "Project", repo: "Repository", issues: "Issues", prs: "Pull requests", discussions: "Discussions",
-        colDocs: "Docs",
+        colDocs: "Docs", guide: "Complete guide",
         colSupport: "Support", star: "★ Star on GitHub", releases: "Releases"
       },
       palette: {

@@ -1,7 +1,4 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg">
-  <img alt="Fugo" src="assets/logo.svg" width="64" height="64">
-</picture>
+<img alt="Fugo" src="assets/logo.svg" width="64" height="64">
 
 # Fugo
 
@@ -16,6 +13,8 @@
 [![Version](https://img.shields.io/badge/version-3.44.8--fugo.0-brightgreen)](VERSION)
 [![go install](https://img.shields.io/badge/go%20install-cmd%2Ffugo-00ADD8?logo=go)](#installation)
 
+**[🌐 Website](https://sazardev.github.io/fugo/)** · **[📖 The complete guide](docs/FUGO_IDIOMATICO.md)** · **[📝 Changelog](CHANGELOG.md)**
+
 > Fugo's version tracks the exact Flutter release it targets — `X.Y.Z` always matches the Flutter SDK the precompiled client is built against, with a `-fugo.N` suffix for fugo-only fixes against that same Flutter version. See `FLUTTER_VERSION` / `CLAUDE.md` for details.
 
 ---
@@ -24,7 +23,7 @@
 
 Fugo is a **local Server-Driven UI (SDUI)** framework that lets you build native desktop applications writing **exclusively in Go**. Business logic, state management, and routing live entirely in a Go process, while a precompiled Flutter engine acts as a pure rendering terminal — communicating over **Unix Domain Sockets** (TCP on Windows) via **gRPC** with **Protocol Buffers**.
 
-> 📖 **[docs/FUGO_IDIOMATICO.md](docs/FUGO_IDIOMATICO.md)** (Spanish) is the complete, code-verified guide: architecture, the full widget catalog, theming, idiomatic state management, host services, platform support, and packaging.
+> 📖 **[docs/FUGO_IDIOMATICO.md](docs/FUGO_IDIOMATICO.md)** is the complete, code-verified guide (in Spanish) to the whole framework: architecture, the full 83-widget catalog, theming, idiomatic state management (closures vs. the opt-in `fg.Store[S]`), host services, platform support, and packaging. It's the canonical reference — this README stays a pitch and quick start.
 
 ```
 ┌──────────────────────┐     IPC (UDS/TCP)   ┌──────────────────────┐
@@ -158,9 +157,11 @@ fg.SizedBox(0, t.Spacing.LG)
 `fg.ProgressCircular` / `fg.ProgressLinear`, `fg.NavigationBar`, and `fg.Tabs` (a `TabBar` +
 `TabBarView`, switched client-side) — plus `fg.Tooltip`, `fg.Badge`, `fg.CircleAvatar`,
 `fg.SegmentedButton`, `fg.Spacer`, `fg.AspectRatio`, `fg.ClipRRect`, `fg.FittedBox`, `fg.Flexible`,
-`fg.ExpansionTile`, `fg.PopupMenuButton`, `fg.RichText`, `fg.DataTable`, and `fg.Stepper`. A scaffold
-composes them —
-an app bar, the body, a FAB, a slide-in `.Drawer`, and a bottom `.BottomBar`:
+`fg.ExpansionTile`, `fg.PopupMenuButton`, `fg.RichText`, `fg.DataTable`, and `fg.Stepper` — plus
+forms (`fg.Form`), drag-and-drop (`fg.Draggable`/`fg.DragTarget`), swipe-to-dismiss
+(`fg.Dismissible`), collapsing headers (`fg.SliverScaffold`), and more; see
+[docs/FUGO_IDIOMATICO.md](docs/FUGO_IDIOMATICO.md) for the complete catalog. A scaffold composes
+the essentials — an app bar, the body, a FAB, a slide-in `.Drawer`, and a bottom `.BottomBar`:
 
 ```go
 fg.Scaffold(body).
@@ -219,24 +220,26 @@ fg.Text("Title").FontSize(fg.TextSize.HeadlineMedium)  // the M3 type scale: .Di
 
 ## Current Status
 
-**Version 0.4.0 — engine + widget API + transport + CLI + Flutter client are implemented and run end-to-end, the CLI is installable via `go install`, and the client renders native Material 3.**
+**The engine, widget API, transport, CLI, and Flutter client are implemented and run end-to-end** — installable via `go install`, rendering native Material 3, with 83 widgets in `fg/`. Highlights:
 
 - [x] Installable: `go install github.com/sazardev/fugo/cmd/fugo@latest` (generated protobuf bindings committed; builds on a clean fetch)
-- [x] Native **Material 3** (light by default), seeded from `fg.Theme`; Material button variants (Filled/Tonal/Outlined/Text/Elevated/Icon) + Card/Scaffold/FAB/ListTile/Chip/Progress
+- [x] Native **Material 3** (light/dark/`Theme.FollowSystem`), seeded from `fg.Theme`; the full button family + Card/Scaffold/AppBar/FAB/ListTile/Chip/Progress/DataTable/Form/SliverScaffold and more
 - [x] Diffing engine, reconciler, 60 fps scheduler with priority (`Update` / `UpdateNow`)
 - [x] gRPC transport (UDS / TCP on Windows), health check, keepalive, opt-in auth token
-- [x] 36+ widgets in `fg/` with a fluent, prefix-free API + a `Theme` system
+- [x] **83 widgets** in `fg/` with a fluent, prefix-free API, a `Theme` system, and an opt-in `fg.Store[S]` for shared state
 - [x] Flutter render client (background gRPC isolate, widget registry, auto-reconnect)
-- [x] CLI: `fugo init` (templates) / `run` (hot reload by default) / `build` / `doctor` (`--fix`) / `widgets` / `upgrade` (self-update)
-- [x] Runtime window control (`Context.Window()`), `window_manager`-backed
-- [x] OS host services: clipboard (`Context.Clipboard()`), native file dialogs (`Context.Files()`)
-- [x] Imperative overlays: `ctx.ShowSnackBar(...)`, `ctx.ShowDialog(...)`
+- [x] CLI: `fugo init` (templates) / `run` (hot reload by default) / `build` (+ Linux packaging) / `doctor` (`--fix`) / `autostart` / `widgets` / `upgrade`
+- [x] Runtime window control (`Context.Window()`), keyboard shortcuts, focus requests, file drag-and-drop
+- [x] OS host services: clipboard, native file dialogs, native notifications
+- [x] Imperative overlays: `ctx.ShowSnackBar(...)`, `ctx.ShowDialog(...)`, date/time pickers
 - [x] Performance: object-pooled diff, GC tuning (`FUGO_GOGC` / `FUGO_GOMEMLIMIT`), Go + Dart benchmarks with a CI perf gate
 
-See [ROADMAP](./ROADMAP/) and [SPEC.md](./SPEC.md) for the full design vision. **Note:** the
-roadmap describes a FlatBuffers transport; the shipped implementation uses standard
-**Protocol Buffers** (`google.golang.org/protobuf`) instead — per-widget props are a protobuf
-message marshaled into each node's `bytes` field. `CLAUDE.md` is the canonical, up-to-date guide.
+**[docs/FUGO_IDIOMATICO.md](docs/FUGO_IDIOMATICO.md) is the up-to-date, exhaustive picture** — this
+list is a snapshot, that guide isn't. See [ROADMAP](./ROADMAP/) and [SPEC.md](./SPEC.md) for the
+original design vision. **Note:** the roadmap describes a FlatBuffers transport; the shipped
+implementation uses standard **Protocol Buffers** (`google.golang.org/protobuf`) instead —
+per-widget props are a protobuf message marshaled into each node's `bytes` field. `CLAUDE.md` is
+the canonical, up-to-date engineering guide.
 
 ---
 
@@ -249,6 +252,9 @@ fugo/                   # App, Context, lifecycle (RunStandalone, scheduler)
 ├── engine/             # Diffing engine, Reconciler, Scheduler (16ms tick)
 ├── transport/          # gRPC server (UDS/TCP), health, keepalive
 ├── supervisor/         # Flutter subprocess lifecycle, signals
+├── cmd/fugo/           # The fugo CLI (init/run/build/doctor/autostart/widgets/...)
+├── cmd/fugo-lsp/       # A from-scratch Language Server for fg — hover/definition/completion
+├── fugovet/            # Fugo's opinionated static analyzer (go vet-compatible)
 └── flutter_client/     # Precompiled Flutter rendering client
 ```
 
@@ -307,10 +313,13 @@ the value to `fugo.RunComponent`. **Routing** supports `:params` (e.g. `/user/:i
 `ctx.Param("id")`. Set **`FUGO_AUTH=1`** to mint a per-run token that hardens the local transport.
 
 **OS host services** run on the client and answer asynchronously: `ctx.Clipboard().Write/Read`,
-`ctx.Files().Open/Save(fg.FileDialog{...}, func(path string){...})`. The callback runs on the
-event goroutine, so mutate widgets and call `ctx.Update()` from it like any handler. For frameless
-windows, wrap a region in **`fg.WindowDragArea(...)`** to make it drag the window, and use
-**`fg.AnimatedPositioned(...)`** inside a `Stack` to animate a child between positions.
+`ctx.Files().Open/Save(fg.FileDialog{...}, func(path string){...})`, `ctx.Notifications().Show(title, body)`,
+`ctx.RequestFocus(field)`, `ctx.RegisterShortcuts(map[string]func(){...})`, and `ctx.OnFileDrop(func(paths []string){...})`.
+Callbacks run on the event goroutine, so mutate widgets and call `ctx.Update()` from them like any
+handler. For frameless windows, wrap a region in **`fg.WindowDragArea(...)`** to make it drag the
+window, and use **`fg.AnimatedPositioned(...)`** inside a `Stack` to animate a child between positions.
+For state shared across more than a couple of widgets, `fg.Store[S]` is an opt-in generic store
+(`Get`/`Update(fn)`/`Subscribe`) that composes with `ctx.Update()` rather than replacing it.
 
 **Overlays** are imperative, driven from Go over the same command channel: `ctx.ShowSnackBar("Saved")`
 (snackbar), `ctx.ShowDialog("Title", "Message")` (alert dialog), and `ctx.ShowBottomSheet("Title",
