@@ -52,6 +52,22 @@ type App struct {
 	hostMu   sync.Mutex
 	hostSeq  uint64
 	hostReqs map[uint64]func([]byte)
+
+	// shortcuts holds the app-wide keyboard bindings registered via
+	// Context.RegisterShortcuts, keyed by the normalized binding string
+	// (e.g. "ctrl+s") the client reports back on a match.
+	shortcutsMu sync.RWMutex
+	shortcuts   map[string]func()
+
+	// resizeHandler is the callback registered via Context.OnResize, invoked
+	// whenever the client reports a new window size.
+	resizeMu      sync.Mutex
+	resizeHandler func(width, height float64)
+
+	// fileDropHandler is the callback registered via Context.OnFileDrop,
+	// invoked whenever the OS drops files onto the client window.
+	fileDropMu      sync.Mutex
+	fileDropHandler func(paths []string)
 }
 
 // Context is passed to buildUI and to event handlers. It exposes navigation
@@ -230,11 +246,33 @@ func (a *App) Shutdown() {
 // HostCommand; the node_id then carries the request id rather than a widget id.
 const hostEventType = "host"
 
+// shortcutEventType and resizeEventType are the ClientEvent.event_type values
+// the client uses for a matched keyboard shortcut and a window resize; both
+// carry no widget node id (there is no widget involved).
+const (
+	shortcutEventType = "shortcut"
+	resizeEventType   = "resize"
+	fileDropEventType = "filedrop"
+)
+
 // HandleEvent routes a client event to the handler of the widget whose node id
 // matches. It implements the transport's app handler.
 func (a *App) HandleEvent(ev *fugov1.ClientEvent) {
-	if ev.GetEventType() == hostEventType {
+	switch ev.GetEventType() {
+	case hostEventType:
 		a.dispatchHostReply(ev)
+
+		return
+	case shortcutEventType:
+		a.dispatchShortcut(string(ev.GetEventData()))
+
+		return
+	case resizeEventType:
+		a.dispatchResize(string(ev.GetEventData()))
+
+		return
+	case fileDropEventType:
+		a.dispatchFileDrop(string(ev.GetEventData()))
 
 		return
 	}
@@ -450,6 +488,14 @@ func exportWindowEnv(opts AppOptions) {
 	theme := fg.CurrentTheme()
 	_ = os.Setenv("FUGO_THEME_SEED", theme.Colors.Primary.String())
 	_ = os.Setenv("FUGO_THEME_BRIGHTNESS", theme.Brightness())
+
+	if theme.FollowSystem {
+		_ = os.Setenv("FUGO_THEME_FOLLOW_SYSTEM", "1")
+	}
+
+	if theme.Typography.Family != "" {
+		_ = os.Setenv("FUGO_THEME_FONT_FAMILY", theme.Typography.Family)
+	}
 }
 
 func findFlutterBinary() string {

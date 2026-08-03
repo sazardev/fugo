@@ -19,22 +19,34 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/urfave/cli/v3"
 
 	"github.com/sazardev/fugo/config"
 )
 
 var (
-	version = "0.1.0"
+	version = unresolvedVersion
 	commit  = "unknown"
 	date    = "unknown"
 )
 
 const (
 	osWindows   = "windows"
+	osLinux     = "linux"
 	subcmdBuild = "build"
 	fugoModule  = "github.com/sazardev/fugo"
 	versionFlag = "--version"
+	distDir     = "dist"
+
+	// unresolvedVersion is the unresolved placeholder in `var version` (see
+	// below) — a plain `go build` of this repo without make's -ldflags, not a
+	// real tagged release.
+	unresolvedVersion = "0.1.0"
+
+	templateCounter  = "counter"
+	templateApp      = "app"
+	templateShowcase = "showcase"
 )
 
 func main() {
@@ -55,6 +67,9 @@ Typical workflow:
 
 Other commands:
   fugo widgets           browse the fg widget catalog and their doc comments
+  fugo generate          scaffold a new screen or reusable component
+  fugo vet               run Fugo's opinionated static analyzer
+  fugo fix               auto-fix, format, and reorder by Fugo convention
   fugo doctor            check the toolchain + (in a project) its health
   fugo upgrade           update the fugo CLI to the latest release
 
@@ -65,7 +80,11 @@ app's runtime logs) and -q/--quiet (errors only). Colors honor NO_COLOR.`,
 			runCmd(),
 			buildCmd(),
 			widgetsCmd(),
+			generateCmd(),
+			vetCmd(),
+			fixCmd(),
 			doctorCmd(),
+			autostartCmd(),
 			upgradeCmd(),
 		},
 	}
@@ -76,20 +95,30 @@ app's runtime logs) and -q/--quiet (errors only). Colors honor NO_COLOR.`,
 	}
 }
 
+// resolvedVersion is the plain semver fugo resolves itself to be — the same
+// fallback chain versionString uses, without the "(commit ..., built ...)"
+// suffix, so it can also drive the precompiled Flutter client download URL.
+func resolvedVersion() string {
+	v := version
+
+	info, ok := debug.ReadBuildInfo()
+	if ok && v == unresolvedVersion && info.Main.Version != "" && info.Main.Version != "(devel)" {
+		v = strings.TrimPrefix(info.Main.Version, "v")
+	}
+
+	return v
+}
+
 // versionString reports the CLI version. `make build` injects version, commit
 // and date through -ldflags; a `go install` binary keeps the defaults, so we
 // fall back to the module version and VCS stamps the Go toolchain embeds in the
 // build info, keeping `fugo --version` accurate either way.
 func versionString() string {
-	v, c, d := version, commit, date
+	v, c, d := resolvedVersion(), commit, date
 
 	info, ok := debug.ReadBuildInfo()
 	if !ok {
 		return fmt.Sprintf("%s (commit %s, built %s)", v, c, d)
-	}
-
-	if v == "0.1.0" && info.Main.Version != "" && info.Main.Version != "(devel)" {
-		v = strings.TrimPrefix(info.Main.Version, "v")
 	}
 
 	for _, s := range info.Settings {
@@ -108,21 +137,30 @@ func versionString() string {
 	return fmt.Sprintf("%s (commit %s, built %s)", v, c, d)
 }
 
+//nolint:gocognit // the wizard flow (flags vs. interactive prompts vs. defaults, each field independently optional) is inherently a lot of branches; splitting it up would just move them into more functions
 func initCmd() *cli.Command {
 	var (
-		fugoSrc  string
-		template string
-		noGit    bool
+		fugoSrc      string
+		template     string
+		theme        string
+		organization string
+		noGit        bool
+		yes          bool
 	)
 
 	return &cli.Command{
 		Name:      "init",
 		Usage:     "Create a new Fugo project",
-		ArgsUsage: "<project-name>",
+		ArgsUsage: "[project-name]",
 		Description: `Scaffold a new Fugo project with a recommended layout: a thin main.go, a
 ui package for your screens, fugo.toml for the window/server config, a README
 and .gitignore, plus bin/ dist/ logs/ folders. It runs 'go mod init' + 'go mod
 tidy' and initializes a git repo with an initial commit.
+
+Run with no arguments in a terminal for the interactive wizard: it asks for
+the project name, organization, template, and theme, then scaffolds
+everything pre-configured and ready to run. Pass flags (or --yes) to skip
+straight to scaffolding — the same path scripts and CI use.
 
 Templates (--template, -t):
   counter   minimal counter — one screen, two FABs, live state (default)
@@ -130,8 +168,9 @@ Templates (--template, -t):
   showcase  most widgets on one scrollable page — a living API reference
 
 Examples:
-  fugo init myapp
-  fugo init myapp -t showcase
+  fugo init                       interactive wizard
+  fugo init myapp                 wizard still asks org/template/theme
+  fugo init myapp -t showcase --theme dark --org com.acme -y
   fugo init myapp --no-git
   fugo init myapp --fugo-src ../fugo`,
 		Flags: append([]cli.Flag{
@@ -143,30 +182,74 @@ Examples:
 			&cli.StringFlag{
 				Name:        "template",
 				Aliases:     []string{"t"},
-				Value:       "counter",
+				Value:       templateCounter,
 				Destination: &template,
 				Usage:       "starter template: counter | app | showcase",
+			},
+			&cli.StringFlag{
+				Name:        "theme",
+				Destination: &theme,
+				Usage:       "color scheme: light | dark (default: the template's own choice)",
+			},
+			&cli.StringFlag{
+				Name:        "organization",
+				Aliases:     []string{"org"},
+				Destination: &organization,
+				Usage:       "reverse-DNS organization (e.g. com.acme) — stored in fugo.toml, reserved for future packaging",
 			},
 			&cli.BoolFlag{
 				Name:        "no-git",
 				Destination: &noGit,
 				Usage:       "skip 'git init' and the initial commit",
 			},
+			&cli.BoolFlag{
+				Name:        "yes",
+				Aliases:     []string{"y"},
+				Destination: &yes,
+				Usage:       "skip the interactive wizard; use flags/defaults for anything not passed",
+			},
 		}, verbosityFlags()...),
 		Action: func(ctx context.Context, c *cli.Command) error {
 			setupUI()
 
 			name := c.Args().First()
+			interactive := !yes && isTerminal(os.Stdin)
+
 			if name == "" {
-				return errors.New("project name required: fugo init <name>")
+				if !interactive {
+					return errors.New("project name required: fugo init <name> (or run with no arguments in a terminal for the wizard)")
+				}
+
+				out.heading("Fugo — new project")
+			}
+
+			w := newWizard()
+
+			if name == "" {
+				name = w.askRequired("Project name")
+			}
+			if interactive && !c.IsSet("organization") {
+				organization = w.ask("Organization (reverse-DNS, e.g. com.acme, optional)", "")
+			}
+			if interactive && !c.IsSet("template") {
+				template = w.askChoice("Template", []string{templateCounter, templateApp, templateShowcase}, template)
+			}
+			if interactive && !c.IsSet("theme") {
+				theme = w.askChoice("Theme", []string{"light", "dark"}, "")
+			}
+			if interactive && !c.IsSet("no-git") {
+				noGit = !w.askYesNo("Initialize git repo?", true)
 			}
 
 			dir := filepath.Clean(name)
 			module := filepath.Base(dir)
 			files := filesFor(template, module)
-			out.tracef("template=%s  dir=%s  module=%s", template, dir, module)
+			if theme != "" {
+				files.theme = strings.ToUpper(theme[:1]) + theme[1:]
+			}
+			out.tracef("template=%s theme=%s org=%q dir=%s module=%s", template, files.theme, organization, dir, module)
 
-			if err := scaffoldProject(dir, module, files); err != nil {
+			if err := scaffoldProject(dir, module, organization, files); err != nil {
 				return err
 			}
 			out.successf("scaffolded %s %s", dir+string(os.PathSeparator), out.paint(cDim, "("+template+" template)"))
@@ -207,7 +290,7 @@ Examples:
 }
 
 // scaffoldProject writes the project's directory skeleton and source files.
-func scaffoldProject(dir, module string, files projectFiles) error {
+func scaffoldProject(dir, module, organization string, files projectFiles) error {
 	for _, d := range []string{dir, filepath.Join(dir, "ui"), filepath.Join(dir, "logs")} {
 		if err := os.MkdirAll(d, 0o755); err != nil {
 			return fmt.Errorf("create %s: %w", d, err)
@@ -217,7 +300,7 @@ func scaffoldProject(dir, module string, files projectFiles) error {
 	writes := []struct{ path, content string }{
 		{filepath.Join(dir, "main.go"), mainGo(module, files.theme)},
 		{filepath.Join(dir, "ui", "home.go"), files.uiHome},
-		{filepath.Join(dir, "fugo.toml"), fmt.Sprintf(configTemplate, module, module, files.width, files.height)},
+		{filepath.Join(dir, "fugo.toml"), fmt.Sprintf(configTemplate, module, module, files.width, files.height, appConfigBlock(organization))},
 		{filepath.Join(dir, "README.md"), fmt.Sprintf(readmeTemplate, module)},
 		{filepath.Join(dir, ".gitignore"), gitignoreTemplate},
 		{filepath.Join(dir, "logs", ".gitkeep"), ""},
@@ -462,17 +545,22 @@ func runWithWatch(ctx context.Context, addr, flutter string) error {
 	}
 	defer killProc(flutterProc)
 
-	snap := fileSnapshot()
+	watcher, err := newWatcher()
+	if err != nil {
+		return fmt.Errorf("watch .go files: %w", err)
+	}
+	defer func() { _ = watcher.Close() }()
+
 	for {
 		if buildErr := buildApp(ctx); buildErr != nil {
-			out.warnf("waiting for changes after build failure")
-			waitForChange(&snap)
+			out.warnf("fix the error above and save to retry")
+			waitForChange(watcher)
 
 			continue
 		}
 
 		server := startServerOnly(ctx, addr)
-		waitForChange(&snap)
+		waitForChange(watcher)
 		killProc(server)
 		out.infof("%s change detected — reloading Go server", out.paint(cCyan, "↻"))
 	}
@@ -481,13 +569,18 @@ func runWithWatch(ctx context.Context, addr, flutter string) error {
 func runWithFullRestart(ctx context.Context, addr, flutter string) error {
 	out.infof("watching .go files for changes")
 
-	snap := fileSnapshot()
+	watcher, err := newWatcher()
+	if err != nil {
+		return fmt.Errorf("watch .go files: %w", err)
+	}
+	defer func() { _ = watcher.Close() }()
+
 	for {
 		if err := buildAndRun(ctx, addr, flutter); err != nil {
 			out.failf("%v", err)
 		}
 
-		waitForChange(&snap)
+		waitForChange(watcher)
 		out.infof("%s change detected — restarting", out.paint(cCyan, "↻"))
 	}
 }
@@ -538,15 +631,90 @@ func startServerOnly(ctx context.Context, addr string) *exec.Cmd {
 	return cmd
 }
 
-func waitForChange(snap *map[string]time.Time) {
+// newWatcher builds an fsnotify watcher covering every directory in the
+// project tree (fsnotify has no recursive mode), skipping build/VCS output so
+// writes to bin/dist/logs don't trigger spurious reloads.
+func newWatcher() (*fsnotify.Watcher, error) {
+	w, err := fsnotify.NewWatcher()
+	if err != nil {
+		return nil, err
+	}
+
+	walkErr := filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil //nolint:nilerr // intentional fallback: skip unreadable paths during walk
+		}
+		if !d.IsDir() {
+			return nil
+		}
+		if isWatchExcluded(path) {
+			return filepath.SkipDir
+		}
+
+		return w.Add(path)
+	})
+	if walkErr != nil {
+		_ = w.Close()
+
+		return nil, walkErr
+	}
+
+	return w, nil
+}
+
+func isWatchExcluded(path string) bool {
+	switch filepath.Base(path) {
+	case ".git", "bin", distDir, "logs", "vendor":
+		return true
+	default:
+		return false
+	}
+}
+
+// waitForChange blocks until a .go file is created, written, or removed.
+// Saves often fire several fsnotify events in a burst (editors write via a
+// temp file + rename, or gofmt rewrites right after a save), so events are
+// debounced into a single wake-up instead of reloading once per event.
+func waitForChange(w *fsnotify.Watcher) {
+	const debounce = 150 * time.Millisecond
+
+	timer := time.NewTimer(time.Hour)
+	if !timer.Stop() {
+		<-timer.C
+	}
+	defer timer.Stop()
+
+	pending := false
+
 	for {
-		time.Sleep(500 * time.Millisecond)
+		select {
+		case ev, ok := <-w.Events:
+			if !ok {
+				return
+			}
+			if info, statErr := os.Stat(ev.Name); statErr == nil && info.IsDir() {
+				if ev.Op&fsnotify.Create != 0 && !isWatchExcluded(ev.Name) {
+					_ = w.Add(ev.Name)
+				}
 
-		current := fileSnapshot()
-		if !snapshotEq(*snap, current) {
-			*snap = current
+				continue
+			}
+			if filepath.Ext(ev.Name) != ".go" {
+				continue
+			}
 
-			return
+			pending = true
+			timer.Reset(debounce)
+		case <-timer.C:
+			if pending {
+				return
+			}
+		case watchErr, ok := <-w.Errors:
+			if !ok {
+				return
+			}
+
+			out.warnf("watch error: %v", watchErr)
 		}
 	}
 }
@@ -555,44 +723,6 @@ func killProc(cmd *exec.Cmd) {
 	if cmd != nil && cmd.Process != nil {
 		_ = cmd.Process.Kill()
 	}
-}
-
-func fileSnapshot() map[string]time.Time {
-	snap := make(map[string]time.Time)
-
-	_ = filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return nil //nolint:nilerr // intentional fallback: skip unreadable paths during walk
-		}
-		if info.IsDir() {
-			base := filepath.Base(path)
-			if base == ".git" || base == "bin" || base == "dist" || base == "logs" || base == "vendor" {
-				return filepath.SkipDir
-			}
-
-			return nil
-		}
-		if filepath.Ext(path) == ".go" {
-			snap[path] = info.ModTime()
-		}
-
-		return nil
-	})
-
-	return snap
-}
-
-func snapshotEq(a, b map[string]time.Time) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for k, t := range a {
-		if !t.Equal(b[k]) {
-			return false
-		}
-	}
-
-	return true
 }
 
 // appLog is where a launched app's stdout/stderr go. setupRunLog points it at
@@ -676,7 +806,7 @@ Examples:
 				return errors.New("no main.go in the current directory — run 'fugo init <name>' first")
 			}
 
-			outDir := "dist"
+			outDir := distDir
 			appOut := filepath.Join(outDir, projectName()+exeSuffix())
 
 			build := exec.CommandContext(ctx, "go", subcmdBuild, "-ldflags=-s -w", "-o", appOut, ".")
@@ -689,6 +819,12 @@ Examples:
 			if _, err := os.Stat(config.DefaultName); err == nil {
 				if err := copyFile(config.DefaultName, filepath.Join(outDir, config.DefaultName)); err != nil {
 					out.tracef("copy %s: %v", config.DefaultName, err)
+				}
+			}
+
+			if runtime.GOOS != osWindows {
+				if err := writeLinuxPackaging(outDir, projectName(), appOut); err != nil {
+					out.tracef("linux packaging: %v", err)
 				}
 			}
 
@@ -713,11 +849,78 @@ Examples:
 			out.successf("build complete → %s%c", outDir, os.PathSeparator)
 			out.infof("  %-9s your app", filepath.Base(appOut))
 			out.infof("  %-9s bundled render client", "flutter"+string(os.PathSeparator))
+			if runtime.GOOS != osWindows {
+				out.infof("  %-9s XDG desktop entry (edit Icon= to point at your own icon)", projectName()+".desktop")
+				out.infof("  %-9s installs the app + desktop entry to ~/.local", "install.sh")
+				out.infof("  %-9s AUR packaging template — see its header comment", "PKGBUILD")
+			}
 			out.infof("  ship the whole %s%c folder; run: %s", outDir, os.PathSeparator, appOut)
 
 			return nil
 		},
 	}
+}
+
+// writeLinuxPackaging writes a minimal set of Linux distribution artifacts
+// next to appOut inside outDir: an XDG .desktop entry, a user-local
+// install.sh (the realistic path for "install this app" without root or a
+// distro package manager), and an AUR PKGBUILD template. None of this
+// requires appimagetool/linuxdeploy or any other external tool — it's plain
+// text generated from what 'fugo build' already knows.
+func writeLinuxPackaging(outDir, name, appOut string) error {
+	binName := filepath.Base(appOut)
+
+	desktop := fmt.Sprintf(`[Desktop Entry]
+Type=Application
+Name=%s
+Exec=%s
+Icon=utilities-terminal
+Terminal=false
+Categories=Utility;
+`, name, binName)
+	if err := os.WriteFile(filepath.Join(outDir, name+".desktop"), []byte(desktop), 0o644); err != nil {
+		return err
+	}
+
+	install := fmt.Sprintf(`#!/bin/sh
+# Installs %[1]s for the current user only (no root needed): the binary and
+# bundled Flutter client go under ~/.local/share/%[1]s, and a desktop entry
+# under ~/.local/share/applications so it shows up in app launchers.
+set -e
+dest="$HOME/.local/share/%[1]s"
+mkdir -p "$dest" "$HOME/.local/share/applications" "$HOME/.local/bin"
+cp -r "$(dirname "$0")"/* "$dest/"
+ln -sf "$dest/%[2]s" "$HOME/.local/bin/%[1]s"
+sed "s#Exec=%[2]s#Exec=$dest/%[2]s#" "$dest/%[1]s.desktop" > "$HOME/.local/share/applications/%[1]s.desktop"
+echo "Installed. Run '%[1]s' (make sure ~/.local/bin is on PATH) or launch it from your app menu."
+`, name, binName)
+	if err := os.WriteFile(filepath.Join(outDir, "install.sh"), []byte(install), 0o755); err != nil {
+		return err
+	}
+
+	pkgbuild := fmt.Sprintf(`# Maintainer: you <you@example.com>
+# AUR packaging template for %[1]s — a Fugo app. Fill in pkgver/source/sha256sums
+# for a real release tarball (this points at the local dist/ build as a
+# starting point) and drop this at the root of your AUR git repo.
+pkgname=%[1]s
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="%[1]s"
+arch=('x86_64')
+url="https://example.com/%[1]s"
+license=('unknown')
+depends=('gtk3')
+source=("%[1]s-$pkgver.tar.gz::file://%[1]s")
+sha256sums=('SKIP')
+
+package() {
+  install -Dm755 "$srcdir/%[1]s/%[2]s" "$pkgdir/usr/bin/%[1]s"
+  install -Dm644 "$srcdir/%[1]s/%[1]s.desktop" "$pkgdir/usr/share/applications/%[1]s.desktop"
+  cp -r "$srcdir/%[1]s/flutter" "$pkgdir/usr/lib/%[1]s" 2>/dev/null || true
+}
+`, name, binName)
+
+	return os.WriteFile(filepath.Join(outDir, "PKGBUILD"), []byte(pkgbuild), 0o644)
 }
 
 // projectName returns the app/binary name: fugo.toml's name when set to a real
@@ -755,10 +958,16 @@ func fugoModuleDir(ctx context.Context) string {
 	return strings.TrimSpace(string(out))
 }
 
-// flutterBundleDir locates the precompiled Flutter client bundle inside the
-// fugo module (resolved via fugoModuleDir so it honors a replace directive), or
-// "" if fugo is not a local checkout or the client has not been built yet.
+// flutterBundleDir locates a usable precompiled Flutter client bundle: first
+// a cached download for the running CLI's version (see flutterdl.go — no
+// Flutter SDK involved), then a local build inside the fugo module (resolved
+// via fugoModuleDir so it honors a replace directive). "" if neither exists
+// yet.
 func flutterBundleDir(ctx context.Context) string {
+	if dir := downloadedFlutterClientDir(resolvedVersion()); dir != "" {
+		return dir
+	}
+
 	repo := fugoModuleDir(ctx)
 	if repo == "" {
 		return ""
@@ -777,13 +986,33 @@ func flutterBundleDir(ctx context.Context) string {
 	return ""
 }
 
-// ensureFlutterClient builds the Flutter render client once if it isn't built
-// yet, so `fugo run` works without a manual `flutter build`. It is a no-op when
-// the client is already built, flutter isn't on PATH, or the fugo source tree
-// can't be located.
+// ensureFlutterClient gets a Flutter render client ready without the user
+// installing anything extra: it first tries downloading the precompiled
+// client that matches this CLI's own release (see flutterdl.go), and only
+// falls back to a local 'flutter build' — which does require the Flutter SDK
+// — when no matching download exists (an unreleased/dev build of fugo, no
+// network, or a platform without a published binary) or the fugo source tree
+// can't be located. Flutter SDK stays useful for anyone adding custom Flutter
+// packages to the client and rebuilding it themselves; it's just no longer
+// required for the default path. No-op if a bundle is already available.
 func ensureFlutterClient(ctx context.Context) {
 	if flutterBundleDir(ctx) != "" {
 		return
+	}
+
+	// "0.1.0" is the unresolved placeholder in `var version` (see the top of
+	// this file) — a plain `go build` of this repo without make's -ldflags,
+	// not a real tagged release. Skip straight to the local-build fallback
+	// instead of trying (and failing) a real network request against a
+	// release that doesn't exist.
+	if v := resolvedVersion(); v != unresolvedVersion {
+		dir, err := downloadFlutterClient(ctx, v)
+		if err == nil {
+			out.successf("downloaded the precompiled Flutter client %s", out.paint(cDim, "("+dir+")"))
+
+			return
+		}
+		out.tracef("precompiled Flutter client not used: %v", err)
 	}
 
 	repo := fugoModuleDir(ctx)
@@ -821,7 +1050,7 @@ func flutterTarget() string {
 		return "windows"
 	}
 
-	return "linux"
+	return osLinux
 }
 
 // copyDir recursively copies the contents of src into dst.
@@ -896,9 +1125,15 @@ configured address is free, and that the project compiles.
 Exits non-zero if there is a blocking issue (✗), so it works in scripts/CI.
 Use -V to trace each probe.
 
+Also runs Fugo's opinionated analyzer (fugovet) as a non-blocking check — a
+convention finding is a warning, not a build error. 'fugo vet' shows details,
+'fugo fix' auto-fixes what it safely can.
+
 With --fix it first repairs the auto-fixable bits inside a project: writes a
-default fugo.toml if missing, runs 'git init' if there's no repo, and 'go mod
-tidy' to resolve dependencies — then re-runs the diagnosis.`,
+default fugo.toml if missing, runs 'git init' if there's no repo, 'go mod
+tidy' to resolve dependencies, applies fugovet's mechanical fixes, and runs
+gofumpt — then re-runs the diagnosis. (It does not reorder declarations;
+that's 'fugo fix''s opt-in structural pass.)`,
 		Flags: append([]cli.Flag{
 			&cli.BoolFlag{
 				Name:  "fix",
@@ -975,7 +1210,7 @@ func doctorToolchain(ctx context.Context, rep *doctorReport) {
 		hint      string
 	}{
 		{"Go", "go", []string{"version"}, true, "required — https://go.dev/dl"},
-		{"Flutter", "flutter", []string{versionFlag}, true, "required to render — https://docs.flutter.dev"},
+		{"Flutter", "flutter", []string{versionFlag}, false, "optional — 'fugo run' downloads a precompiled client automatically; install to add custom Flutter packages or build for an unpublished platform"},
 		{"git", "git", []string{versionFlag}, false, "recommended — 'fugo init' starts a repo"},
 		{"protoc", "protoc", []string{versionFlag}, false, "only to regenerate protobuf (make proto)"},
 		{"gofumpt", "gofumpt", []string{"-version"}, false, "formatter — go install mvdan.cc/gofumpt@latest"},
@@ -992,7 +1227,93 @@ func doctorToolchain(ctx context.Context, rep *doctorReport) {
 		}
 	}
 
+	doctorFlutterVersion(ctx, rep)
+	doctorNotifications(ctx, rep)
+
 	rep.note("platform", runtime.GOOS+"/"+runtime.GOARCH)
+}
+
+// doctorNotifications warns (never fails) when Context.Notifications().Show
+// is unlikely to work: on Linux it's backed by libnotify over D-Bus, and
+// there's no reliable way to query the D-Bus session bus for a running
+// org.freedesktop.Notifications service without a D-Bus client library, so
+// this checks for notify-send (part of the libnotify-bin/libnotify-tools
+// package on most distros) as a proxy for "libnotify is installed".
+func doctorNotifications(ctx context.Context, rep *doctorReport) {
+	if runtime.GOOS != osLinux {
+		return
+	}
+
+	if _, err := firstLine(ctx, "notify-send", versionFlag); err != nil {
+		rep.warn("notifications", "notify-send not found — Context.Notifications().Show needs libnotify (e.g. 'libnotify-bin' on Debian/Ubuntu, 'libnotify' on Arch) and a running notification daemon (most desktop environments ship one)")
+
+		return
+	}
+
+	rep.ok("notifications", "libnotify found")
+}
+
+// doctorFlutterVersion compares an installed Flutter SDK against
+// FLUTTER_VERSION — the version fugo's precompiled client and flutter_client/
+// are built against (see CLAUDE.md's versioning section). A mismatch is a
+// warning, not a failure: 'fugo run' still works via the precompiled
+// download; it only matters if you rebuild flutter_client/ yourself.
+func doctorFlutterVersion(ctx context.Context, rep *doctorReport) {
+	line, err := firstLine(ctx, "flutter", versionFlag)
+	if err != nil {
+		return // already reported (fail or warn) by the toolchain loop above
+	}
+
+	installed := parseFlutterVersion(line)
+	if installed == "" {
+		return
+	}
+
+	pinned := pinnedFlutterVersion(ctx)
+	if pinned == "" {
+		return // fugo module source not resolved — nothing to compare against
+	}
+
+	if installed == pinned {
+		rep.ok("flutter version", installed+" (matches FLUTTER_VERSION)")
+
+		return
+	}
+
+	rep.warn("flutter version", fmt.Sprintf(
+		"%s installed, fugo targets %s — only matters if you rebuild flutter_client/ yourself ('fugo run' otherwise uses the precompiled client)",
+		installed, pinned,
+	))
+}
+
+// parseFlutterVersion extracts "3.44.8" from `flutter --version`'s first
+// line ("Flutter 3.44.8 • channel stable • ...").
+func parseFlutterVersion(line string) string {
+	fields := strings.Fields(line)
+	for i, f := range fields {
+		if f == "Flutter" && i+1 < len(fields) {
+			return fields[i+1]
+		}
+	}
+
+	return ""
+}
+
+// pinnedFlutterVersion reads FLUTTER_VERSION from the resolved fugo module
+// source (honoring a replace directive, same as fugoModuleDir), "" if it
+// can't be resolved or read.
+func pinnedFlutterVersion(ctx context.Context) string {
+	repo := fugoModuleDir(ctx)
+	if repo == "" {
+		return ""
+	}
+
+	data, err := os.ReadFile(filepath.Join(repo, "FLUTTER_VERSION"))
+	if err != nil {
+		return ""
+	}
+
+	return strings.TrimSpace(string(data))
 }
 
 // inProject reports whether the working directory looks like a Fugo project.
@@ -1038,18 +1359,54 @@ func doctorProject(ctx context.Context, rep *doctorReport) {
 	// Coherence: go.mod module ↔ main.go's ui import ↔ ui.Build.
 	doctorCoherence(rep)
 
-	// Flutter render client: built, or buildable on first run.
-	if dir := flutterBundleDir(ctx); dir != "" {
-		rep.ok("flutter client", "built")
-	} else if _, err := exec.LookPath("flutter"); err == nil {
-		rep.note("flutter client", "not built yet — 'fugo run' builds it on first launch")
-	} else {
-		rep.warn("flutter client", "not built and flutter not on PATH — 'fugo run' cannot render")
+	// Fugo's opinionated static analyzer — non-blocking, since it's a
+	// convention check, not a build error.
+	doctorFugovet(ctx, rep)
+
+	// Flutter render client: ready (downloaded or locally built), or
+	// obtainable on first run — via the precompiled download for a real
+	// release, or a local 'flutter build' otherwise.
+	_, lookErr := exec.LookPath("flutter")
+
+	switch {
+	case flutterBundleDir(ctx) != "":
+		rep.ok("flutter client", "ready")
+	case resolvedVersion() != unresolvedVersion:
+		rep.note("flutter client", "not built yet — 'fugo run' downloads the precompiled client on first launch")
+	case lookErr == nil:
+		rep.note("flutter client", "not built yet — 'fugo run' builds it locally on first launch")
+	default:
+		rep.warn("flutter client", "not built, no precompiled client for a dev build of fugo, and flutter not on PATH — 'fugo run' cannot render")
 	}
 
 	// The definitive "will it run?" check.
 	if err := out.runStep("Compiling project (go build ./...)", exec.CommandContext(ctx, "go", subcmdBuild, "./...")); err != nil {
 		rep.fails++
+	}
+}
+
+// doctorFugovet runs Fugo's opinionated static analyzer (fugovet) as a
+// non-blocking check — a convention finding is a warning, not a build error,
+// so it never fails 'fugo doctor' on its own.
+func doctorFugovet(ctx context.Context, rep *doctorReport) {
+	bin, err := ensureFugovet(ctx)
+	if err != nil {
+		rep.note("fugo vet", "skipped — "+err.Error())
+
+		return
+	}
+
+	report, runErr := exec.CommandContext(ctx, bin, "./...").CombinedOutput()
+	trimmed := strings.TrimSpace(string(report))
+
+	switch {
+	case runErr == nil:
+		rep.ok("fugo vet", "no issues")
+	case trimmed == "":
+		rep.warn("fugo vet", "analyzer exited with an error and no output — run 'fugo vet' directly")
+	default:
+		n := len(strings.Split(trimmed, "\n"))
+		rep.warn("fugo vet", fmt.Sprintf("%d finding(s) — 'fugo vet' for details, 'fugo fix' to auto-fix", n))
 	}
 }
 
@@ -1201,7 +1558,7 @@ func doctorFix(ctx context.Context) {
 		if name == "" {
 			name = projectName()
 		}
-		content := fmt.Sprintf(configTemplate, filepath.Base(name), filepath.Base(name), 800, 600)
+		content := fmt.Sprintf(configTemplate, filepath.Base(name), filepath.Base(name), 800, 600, "")
 		if writeErr := os.WriteFile(config.DefaultName, []byte(content), 0o644); writeErr == nil {
 			out.successf("wrote %s", config.DefaultName)
 		} else {
@@ -1217,6 +1574,12 @@ func doctorFix(ctx context.Context) {
 
 	if _, err := os.Stat("go.mod"); err == nil {
 		_ = out.runStep("go mod tidy", exec.CommandContext(ctx, "go", "mod", "tidy"))
+
+		if bin, err := ensureFugovet(ctx); err == nil {
+			_ = out.runStep("Applying mechanical fixes (fugovet -fix)", exec.CommandContext(ctx, bin, "-fix", "./..."))
+		}
+
+		_ = gofumptProject(ctx)
 	}
 }
 

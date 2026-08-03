@@ -1,0 +1,40 @@
+# The single place a release tag ever gets created. Whenever VERSION changes
+# on main — from a manual `make release`/`make release-flutter` push, or from
+# check-flutter-version.yml's automatic bump — this tags it `v<VERSION>` and
+# pushes the tag, which triggers release-flutter-client.yml to build and
+# publish the precompiled client. No one ever needs to run `git tag` by hand.
+name: Tag release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - VERSION
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Tag if VERSION is new
+        run: |
+          set -euo pipefail
+
+          version=$(cat VERSION)
+          tag="v$version"
+
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            echo "$tag already exists — nothing to do"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" -m "release: $tag"
+          git push origin "$tag"

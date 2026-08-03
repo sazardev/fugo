@@ -63,8 +63,8 @@ func TestRouterUnmatchedRouteRendersPlaceholder(t *testing.T) {
 	var counter uint32
 	nodes := r.walkNodes(&counter)
 
-	if len(nodes) != 1 || nodes[0].GetType() != fugov1.WidgetType_CONTAINER {
-		t.Errorf("an unmatched route should render a single placeholder container, got %d nodes", len(nodes))
+	if len(nodes) != 1 || nodes[0].GetType() != fugov1.WidgetType_ROUTER {
+		t.Errorf("an unmatched route should render a single placeholder router node, got %d nodes", len(nodes))
 	}
 }
 

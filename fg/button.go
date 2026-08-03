@@ -132,11 +132,19 @@ func (b *ButtonWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 		bgColor = b.bgColor.String()
 	}
 
+	// A zero BorderRadius means the caller never called BorderRadius
+	// explicitly (0 is never a value someone actually wants), so fall back
+	// to the active theme's per-component default.
+	borderRadius := b.borderRadius
+	if borderRadius == 0 {
+		borderRadius = CurrentTheme().Components.ButtonRadius
+	}
+
 	props, _ := proto.Marshal(&fugov1.ButtonProps{
 		Label:        b.Label,
 		BgColor:      bgColor,
 		FontSize:     b.fontSize,
-		BorderRadius: b.borderRadius,
+		BorderRadius: borderRadius,
 		Variant:      b.variant,
 		Icon:         b.icon,
 		Enabled:      b.enabled,

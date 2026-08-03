@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-i18n="meta.title">Fugo — Server-Driven UI en Go</title>
+<meta name="description" data-i18n-attr="content" data-i18n="meta.description" content="Fugo: framework local de Server-Driven UI. Escribes toda la lógica en Go; un cliente Flutter precompilado la renderiza. Documentación de proyecto, estado, alcance y seguridad.">
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css?v=10">
+</head>
+<body class="layout-landing">
+
+<a class="skip-link" href="#main" data-i18n="a11y.skip">Saltar al contenido</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#top">
+      <img src="assets/logo.svg" alt="" width="26" height="26">
+      <span>fugo</span>
+      <span class="brand-version">v3.44.8-fugo.0</span>
+    </a>
+    <button class="nav-toggle" id="navToggle" data-i18n-attr="aria-label" data-i18n="a11y.openNav" aria-label="Abrir navegación" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="topnav">
+      <button class="palette-trigger" id="paletteTrigger" data-i18n-attr="aria-label|title" data-i18n="a11y.search|a11y.searchTitle" aria-label="Buscar / saltar a sección" title="Buscar (Ctrl K)">
+        <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.3-4.3" stroke-linecap="round"/></svg>
+        <span data-i18n="nav.search">Buscar</span>
+        <kbd>Ctrl K</kbd>
+      </button>
+      <a href="https://github.com/sazardev/fugo" target="_blank" rel="noopener">GitHub</a>
+      <a href="changelog.html" data-i18n="nav.changelog">Changelog</a>
+      <a href="contributing.html" data-i18n="side.contribuir">Contribuir</a>
+      <button class="lang-toggle" id="langToggle" aria-label="Switch language / cambiar idioma" title="ES / EN">
+        <span id="langLabel">EN</span>
+      </button>
+      <button class="theme-toggle" id="themeToggle" data-i18n-attr="aria-label|title" data-i18n="a11y.theme|a11y.theme" aria-label="Cambiar tema" title="Cambiar tema claro/oscuro">
+        <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" stroke-linecap="round"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <nav class="side-nav" data-i18n-attr="aria-label" data-i18n="a11y.sections" aria-label="Secciones">
+      <div class="side-group" data-i18n="side.group1">Proyecto</div>
+      <a href="#que-es" data-i18n="side.queEs">Qué es Fugo</a>
+      <a href="#objetivo" data-i18n="side.objetivo">Objetivo</a>
+      <a href="#para-quien" data-i18n="side.paraQuien">Para quién</a>
+      <a href="#como-funciona" data-i18n="side.comoFunciona">Cómo funciona</a>
+      <div class="side-group" data-i18n="side.group2">Estado</div>
+      <a href="#estado" data-i18n="side.estado">Estado y progreso</a>
+      <a href="#alcance" data-i18n="side.alcance">Alcance</a>
+      <a href="#ventajas-desventajas" data-i18n="side.ventajas">Ventajas y desventajas</a>
+      <div class="side-group" data-i18n="side.group3">Proyecto abierto</div>
+      <a href="#seguridad" data-i18n="side.seguridad">Seguridad</a>
+      <a href="#open-source" data-i18n="side.openSource">Código abierto y contribución</a>
+      <a href="#ci-cd">CI/CD</a>
+      <a href="#licencia" data-i18n="side.licencia">Licencia</a>
+      <div class="side-group" data-i18n="side.group4">Recursos</div>
+      <a href="changelog.html" data-i18n="nav.changelog">Changelog</a>
+      <a href="contributing.html" data-i18n="side.contribuir">Contribuir</a>
+    </nav>
+  </aside>
+
+  <main id="main">
+
+    <section class="hero" id="top">
+      <div class="hero-left">
+        <span class="eyebrow" data-i18n="hero.eyebrow">Server-Driven UI · Go + Flutter</span>
+        <h1>Fugo</h1>
+        <p class="hero-tagline" data-i18n="hero.tagline">Server-Driven UI local para escritorio.<br>Escribe <strong>toda</strong> tu lógica en Go — un cliente Flutter precompilado se encarga de dibujarla.</p>
+        <div class="hero-badges">
+          <span class="badge">Go 1.26+</span>
+          <span class="badge">Flutter 3.44.8</span>
+          <span class="badge badge-flame">MIT</span>
+          <span class="badge">v3.44.8-fugo.0</span>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="https://github.com/sazardev/fugo" target="_blank" rel="noopener" data-i18n="hero.viewGithub">Ver en GitHub</a>
+          <a class="btn btn-ghost" href="#que-es" data-i18n="hero.whatIsLink">Qué es Fugo →</a>
+        </div>
+      </div>
+      <div class="hero-right">
+        <img class="hero-mark" src="assets/logo.svg" alt="Fugo" width="180" height="180">
+        <pre class="hero-code hero-visual-code"><code>go install github.com/sazardev/fugo/cmd/fugo@latest
+fugo init myapp &amp;&amp; cd myapp
+fugo run</code></pre>
+      </div>
+    </section>
+
+    <section id="que-es">
+      <h2 data-i18n="queEs.h2">Qué es Fugo</h2>
+      <p data-i18n="queEs.p1">Fugo es un framework local de <strong>Server-Driven UI (SDUI)</strong>: construyes aplicaciones de escritorio nativas escribiendo <strong>exclusivamente en Go</strong>. La lógica de negocio, el estado y el enrutamiento viven enteramente en un proceso Go; un motor Flutter precompilado actúa como una terminal de renderizado pura — sin lógica de aplicación, sin estado propio.</p>
+      <p data-i18n="queEs.p2">Los dos procesos se comunican por <strong>gRPC</strong> con streaming bidireccional, sobre <strong>Unix Domain Sockets</strong> (TCP en Windows) y <strong>Protocol Buffers</strong> como formato de cable.</p>
+      <pre class="diagram" data-i18n-attr="aria-label" data-i18n="queEs.diagramLabel" aria-label="Diagrama de arquitectura"><code data-i18n="queEs.diagram">┌──────────────────────┐     IPC (UDS/TCP)    ┌──────────────────────┐
+│      Proceso Go      │◄════════════════════►│   Proceso Flutter    │
+│                      │   gRPC + Protobuf     │                      │
+│  Lógica de negocio    │                       │  Registro de widgets │
+│  Árbol retenido       │──── Diff de árbol ───►│  Pipeline de render  │
+│  Motor de diffing     │                       │  Debounce de eventos │
+│  Servidor gRPC        │◄──── Eventos de UI ───│  Cliente gRPC        │
+└──────────────────────┘                       └──────────────────────┘</code></pre>
+      <p class="callout callout-flame" data-i18n="queEs.callout"><strong>Go es la fuente de verdad absoluta.</strong> Flutter es una terminal muda: sin lógica de negocio, sin estado — solo píxeles a 60/120&nbsp;fps vía Impeller.</p>
+    </section>
+
+    <section id="objetivo">
+      <h2 data-i18n="objetivo.h2">Objetivo</h2>
+      <p data-i18n="objetivo.p1">Fugo busca ser el framework <strong>"pilas incluidas"</strong> para construir aplicaciones de escritorio ultrarrápidas y eficientes usando <strong>únicamente Go</strong>: aplicaciones corriendo en segundos, combinando la velocidad de iteración y el conocimiento que ya tienes de Go con el poder de renderizado y el ecosistema visual de Flutter — sin tener que aprender Dart, sin gestionar estado en dos lenguajes, sin el consumo de memoria de un motor basado en Chromium.</p>
+      <p data-i18n="objetivo.p2">No es un puente genérico Go↔Dart ni un binding de FFI: es una arquitectura deliberada de <em>terminal tonta</em> donde el 100% de la superficie de programación que tocas es Go — <code>fg.Text</code>, <code>fg.Button</code>, <code>fg.Router</code> — y Flutter nunca ve una decisión de negocio, solo un árbol de widgets y sus parches.</p>
+    </section>
+
+    <section id="para-quien">
+      <h2 data-i18n="paraQuien.h2">Para quién</h2>
+      <div class="grid-3">
+        <div class="card">
+          <h3 data-i18n="paraQuien.c1h">Desarrolladores Go</h3>
+          <p data-i18n="paraQuien.c1p">Que quieren una GUI de escritorio nativa sin salir de Go ni aprender Dart/Flutter para poder usarlo.</p>
+        </div>
+        <div class="card">
+          <h3 data-i18n="paraQuien.c2h">Herramientas internas</h3>
+          <p data-i18n="paraQuien.c2p">Equipos que ya tienen backends/CLIs en Go y necesitan una interfaz de escritorio ligera para operarlos, sin el peso de Electron.</p>
+        </div>
+        <div class="card">
+          <h3 data-i18n="paraQuien.c3h">Apps de un solo lenguaje</h3>
+          <p data-i18n="paraQuien.c3p">Proyectos donde mantener <em>un único</em> lenguaje de aplicación (Go) es una prioridad de arquitectura y de equipo, no una preferencia estética.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="como-funciona">
+      <h2 data-i18n="comoFunciona.h2">Cómo funciona</h2>
+      <p data-i18n="comoFunciona.p1">El árbol de widgets se construye <strong>una sola vez</strong> y se <strong>retiene</strong>. Los manejadores de eventos son closures de Go que mutan los campos del widget directamente (<code>counterText.SetText("5")</code>) y luego llaman a <code>ctx.Update()</code>. El scheduler (ticker de 60&nbsp;fps) vuelve a recorrer ese <em>mismo</em> árbol cada frame cuando hay cambios pendientes, re-serializa las props, calcula el diff contra el snapshot anterior y transmite <strong>solo los parches</strong>.</p>
+      <p data-i18n="comoFunciona.p2">Esto <strong>no</strong> es un "rebuild desde cero" al estilo React — es mutación directa de un árbol retenido, con diffing por ID/posición (<code>CREATE</code>/<code>UPDATE</code>/<code>DELETE</code>/<code>REPLACE</code>/<code>REORDER</code>) y streaming incremental sobre gRPC.</p>
+    </section>
+
+    <section id="estado">
+      <h2 data-i18n="estado.h2">Estado y progreso</h2>
+      <p data-i18n="estado.intro"><span class="badge badge-flame">v3.44.8-fugo.0</span> — el motor, la API de widgets, el transporte, el supervisor de proceso, el CLI y el cliente Flutter están implementados y funcionan de extremo a extremo.</p>
+      <ul class="checklist">
+        <li data-i18n="estado.li1">Instalable vía <code>go install github.com/sazardev/fugo/cmd/fugo@latest</code> — los bindings de protobuf están commiteados, compila en un fetch limpio</li>
+        <li data-i18n="estado.li2">Material&nbsp;3 nativo (claro por defecto), variantes de botón, Card/Scaffold/FAB/ListTile/Chip/Progress</li>
+        <li data-i18n="estado.li3">Motor de diffing, reconciliador, scheduler de 60&nbsp;fps con prioridad (<code>Update</code> / <code>UpdateNow</code>)</li>
+        <li data-i18n="estado.li4">Transporte gRPC (UDS / TCP en Windows), health check, keepalive, token de autenticación opcional</li>
+        <li data-i18n="estado.li5">36+ widgets en <code>fg/</code> con API fluida y prefix-free, más un sistema de <code>Theme</code></li>
+        <li data-i18n="estado.li6">Cliente Flutter (isolate gRPC en segundo plano, registro de widgets, reconexión automática)</li>
+        <li data-i18n="estado.li7">CLI: <code>fugo init</code> / <code>run</code> (hot reload por defecto) / <code>build</code> / <code>doctor</code> (<code>--fix</code>) / <code>widgets</code> / <code>upgrade</code></li>
+        <li data-i18n="estado.li8">Control de ventana en tiempo de ejecución, portapapeles, diálogos de archivo nativos</li>
+        <li data-i18n="estado.li9">Overlays imperativos: <code>ShowSnackBar</code>, <code>ShowDialog</code>, <code>ShowBottomSheet</code>, selectores de fecha/hora</li>
+        <li data-i18n="estado.li10">Rendimiento: diffing con pool de objetos, ajuste de GC, benchmarks Go + Dart con perf gate en CI</li>
+      </ul>
+      <p data-i18n="estado.outro">Ver <a href="https://github.com/sazardev/fugo/tree/main/ROADMAP" target="_blank" rel="noopener">ROADMAP</a> y <a href="https://github.com/sazardev/fugo/blob/main/SPEC.md" target="_blank" rel="noopener">SPEC.md</a> para la visión de diseño completa.</p>
+    </section>
+
+    <section id="alcance">
+      <h2 data-i18n="alcance.h2">Alcance</h2>
+      <div class="grid-2">
+        <div class="card card-in">
+          <h3 data-i18n="alcance.inH">Dentro del alcance</h3>
+          <ul>
+            <li data-i18n="alcance.in1">Apps de escritorio: Linux, Windows, macOS</li>
+            <li data-i18n="alcance.in2">IPC estrictamente local (UDS/TCP en <code>127.0.0.1</code>)</li>
+            <li data-i18n="alcance.in3">Un binario Go + un cliente Flutter precompilado por plataforma</li>
+            <li data-i18n="alcance.in4">Material&nbsp;3 como sistema de diseño del cliente de render</li>
+          </ul>
+        </div>
+        <div class="card card-out">
+          <h3 data-i18n="alcance.outH">Fuera del alcance (por ahora)</h3>
+          <ul>
+            <li data-i18n="alcance.out1">Móvil (iOS/Android) y web</li>
+            <li data-i18n="alcance.out2">SDUI remoto sobre red (el diseño asume IPC local de baja latencia, no una WAN)</li>
+            <li data-i18n="alcance.out3">Persistencia de estado entre hot reloads (el estado en memoria se reinicia)</li>
+            <li data-i18n="alcance.out4">Un sistema de diseño propio — el cliente es intencionalmente Material&nbsp;3 "vanilla"</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="ventajas-desventajas">
+      <h2 data-i18n="pros.h2">Ventajas y desventajas</h2>
+      <div class="grid-2">
+        <div class="card card-in">
+          <h3 data-i18n="pros.prosH">Ventajas</h3>
+          <ul>
+            <li data-i18n="pros.p1">Sin el consumo de memoria de Electron/Chromium — renderizado nativo vía Flutter/Impeller</li>
+            <li data-i18n="pros.p2">Un único lenguaje de aplicación: toda la lógica, el estado y el enrutamiento en Go</li>
+            <li data-i18n="pros.p3">Material&nbsp;3 real (tipografía, layout, animaciones) sin reinventar un design system</li>
+            <li data-i18n="pros.p4">Latencia de IPC local de 5–10&micro;s, no 50–200&nbsp;ms de un SDUI remoto</li>
+            <li data-i18n="pros.p5">Solo se transmiten diffs — el framing en Protobuf evita el costo de parsear JSON en cada frame</li>
+            <li data-i18n="pros.p6">CLI "pilas incluidas": <code>init</code> → <code>run</code> (hot reload) → <code>build</code> → <code>doctor</code></li>
+          </ul>
+        </div>
+        <div class="card card-out">
+          <h3 data-i18n="pros.consH">Desventajas</h3>
+          <ul>
+            <li data-i18n="pros.c1">Pre-1.0: la API pública puede tener cambios incompatibles entre versiones</li>
+            <li data-i18n="pros.c2"><code>fugo run</code>/<code>build</code> requieren el SDK de Flutter instalado (o un binario precompilado vía <code>FUGO_FLUTTER_BINARY</code>)</li>
+            <li data-i18n="pros.c3">Sin objetivo móvil o web todavía — desktop-only por diseño actual</li>
+            <li data-i18n="pros.c4">El hot reload no persiste el estado en memoria entre recargas</li>
+            <li data-i18n="pros.c5">Ecosistema y comunidad jóvenes — menos respuestas de terceros que con Flutter/Dart puro</li>
+            <li data-i18n="pros.c6">Estás limitado a la superficie que expone <code>fg/</code>, no al 100% de los widgets de Flutter/Dart</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="seguridad">
+      <h2 data-i18n="seguridad.h2">Seguridad</h2>
+      <p data-i18n="seguridad.p1">El transporte es <strong>local por defecto</strong> — Unix Domain Sockets (o TCP en <code>127.0.0.1</code> en Windows) — no expuesto a la red salvo que el usuario lo configure explícitamente. <code>FUGO_AUTH=1</code> añade un token por ejecución que endurece aún más el transporte local.</p>
+      <div class="grid-3">
+        <div class="card">
+          <h3 data-i18n="seguridad.c1h">Análisis estático</h3>
+          <p data-i18n="seguridad.c1p"><a href="https://codeql.github.com/" target="_blank" rel="noopener">CodeQL</a> corre en cada push/PR y semanalmente vía <code>codeql.yml</code>.</p>
+        </div>
+        <div class="card">
+          <h3 data-i18n="seguridad.c2h">Reporte responsable</h3>
+          <p data-i18n="seguridad.c2p">Vulnerabilidades vía <a href="https://github.com/sazardev/fugo/security/advisories/new" target="_blank" rel="noopener">security advisories privados</a> — nunca en issues públicos.</p>
+        </div>
+        <div class="card">
+          <h3 data-i18n="seguridad.c3h">Compromiso de respuesta</h3>
+          <p data-i18n="seguridad.c3p">Confirmación en 48h, actualizaciones cada 7 días, crédito en el advisory y en el CHANGELOG.</p>
+        </div>
+      </div>
+      <p data-i18n="seguridad.p2">Ver <a href="https://github.com/sazardev/fugo/blob/main/SECURITY.md" target="_blank" rel="noopener">SECURITY.md</a> para la política completa, incluyendo versiones soportadas.</p>
+    </section>
+
+    <section id="open-source">
+      <h2 data-i18n="openSource.h2">Código abierto y contribución</h2>
+      <p data-i18n="openSource.p1">Fugo es <strong>abierto a contribuciones</strong> bajo licencia MIT. El flujo de trabajo está documentado en <a href="https://github.com/sazardev/fugo/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a> y el proyecto sigue el <a href="https://github.com/sazardev/fugo/blob/main/CODE_OF_CONDUCT.md" target="_blank" rel="noopener">Contributor Covenant</a>.</p>
+      <ul class="checklist">
+        <li data-i18n="openSource.li1">Plantillas de issue estructuradas (bug report / feature request) y de pull request</li>
+        <li data-i18n="openSource.li2"><code>CODEOWNERS</code> define la revisión requerida en todo el repositorio</li>
+        <li data-i18n="openSource.li3"><code>.golangci.yml</code>: 80+ linters activos, sin umbral de tolerancia (<code>max-issues-per-linter: 0</code>)</li>
+        <li data-i18n="openSource.li4">Git hooks (Lefthook): pre-commit auto-arregla formato/lint; pre-push corre la puerta completa</li>
+        <li data-i18n="openSource.li5">Dependabot semanal para módulos Go y GitHub Actions</li>
+      </ul>
+    </section>
+
+    <section id="ci-cd">
+      <h2>CI/CD</h2>
+      <p data-i18n="cicd.p1">Todo push y pull request a <code>main</code> corre la misma puerta de calidad — nada se fusiona sin pasarla:</p>
+      <div class="grid-3">
+        <div class="card"><h3 data-i18n="cicd.hLint">Lint</h3><p data-i18n="cicd.pLint">golangci-lint + staticcheck</p></div>
+        <div class="card"><h3 data-i18n="cicd.hVet">Vet</h3><p data-i18n="cicd.pVet"><code>go vet ./...</code></p></div>
+        <div class="card"><h3 data-i18n="cicd.hBuild">Build</h3><p data-i18n="cicd.pBuild"><code>go build ./...</code></p></div>
+        <div class="card"><h3 data-i18n="cicd.hTest">Test</h3><p data-i18n="cicd.pTest"><code>go test -race -shuffle=on</code></p></div>
+        <div class="card"><h3 data-i18n="cicd.hFormat">Format</h3><p data-i18n="cicd.format">gofumpt, sin diferencias</p></div>
+        <div class="card"><h3 data-i18n="cicd.hBench">Bench</h3><p data-i18n="cicd.bench">Perf gates + benchmarks del motor de diffing</p></div>
+        <div class="card"><h3 data-i18n="cicd.hDart">Dart</h3><p data-i18n="cicd.dart"><code>flutter analyze</code> + <code>flutter test</code> en <code>flutter_client/</code></p></div>
+        <div class="card"><h3 data-i18n="cicd.hCodeQL">CodeQL</h3><p data-i18n="cicd.codeql">Análisis de seguridad, push/PR + semanal</p></div>
+      </div>
+      <p data-i18n="cicd.p2">Aparte, <code>check-flutter-version.yml</code> vigila semanalmente nuevas versiones estables de Flutter y abre un PR (nunca auto-merge) para actualizar el pin, y <code>release-flutter-client.yml</code> compila el cliente Flutter para Linux/Windows y lo adjunta al release en cada tag <code>v*</code>.</p>
+      <p class="callout callout-flame" data-i18n="cicd.callout">Esta misma página se despliega automáticamente: un workflow de GitHub Actions publica <code>site/</code> en GitHub Pages en cada cambio a <code>main</code>, sin pasos manuales.</p>
+    </section>
+
+    <section id="licencia">
+      <h2 data-i18n="licencia.h2">Licencia</h2>
+      <p data-i18n="licencia.p"><strong>MIT</strong> — permisiva, sin restricciones de uso comercial ni de distribución. Ver <a href="https://github.com/sazardev/fugo/blob/main/LICENSE" target="_blank" rel="noopener">LICENSE</a> en el repositorio.</p>
+    </section>
+
+    <footer class="page-footer">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <div class="footer-h" data-i18n="footer.colProject">Proyecto</div>
+          <a href="https://github.com/sazardev/fugo" target="_blank" rel="noopener" data-i18n="footer.repo">Repositorio</a>
+          <a href="https://github.com/sazardev/fugo/issues" target="_blank" rel="noopener" data-i18n="footer.issues">Issues</a>
+          <a href="https://github.com/sazardev/fugo/pulls" target="_blank" rel="noopener" data-i18n="footer.prs">Pull requests</a>
+          <a href="https://github.com/sazardev/fugo/discussions" target="_blank" rel="noopener" data-i18n="footer.discussions">Discussions</a>
+        </div>
+        <div class="footer-col">
+          <div class="footer-h" data-i18n="footer.colDocs">Documentación</div>
+          <a href="changelog.html" data-i18n="nav.changelog">Changelog</a>
+          <a href="contributing.html" data-i18n="side.contribuir">Contribuir</a>
+          <a href="https://github.com/sazardev/fugo/blob/main/SECURITY.md" target="_blank" rel="noopener" data-i18n="side.seguridad">Seguridad</a>
+          <a href="https://github.com/sazardev/fugo/blob/main/LICENSE" target="_blank" rel="noopener" data-i18n="side.licencia">Licencia</a>
+        </div>
+        <div class="footer-col">
+          <div class="footer-h" data-i18n="footer.colSupport">Apoyar</div>
+          <a href="https://github.com/sazardev/fugo" target="_blank" rel="noopener" data-i18n="footer.star">★ Star en GitHub</a>
+          <a href="https://github.com/sazardev/fugo/releases" target="_blank" rel="noopener" data-i18n="footer.releases">Releases</a>
+        </div>
+      </div>
+      <p class="page-footer-sub" data-i18n="footer.p1">Fugo — hecho con Go + Flutter. <a href="https://github.com/sazardev/fugo" target="_blank" rel="noopener">github.com/sazardev/fugo</a></p>
+      <p class="page-footer-sub" data-i18n="footer.p2">Esta página aún no incluye la documentación de la API — llegará bajo esta misma estructura.</p>
+
+    </footer>
+
+  </main>
+</div>
+
+<div class="palette-overlay" id="paletteOverlay" hidden>
+  <div class="palette" role="dialog" aria-modal="true" data-i18n-attr="aria-label" data-i18n="a11y.paletteLabel" aria-label="Paleta de comandos">
+    <div class="palette-input-row">
+      <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.3-4.3" stroke-linecap="round"/></svg>
+      <input type="text" id="paletteInput" data-i18n-attr="placeholder" data-i18n="palette.placeholder" placeholder="Ir a una sección… (Home, Seguridad, CI/CD…)" autocomplete="off" spellcheck="false">
+      <kbd>Esc</kbd>
+    </div>
+    <ul class="palette-results" id="paletteResults"></ul>
+  </div>
+</div>
+
+<script src="i18n.js?v=10"></script>
+<script src="script.js?v=10"></script>
+</body>
+</html>

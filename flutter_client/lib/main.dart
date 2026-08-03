@@ -1,11 +1,13 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
 
-import 'package:file_picker/file_picker.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:local_notifier/local_notifier.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'generated/fugo/v1/fugo.pb.dart'
@@ -13,11 +15,129 @@ import 'generated/fugo/v1/fugo.pb.dart'
 import 'events.dart';
 import 'fugo_renderer.dart';
 import 'grpc_isolate.dart';
-import 'registry.dart' show hexToColor;
+import 'registry.dart' show hexToColor, requestFocus;
 
 final _fugoRendererKey = GlobalKey<FugoRendererState>();
 final _messengerKey = GlobalKey<ScaffoldMessengerState>();
 final _navigatorKey = GlobalKey<NavigatorState>();
+
+// _shortcutBindings is the current app-wide keyboard shortcut set, replaced
+// wholesale whenever Go sends a ShortcutsCommand (see applyShortcutsCommand).
+Set<String> _shortcutBindings = {};
+
+void applyShortcutsCommand(ShortcutsCommand cmd) {
+  _shortcutBindings = cmd.bindings.toSet();
+}
+
+// _handleKeyEvent is registered globally via HardwareKeyboard, independent of
+// the focus tree, so a shortcut fires no matter which widget (if any) has
+// focus. Caveat: it runs alongside normal focus-based key handling (e.g. a
+// focused TextField still receives the character), so binding a shortcut to
+// a bare printable key with no modifier while a text field is focused would
+// both type the character AND fire the shortcut — in practice this only
+// matters for modifier-less bindings, which most real shortcuts (ctrl+s,
+// escape, ctrl+z) aren't.
+bool _handleKeyEvent(KeyEvent event) {
+  if (event is! KeyDownEvent) return false;
+  if (_isModifierKey(event.logicalKey)) return false;
+
+  final label = _keyLabel(event.logicalKey);
+  if (label == null) return false;
+
+  final parts = <String>[];
+  if (HardwareKeyboard.instance.isControlPressed) parts.add('ctrl');
+  if (HardwareKeyboard.instance.isAltPressed) parts.add('alt');
+  if (HardwareKeyboard.instance.isShiftPressed) parts.add('shift');
+  if (HardwareKeyboard.instance.isMetaPressed) parts.add('meta');
+  parts.add(label);
+
+  final binding = parts.join('+');
+  if (!_shortcutBindings.contains(binding)) return false;
+
+  sendEvent(ClientEvent(
+    nodeId: '',
+    eventType: 'shortcut',
+    eventData: binding.codeUnits,
+  ));
+
+  return true;
+}
+
+bool _isModifierKey(LogicalKeyboardKey key) {
+  // Not `const`: LogicalKeyboardKey overrides ==/hashCode, which the analyzer
+  // disallows in const collection literals.
+  final modifiers = {
+    LogicalKeyboardKey.control,
+    LogicalKeyboardKey.controlLeft,
+    LogicalKeyboardKey.controlRight,
+    LogicalKeyboardKey.alt,
+    LogicalKeyboardKey.altLeft,
+    LogicalKeyboardKey.altRight,
+    LogicalKeyboardKey.shift,
+    LogicalKeyboardKey.shiftLeft,
+    LogicalKeyboardKey.shiftRight,
+    LogicalKeyboardKey.meta,
+    LogicalKeyboardKey.metaLeft,
+    LogicalKeyboardKey.metaRight,
+  };
+
+  return modifiers.contains(key);
+}
+
+// _keyLabel normalizes a logical key to the lowercase token Go's bindings use
+// (e.g. LogicalKeyboardKey.keyS -> "s", arrowUp -> "up"); null for keys with
+// no normalized name (not meant to be bindable).
+String? _keyLabel(LogicalKeyboardKey key) {
+  // Not `const` — see _isModifierKey.
+  final named = {
+    LogicalKeyboardKey.escape: 'escape',
+    LogicalKeyboardKey.enter: 'enter',
+    LogicalKeyboardKey.tab: 'tab',
+    LogicalKeyboardKey.delete: 'delete',
+    LogicalKeyboardKey.backspace: 'backspace',
+    LogicalKeyboardKey.space: 'space',
+    LogicalKeyboardKey.arrowUp: 'up',
+    LogicalKeyboardKey.arrowDown: 'down',
+    LogicalKeyboardKey.arrowLeft: 'left',
+    LogicalKeyboardKey.arrowRight: 'right',
+    LogicalKeyboardKey.f1: 'f1',
+    LogicalKeyboardKey.f2: 'f2',
+    LogicalKeyboardKey.f3: 'f3',
+    LogicalKeyboardKey.f4: 'f4',
+    LogicalKeyboardKey.f5: 'f5',
+  };
+  if (named.containsKey(key)) return named[key];
+
+  final label = key.keyLabel;
+  if (label.length == 1) return label.toLowerCase();
+
+  return null;
+}
+
+// _ResizeReporter debounces window-resize notifications back to Go (a resize
+// drag fires many raw metric changes per second) — there is no other channel
+// for Go to learn the client's actual viewport size, since the widget tree is
+// built before anything is measured.
+class _ResizeReporter with WidgetsBindingObserver {
+  Timer? _debounce;
+
+  @override
+  void didChangeMetrics() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 250), () {
+      final view = WidgetsBinding.instance.platformDispatcher.views.first;
+      final size = view.physicalSize / view.devicePixelRatio;
+
+      sendEvent(ClientEvent(
+        nodeId: '',
+        eventType: 'resize',
+        eventData:
+            '${size.width.toStringAsFixed(0)}x${size.height.toStringAsFixed(0)}'
+                .codeUnits,
+      ));
+    });
+  }
+}
 
 // applyWindowCommand applies a runtime window-control command from Go via the
 // OS window manager (driven by WindowController on the Go side).
@@ -60,21 +180,24 @@ Future<void> applyHostCommand(HostCommand cmd) async {
       _replyHost(requestId, data?.text ?? '');
       break;
     case HostOp.HOST_FILE_OPEN:
-      final result = await FilePicker.pickFiles(
-        dialogTitle: cmd.text.isNotEmpty ? cmd.text : null,
-        type: cmd.extensions.isNotEmpty ? FileType.custom : FileType.any,
-        allowedExtensions: cmd.extensions.isNotEmpty ? cmd.extensions : null,
+      final result = await openFile(
+        acceptedTypeGroups: cmd.extensions.isNotEmpty
+            ? [XTypeGroup(extensions: cmd.extensions)]
+            : const [],
       );
-      _replyHost(requestId, result?.files.single.path ?? '');
+      _replyHost(requestId, result?.path ?? '');
       break;
     case HostOp.HOST_FILE_SAVE:
-      final path = await FilePicker.saveFile(
-        dialogTitle: cmd.text.isNotEmpty ? cmd.text : null,
-        fileName: cmd.defaultName.isNotEmpty ? cmd.defaultName : null,
-        type: cmd.extensions.isNotEmpty ? FileType.custom : FileType.any,
-        allowedExtensions: cmd.extensions.isNotEmpty ? cmd.extensions : null,
+      final location = await getSaveLocation(
+        suggestedName: cmd.defaultName.isNotEmpty ? cmd.defaultName : null,
+        acceptedTypeGroups: cmd.extensions.isNotEmpty
+            ? [XTypeGroup(extensions: cmd.extensions)]
+            : const [],
       );
-      _replyHost(requestId, path ?? '');
+      _replyHost(requestId, location?.path ?? '');
+      break;
+    case HostOp.HOST_NOTIFICATION:
+      LocalNotification(title: cmd.title, body: cmd.text).show();
       break;
     default:
       break;
@@ -104,47 +227,82 @@ void applyOverlayCommand(OverlayCommand cmd) {
     case OverlayOp.OVERLAY_DIALOG:
       {
         final ctx = _navigatorKey.currentContext;
-        if (ctx != null) {
-          showDialog<void>(
-            context: ctx,
-            builder: (c) => AlertDialog(
-              title: cmd.title.isNotEmpty ? Text(cmd.title) : null,
-              content: cmd.message.isNotEmpty ? Text(cmd.message) : null,
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(c).pop(),
-                  child: const Text('OK'),
-                ),
-              ],
-            ),
-          );
+        final id = cmd.requestId.toInt();
+        if (ctx == null) {
+          if (cmd.actions.isNotEmpty) _replyHost(id, '');
+          break;
         }
+        // cmd.actions.isNotEmpty renders custom action buttons (e.g.
+        // "Cancel"/"Delete") instead of the default single "OK"; whichever
+        // one is tapped becomes the dialog's pop result, and the single
+        // .then() below is the one place that replies — so an action button
+        // is never double-replied (once by itself, once by dismissal).
+        showDialog<String>(
+          context: ctx,
+          builder: (c) => AlertDialog(
+            title: cmd.title.isNotEmpty ? Text(cmd.title) : null,
+            content: cmd.message.isNotEmpty ? Text(cmd.message) : null,
+            actions: cmd.actions.isNotEmpty
+                ? cmd.actions
+                    .map((a) => TextButton(
+                          onPressed: () => Navigator.of(c).pop(a),
+                          child: Text(a),
+                        ))
+                    .toList()
+                : [
+                    TextButton(
+                      onPressed: () => Navigator.of(c).pop(),
+                      child: const Text('OK'),
+                    ),
+                  ],
+          ),
+        ).then((result) {
+          if (cmd.actions.isNotEmpty) _replyHost(id, result ?? '');
+        });
       }
       break;
     case OverlayOp.OVERLAY_BOTTOMSHEET:
       {
         final ctx = _navigatorKey.currentContext;
-        if (ctx != null) {
-          showModalBottomSheet<void>(
-            context: ctx,
-            builder: (c) => Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (cmd.title.isNotEmpty)
-                    Text(cmd.title, style: Theme.of(c).textTheme.titleLarge),
-                  if (cmd.message.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(cmd.message),
-                    ),
-                ],
-              ),
-            ),
-          );
+        final id = cmd.requestId.toInt();
+        if (ctx == null) {
+          if (cmd.actions.isNotEmpty) _replyHost(id, '');
+          break;
         }
+        showModalBottomSheet<String>(
+          context: ctx,
+          builder: (c) => Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (cmd.title.isNotEmpty)
+                  Text(cmd.title, style: Theme.of(c).textTheme.titleLarge),
+                if (cmd.message.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(cmd.message),
+                  ),
+                if (cmd.actions.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: Wrap(
+                      spacing: 8,
+                      children: cmd.actions
+                          .map((a) => FilledButton(
+                                onPressed: () => Navigator.of(c).pop(a),
+                                child: Text(a),
+                              ))
+                          .toList(),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ).then((result) {
+          if (cmd.actions.isNotEmpty) _replyHost(id, result ?? '');
+        });
       }
       break;
     case OverlayOp.OVERLAY_DATE_PICKER:
@@ -190,6 +348,7 @@ void main() async {
   await windowManager.ensureInitialized();
 
   final title = Platform.environment['FUGO_TITLE'] ?? 'Fugo';
+  await localNotifier.setup(appName: title);
   final width = double.tryParse(Platform.environment['FUGO_WIDTH'] ?? '') ?? 800;
   final height = double.tryParse(Platform.environment['FUGO_HEIGHT'] ?? '') ?? 600;
 
@@ -200,6 +359,8 @@ void main() async {
   final brightness = Platform.environment['FUGO_THEME_BRIGHTNESS'] == 'dark'
       ? Brightness.dark
       : Brightness.light;
+  final followSystemTheme = Platform.environment['FUGO_THEME_FOLLOW_SYSTEM'] == '1';
+  final fontFamily = Platform.environment['FUGO_THEME_FONT_FAMILY'];
 
   final windowOptions = WindowOptions(
     size: Size(width, height),
@@ -211,6 +372,9 @@ void main() async {
     await windowManager.show();
     await windowManager.focus();
   });
+
+  HardwareKeyboard.instance.addHandler(_handleKeyEvent);
+  WidgetsBinding.instance.addObserver(_ResizeReporter());
 
   final receivePort = ReceivePort();
   await Isolate.spawn(grpcIsolateEntry, receivePort.sendPort);
@@ -227,6 +391,8 @@ void main() async {
         navigatorKey: _navigatorKey,
         seedColor: seedColor,
         brightness: brightness,
+        followSystem: followSystemTheme,
+        fontFamily: fontFamily,
       ));
 
       return;
@@ -248,6 +414,16 @@ void main() async {
 
         if (payload.hasOverlay()) {
           applyOverlayCommand(payload.overlay);
+          return;
+        }
+
+        if (payload.hasShortcuts()) {
+          applyShortcutsCommand(payload.shortcuts);
+          return;
+        }
+
+        if (payload.hasFocus()) {
+          requestFocus(payload.focus.nodeId.toInt());
           return;
         }
 

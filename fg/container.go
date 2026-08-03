@@ -6,13 +6,23 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// ContainerWidget wraps a single child with a background, padding, and rounded corners. Build one with Container.
+// ContainerWidget wraps a single child with a background, padding, margin,
+// rounded corners, border, and shadow. Build one with Container.
 type ContainerWidget struct {
-	child        Widget
-	Padding      style.EdgeInsets
-	borderRadius float64
-	bgColor      style.Color
-	bgColorSet   bool
+	child          Widget
+	Padding        style.EdgeInsets
+	margin         style.EdgeInsets
+	borderRadius   float64
+	bgColor        style.Color
+	bgColorSet     bool
+	borderColor    style.Color
+	borderColorSet bool
+	borderWidth    float64
+	shadowColor    style.Color
+	shadowColorSet bool
+	shadowBlur     float64
+	shadowOffsetX  float64
+	shadowOffsetY  float64
 	baseWidget
 }
 
@@ -44,6 +54,42 @@ func (c *ContainerWidget) BorderRadius(v float64) *ContainerWidget {
 	return c
 }
 
+// Margin sets the outer margin and returns the widget for chaining.
+func (c *ContainerWidget) Margin(v style.EdgeInsets) *ContainerWidget {
+	c.margin = v
+
+	return c
+}
+
+// Border sets a solid border color and width (in logical pixels) and returns
+// the widget for chaining. If width is 0 and color is non-empty, width
+// defaults to 1.0 (a hairline border) so a caller doing Border(color, 0)
+// still gets a visible border instead of an invisible one.
+func (c *ContainerWidget) Border(color style.Color, width float64) *ContainerWidget {
+	c.borderColor = color
+	c.borderColorSet = true
+
+	if width == 0 {
+		width = 1.0
+	}
+
+	c.borderWidth = width
+
+	return c
+}
+
+// Shadow sets a drop shadow (color, blur radius, and offset in logical
+// pixels) and returns the widget for chaining.
+func (c *ContainerWidget) Shadow(color style.Color, blur, offsetX, offsetY float64) *ContainerWidget {
+	c.shadowColor = color
+	c.shadowColorSet = true
+	c.shadowBlur = blur
+	c.shadowOffsetX = offsetX
+	c.shadowOffsetY = offsetY
+
+	return c
+}
+
 func (c *ContainerWidget) isWidget() {}
 
 func (c *ContainerWidget) widgetChildren() []Widget {
@@ -65,13 +111,33 @@ func (c *ContainerWidget) walkNodes(counter *uint32) []*fugov1.WidgetNode {
 		bgColor = c.bgColor.String()
 	}
 
+	borderColor := ""
+	if c.borderColorSet {
+		borderColor = c.borderColor.String()
+	}
+
+	shadowColor := ""
+	if c.shadowColorSet {
+		shadowColor = c.shadowColor.String()
+	}
+
 	props, _ := proto.Marshal(&fugov1.ContainerProps{
-		BgColor:      bgColor,
-		BorderRadius: c.borderRadius,
-		PadTop:       c.Padding.Top,
-		PadRight:     c.Padding.Right,
-		PadBottom:    c.Padding.Bottom,
-		PadLeft:      c.Padding.Left,
+		BgColor:       bgColor,
+		BorderRadius:  c.borderRadius,
+		PadTop:        c.Padding.Top,
+		PadRight:      c.Padding.Right,
+		PadBottom:     c.Padding.Bottom,
+		PadLeft:       c.Padding.Left,
+		MarginTop:     c.margin.Top,
+		MarginRight:   c.margin.Right,
+		MarginBottom:  c.margin.Bottom,
+		MarginLeft:    c.margin.Left,
+		BorderColor:   borderColor,
+		BorderWidth:   c.borderWidth,
+		ShadowColor:   shadowColor,
+		ShadowBlur:    c.shadowBlur,
+		ShadowOffsetX: c.shadowOffsetX,
+		ShadowOffsetY: c.shadowOffsetY,
 	})
 
 	self := &fugov1.WidgetNode{

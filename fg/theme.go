@@ -9,10 +9,25 @@ type Theme struct {
 	Typography ThemeTypography
 	Spacing    ThemeSpacing
 	Radius     ThemeRadius
+	Components ThemeComponents
 	// Dark selects the Material 3 brightness the Flutter client builds its
 	// ColorScheme with (seeded from Colors.Primary). LightTheme sets it false,
-	// DarkTheme true.
+	// DarkTheme true. Ignored when FollowSystem is true.
 	Dark bool
+	// FollowSystem makes the client track the OS's light/dark setting live
+	// (Flutter's ThemeMode.system) instead of using the fixed Dark value.
+	FollowSystem bool
+}
+
+// ThemeComponents holds per-widget-type defaults, applied only when the
+// widget's own value is left unset (zero) — an explicit setter call on the
+// widget always wins. This is Fugo's equivalent of Flutter's CardTheme/
+// ElevatedButtonThemeData: change the look of every Card/Button in the app
+// from one place instead of setting the same prop on each one.
+type ThemeComponents struct {
+	CardRadius    float64 // 0 = let the Material 3 client default apply (today's behavior)
+	CardElevation float64
+	ButtonRadius  float64 // 0 = let the Material 3 client default apply
 }
 
 // Material brightness values, as the Flutter client expects them over
@@ -83,6 +98,7 @@ func DarkTheme() Theme {
 		Typography: defaultTypography(),
 		Spacing:    defaultSpacing(),
 		Radius:     defaultRadius(),
+		Components: defaultComponents(),
 		Dark:       true,
 	}
 }
@@ -105,6 +121,7 @@ func LightTheme() Theme {
 		Typography: defaultTypography(),
 		Spacing:    defaultSpacing(),
 		Radius:     defaultRadius(),
+		Components: defaultComponents(),
 	}
 }
 
@@ -124,6 +141,19 @@ func defaultSpacing() ThemeSpacing {
 
 func defaultRadius() ThemeRadius {
 	return ThemeRadius{SM: 4, MD: 8, LG: 16}
+}
+
+// defaultComponents reuses the MD step of the existing radius scale so card
+// and button corners stay visually consistent with the rest of the theme
+// (Radius.MD, e.g. 8 logical px) instead of introducing a new magic number.
+func defaultComponents() ThemeComponents {
+	r := defaultRadius()
+
+	return ThemeComponents{
+		CardRadius:    r.MD,
+		CardElevation: 1,
+		ButtonRadius:  r.MD,
+	}
 }
 
 //nolint:gochecknoglobals // the active theme is intentional, opinionated, package-level state

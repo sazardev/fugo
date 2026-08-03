@@ -47,7 +47,7 @@ func TestGestureDetectorHandler(t *testing.T) {
 		t.Fatal("expected a handler")
 	}
 
-	g.Handle(Event{})
+	g.Handle(Event{EventType: "onTap"})
 	if !tapped {
 		t.Error("handler was not invoked")
 	}

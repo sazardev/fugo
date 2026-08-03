@@ -60,6 +60,28 @@ const (
 	WidgetRichText           = fugov1.WidgetType_RICHTEXT
 	WidgetDataTable          = fugov1.WidgetType_DATATABLE
 	WidgetStepper            = fugov1.WidgetType_STEPPER
+	WidgetCheckboxListTile   = fugov1.WidgetType_CHECKBOXLISTTILE
+	WidgetRadioListTile      = fugov1.WidgetType_RADIOLISTTILE
+	WidgetSwitchListTile     = fugov1.WidgetType_SWITCHLISTTILE
+	WidgetNavigationRail     = fugov1.WidgetType_NAVIGATIONRAIL
+	WidgetPageView           = fugov1.WidgetType_PAGEVIEW
+	WidgetTable              = fugov1.WidgetType_TABLE
+	WidgetConstrainedBox     = fugov1.WidgetType_CONSTRAINEDBOX
+	WidgetFractionallySized  = fugov1.WidgetType_FRACTIONALLYSIZEDBOX
+	WidgetVerticalDivider    = fugov1.WidgetType_VERTICALDIVIDER
+	WidgetRangeSlider        = fugov1.WidgetType_RANGESLIDER
+	WidgetAutocomplete       = fugov1.WidgetType_AUTOCOMPLETE
+	WidgetScrollbar          = fugov1.WidgetType_SCROLLBAR
+	WidgetRefreshIndicator   = fugov1.WidgetType_REFRESHINDICATOR
+	WidgetSemantics          = fugov1.WidgetType_SEMANTICS
+	WidgetCanvas             = fugov1.WidgetType_CANVAS
+	WidgetRouter             = fugov1.WidgetType_ROUTER
+	WidgetForm               = fugov1.WidgetType_FORM
+	WidgetDismissible        = fugov1.WidgetType_DISMISSIBLE
+	WidgetSliverScaffold     = fugov1.WidgetType_SLIVERSCAFFOLD
+	WidgetResponsive         = fugov1.WidgetType_RESPONSIVE
+	WidgetDraggable          = fugov1.WidgetType_DRAGGABLE
+	WidgetDragTarget         = fugov1.WidgetType_DRAGTARGET
 )
 
 // Event is a user interaction forwarded from the client to a widget's handler.
@@ -98,8 +120,19 @@ type baseWidget struct {
 	key string
 }
 
-func (b *baseWidget) widgetID() uint32        { return b.id }
-func (b *baseWidget) setWidgetID(id uint32)   { b.id = id }
+func (b *baseWidget) widgetID() uint32      { return b.id }
+func (b *baseWidget) setWidgetID(id uint32) { b.id = id }
+
+// NodeID returns the widget's assigned node id (0 before the tree has been
+// built at least once). Implements Focusable.
+func (b *baseWidget) NodeID() uint32 { return b.id }
+
+// Focusable is implemented by widgets that can receive keyboard focus (today,
+// only TextField). See Context.RequestFocus in the root fugo package.
+type Focusable interface {
+	NodeID() uint32
+}
+
 func (b *baseWidget) widgetKey() string       { return b.key }
 func (b *baseWidget) setWidgetKey(key string) { b.key = key }
 
@@ -113,6 +146,20 @@ func (b *baseWidget) Handle(Event) {}
 // BuildTree walks root depth-first, assigning stable ids, and returns the
 // serialized widget tree together with a map from node id to widget (used to
 // route events back to handlers).
+//
+// This is also Fugo's supported way to test a UI without gRPC or Flutter:
+// build the widget tree the same way the app does (call your buildUI/Build
+// function, the same one passed to fugo.Run/RunStandalone), keep a reference
+// to the concrete widget(s) you want to interact with (or fetch them from the
+// returned map[uint32]Widget by node id), call BuildTree(root) once to assign
+// ids, then simulate interaction by calling widget.Handle(event) directly —
+// using a synthetic Event from ClickEvent/BoolEvent/TextEvent/FloatEvent/
+// RangeEvent so you don't have to reverse-engineer the wire format each
+// widget's Flutter counterpart sends. Finally assert on the widget's exported
+// fields (e.g. a Checkbox's Checked, a TextWidget's Value) or on whatever a
+// handler mutated (e.g. a companion Text widget's Value after SetText). See
+// testkit_example_test.go for a worked example. No gRPC server, Reconciler,
+// or Flutter process is involved — Handle is a plain method call.
 func BuildTree(root Widget) (*fugov1.WidgetTree, map[uint32]Widget) {
 	var counter uint32
 	nodes := root.walkNodes(&counter)

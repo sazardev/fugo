@@ -33,7 +33,10 @@ func (cb *Clipboard) Read(fn func(text string)) {
 
 // FileDialog configures a native file open/save dialog.
 type FileDialog struct {
-	// Title is the dialog window title.
+	// Title is the dialog window title. Not currently shown: the client's
+	// native file dialog package (file_selector) doesn't expose a title
+	// override, only a confirm-button label, which the OS dialog usually
+	// derives on its own.
 	Title string
 	// DefaultName is the suggested file name, used by Save dialogs.
 	DefaultName string
@@ -72,4 +75,23 @@ func (f *FilePicker) Save(dlg FileDialog, fn func(path string)) {
 		DefaultName: dlg.DefaultName,
 		Extensions:  dlg.Extensions,
 	}, func(data []byte) { fn(string(data)) })
+}
+
+// Notifications returns a controller for native OS notifications (toast /
+// notification center), backed by the client.
+func (c *Context) Notifications() *Notifier {
+	return &Notifier{app: c.app}
+}
+
+// Notifier shows native OS notifications. Obtain one with Context.Notifications.
+type Notifier struct{ app *App }
+
+// Show displays a native OS notification with title and body. It is
+// fire-and-forget.
+func (n *Notifier) Show(title, body string) {
+	n.app.sendHost(&fugov1.HostCommand{
+		Op:    fugov1.HostOp_HOST_NOTIFICATION,
+		Title: title,
+		Text:  body,
+	}, nil)
 }

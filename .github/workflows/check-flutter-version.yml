@@ -1,0 +1,129 @@
+# Fugo is meant to track current Flutter, not drift behind it. This runs
+# weekly, and end-to-end automatically (no PR, no manual step) rolls the
+# targeted Flutter version forward whenever a newer stable release exists:
+#
+#   1. Compare FLUTTER_VERSION against the latest stable Flutter.
+#   2. If newer, validate it for real — actually build flutter_client/
+#      against it — before touching anything. This is the safety gate: a
+#      broken Flutter upgrade never gets committed.
+#   3. On a successful validation build, bump FLUTTER_VERSION + VERSION (a
+#      fresh "-fugo.0") + CHANGELOG.md and push straight to main.
+#   4. That push (VERSION changed) triggers tag-release.yml, which tags,
+#      which triggers release-flutter-client.yml, which builds + publishes
+#      the precompiled client. The whole chain runs unattended.
+#
+# If the validation build fails, nothing is committed — an issue is opened
+# instead so a human knows flutter_client/ needs attention before the next
+# Flutter version can be adopted.
+name: Check Flutter version
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Monday 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
+      current: ${{ steps.diff.outputs.current }}
+      latest: ${{ steps.diff.outputs.latest }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Compare against the latest stable Flutter release
+        id: diff
+        run: |
+          set -euo pipefail
+
+          current=$(cat FLUTTER_VERSION)
+          latest=$(curl -fsSL https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json \
+            | jq -r '.releases[] | select(.channel == "stable") | .version' \
+            | sed 's/^v//' \
+            | sort -V | tail -n1)
+
+          echo "current=$current"
+          echo "latest=$latest"
+
+          if [ -z "$latest" ] || [ "$current" = "$latest" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "current=$current" >> "$GITHUB_OUTPUT"
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+
+  validate:
+    needs: check
+    if: needs.check.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      ok: ${{ steps.build.outcome == 'success' }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ needs.check.outputs.latest }}
+          channel: stable
+
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libgtk-3-dev
+
+      - working-directory: flutter_client
+        run: flutter pub get
+
+      - id: build
+        working-directory: flutter_client
+        continue-on-error: true
+        run: flutter build linux --release
+
+  adopt:
+    needs: [check, validate]
+    if: needs.check.outputs.changed == 'true' && needs.validate.outputs.ok == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Bump FLUTTER_VERSION + VERSION + CHANGELOG and push to main
+        run: |
+          set -euo pipefail
+
+          latest="${{ needs.check.outputs.latest }}"
+          current="${{ needs.check.outputs.current }}"
+          newver="$latest-fugo.0"
+          date=$(date -u '+%Y-%m-%d')
+          entry="## [$newver] - $date"
+          msg="Automated: validated with a successful \`flutter build linux --release\` before adopting."
+
+          echo "$latest" > FLUTTER_VERSION
+          echo "$newver" > VERSION
+          sed -i "s/^## \[Unreleased\]\$/## [Unreleased]\n\n$entry\n\n### Changed\n- Bump the targeted Flutter version to $latest (was $current). $msg/" CHANGELOG.md
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add FLUTTER_VERSION VERSION CHANGELOG.md
+          git commit -m "release: v$newver (Flutter $latest, automated)"
+          git push origin HEAD:main
+
+  report-failure:
+    needs: [check, validate]
+    if: needs.check.outputs.changed == 'true' && needs.validate.outputs.ok == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create --repo "${{ github.repository }}" \
+            --title "Flutter ${{ needs.check.outputs.latest }} failed the flutter_client validation build" \
+            --body "Weekly check found a newer stable Flutter (${{ needs.check.outputs.current }} → ${{ needs.check.outputs.latest }}), but \`flutter build linux --release\` failed against it in \`flutter_client/\`. FLUTTER_VERSION was **not** bumped. See the failed run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --label dependencies

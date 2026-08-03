@@ -1,0 +1,76 @@
+# Builds the precompiled Flutter render client for every supported desktop
+# platform and attaches the archives to the GitHub Release for the pushed
+# tag, so 'fugo run'/'fugo build' can download a ready-to-use binary instead
+# of requiring the Flutter SDK for the common case. Flutter stays installed
+# only for contributors and for anyone who wants to add custom Flutter
+# packages to the client (fl_chart, maps, ...) and rebuild it locally.
+name: Release Flutter client
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  # A single job creates the release first (idempotent) so the matrix jobs
+  # below never race each other trying to create it in parallel.
+  ensure-release:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "${{ github.ref_name }}" --repo "${{ github.repository }}" >/dev/null 2>&1 || \
+            gh release create "${{ github.ref_name }}" --repo "${{ github.repository }}" --generate-notes --title "${{ github.ref_name }}"
+
+  build:
+    needs: ensure-release
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux
+            bundle_dir: flutter_client/build/linux/x64/release/bundle
+            asset: fugo_flutter_client_linux_x64.tar.gz
+          - os: windows-latest
+            target: windows
+            bundle_dir: flutter_client/build/windows/x64/runner/Release
+            asset: fugo_flutter_client_windows_x64.tar.gz
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+
+      # Pinned to FLUTTER_VERSION — the single source of truth for the exact
+      # Flutter release fugo targets (see CLAUDE.md's versioning section) —
+      # instead of a floating channel, so every build is reproducible and
+      # matches what 'fugo doctor' checks against.
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: FLUTTER_VERSION
+          channel: stable
+
+      - name: Install Linux desktop build deps
+        if: matrix.target == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libgtk-3-dev
+
+      - name: flutter pub get
+        working-directory: flutter_client
+        run: flutter pub get
+
+      - name: flutter build ${{ matrix.target }}
+        working-directory: flutter_client
+        run: flutter build ${{ matrix.target }} --release
+
+      - name: Package bundle (tar.gz for every OS — extracted by fugo's own Go code, no unzip dependency)
+        shell: bash
+        run: tar -czf "${{ matrix.asset }}" -C "${{ matrix.bundle_dir }}" .
+
+      - name: Upload to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.ref_name }}" "${{ matrix.asset }}" --repo "${{ github.repository }}" --clobber
