@@ -68,12 +68,28 @@ x11_fullscreen() {
 # not composite anything positioned past the root's dimensions, so this
 # hides it from the x11grab capture without unmapping it (unmapping a GTK/
 # Flutter window can pause its renderer; this keeps it live so hot-reload
-# updates still land while it's "offscreen").
+# updates still land while it's "offscreen"). Unused for the app/terminal
+# alternation itself (see x11_raise) — kept for anything that genuinely
+# needs to be removed from the canvas.
 x11_park_offscreen() {
 	local id
 	id=$(x11_window_id "$1")
 	[[ -z "$id" ]] && return 0
 	xdotool windowmove "$id" "$XVFB_WIDTH" 0
+}
+
+# Raises a window to the top of the stacking order. There's no window
+# manager under Xvfb, so both the terminal and the (portrait-sized) app
+# window stay mapped at their normal positions the whole time; "switching"
+# between full-screen-terminal and app-in-frame shots is really just
+# raising whichever one should be on top. The terminal, left at full
+# screen underneath, doubles as a dark backdrop around the app.
+x11_raise() {
+	local id
+	id=$(x11_window_id "$1")
+	[[ -z "$id" ]] && return 1
+	xdotool windowraise "$id"
+	xdotool windowactivate "$id" >/dev/null 2>&1 || true
 }
 
 x11_click() {
