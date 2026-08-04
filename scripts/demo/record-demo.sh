@@ -1,17 +1,23 @@
 #!/usr/bin/env bash
 # record-demo.sh — records a real, live "0 to running app" Fugo demo, fully
-# headless: `fugo init` -> `fugo doctor` -> `fugo run` (a real Flutter
-# window spawns, on a virtual X11 display nobody sees) -> a live code edit
-# that hot-reloads the running app -> `fugo build`.
+# headless: `fugo init` -> a quick scaffold tour -> `fugo doctor` ->
+# `fugo run` (a real Flutter window spawns, on a virtual X11 display
+# nobody sees) -> three separate live nvim edits, each hot-reloading the
+# running app -> `fugo build`.
 #
 # Nothing touches the real desktop: everything runs against a headless
 # Xvfb display (see lib/xvfb.sh) and is captured straight off that virtual
-# framebuffer via ffmpeg's x11grab. The only "trick" is pacing (typing
-# speed) and a scripted digital zoom applied in postprocess.sh, timed from
+# framebuffer via ffmpeg's x11grab. The terminal is YOUR real alacritty +
+# nvim config (no theming override) — only the app itself carries Fugo's
+# own brand theme (assets/branded_main.go.tmpl). Instead of a static
+# side-by-side split, the video alternates full-screen shots of "editing
+# code" and "the app, live" (see x11_fullscreen/x11_park_offscreen in
+# lib/x11.sh) — more dramatic than a permanently shared screen. The other
+# "trick" is a scripted digital zoom applied in postprocess.sh, timed from
 # a beat log this script writes while it runs (see lib/gen_zoom_filter.py)
 # — Xvfb has no compositor to do a live zoom the way a real desktop would.
 #
-# Requires: Xvfb, xdotool, tmux, alacritty, python3, ffmpeg.
+# Requires: Xvfb, xdotool, tmux, alacritty, nvim, python3, ffmpeg.
 # (ffmpeg is only needed by postprocess.sh, not this script.)
 #
 # Usage: scripts/demo/record-demo.sh [output.mp4]
@@ -57,7 +63,7 @@ p() { # p <seconds> — a pacing sleep, scaled down under FAST=1
 	fi
 }
 
-REQUIRED_CMDS=(Xvfb xdotool tmux alacritty python3)
+REQUIRED_CMDS=(Xvfb xdotool tmux alacritty nvim python3)
 for c in "${REQUIRED_CMDS[@]}"; do
 	command -v "$c" >/dev/null 2>&1 || {
 		echo "missing required command: $c" >&2
@@ -86,6 +92,38 @@ zoom_beat() {
 	p "$(python3 -c "print($in + $hold + $out)")"
 }
 
+# show_app / show_term — the full-screen alternation described above. The
+# app is only ever MOVED, never resized (see x11_move_only in lib/x11.sh)
+# — it's already full-screen-sized because fugo.toml is patched to that
+# size before `fugo run` ever launches it.
+show_app() {
+	x11_move_only "$APP_CLASS" 0 0
+	x11_park_offscreen "$TERM_CLASS"
+}
+show_term() {
+	x11_fullscreen "$TERM_CLASS"
+	x11_park_offscreen "$APP_CLASS"
+}
+
+# nvim_replace_line <pane> <search> <new_line_with_its_own_leading_tabs>
+# Searches for the line, jumps to column 0, then `C` (change-to-end-of-line
+# — NOT `cc`/`S`, which would re-apply autoindent and double up the
+# replacement's own leading tabs) so the result is correct regardless of
+# the machine's nvim indent settings.
+nvim_replace_line() {
+	local target="$1" search="$2" new_line="$3"
+	tmux_key "$target" "/"
+	tmux_type "$target" "$search"
+	tmux_key "$target" Enter
+	p 0.5
+	tmux_key "$target" "0"
+	tmux_key "$target" "C"
+	tmux_type "$target" "$new_line"
+	tmux_key "$target" Escape
+}
+nvim_save() { tmux_type_line "$1" ":w" 0.8; }
+nvim_quit() { tmux_type_line "$1" ":wq" 0.8; }
+
 cleanup() {
 	local ec=$?
 	[[ -n "$FFMPEG_PID" ]] && kill -INT "$FFMPEG_PID" 2>/dev/null || true
@@ -109,7 +147,10 @@ unset WAYLAND_DISPLAY # see lib/xvfb.sh — critical, or apps connect to the rea
 echo "==> launching terminal (headless, on $XVFB_DISPLAY)"
 # A plain, self-contained bash — not the user's login shell — so a
 # first-run Powerlevel10k/oh-my-zsh wizard can never steal the recorded
-# keystrokes. All env the demo needs is set right here, explicitly.
+# keystrokes. All env the demo needs is set right here, explicitly. The
+# terminal/editor look, though, is deliberately the real thing: no
+# --config-file override on alacritty, no -f override on tmux, plain nvim
+# with whatever colorscheme/LSP/treesitter is already configured.
 DEMO_RC="$SCRATCH_ROOT/.demo_bashrc"
 cat >"$DEMO_RC" <<RC
 export DISPLAY='$XVFB_DISPLAY'
@@ -118,14 +159,20 @@ export FUGO_FLUTTER_BINARY="$FLUTTER_BUNDLE"
 export PATH="$REPO_DIR/bin:\$PATH"
 alias fugo="$FUGO_BIN"
 export PS1='demo ~$ '
+# Workaround for a real Fugo gap, not a demo-only hack: hot-reload mode
+# (cmd/fugo's startFlutterClient — the default \`fugo run\` path) spawns the
+# Flutter client itself and never forwards FUGO_WIDTH/FUGO_HEIGHT/FUGO_TITLE
+# from fugo.toml, so the window always falls back to main.dart's 800x600
+# default regardless of what fugo.toml says. Exporting them here works
+# because that spawn does \`cmd.Env = append(os.Environ(), ...)\` — it
+# inherits whatever's already in the shell that ran \`fugo run\`.
+export FUGO_WIDTH="$XVFB_WIDTH"
+export FUGO_HEIGHT="$XVFB_HEIGHT"
+export FUGO_TITLE="$APP_NAME"
 RC
 
-# tmux's own default-shell (whatever the account's login shell is) is what
-# actually runs inside the pane, so the clean bash must be its explicit
-# shell-command argument — not just how we invoke tmux itself.
-alacritty --config-file "$DEMO_DIR/assets/alacritty-ember.toml" --class "$TERM_CLASS" \
-	-o 'window.position.x=0' -o 'window.position.y=0' \
-	-e tmux -f "$DEMO_DIR/assets/tmux-ember.conf" new-session -s "$TMUX_SESSION" -x 100 -y 45 -c "$SCRATCH_ROOT" \
+alacritty --class "$TERM_CLASS" \
+	-e tmux new-session -s "$TMUX_SESSION" -x 220 -y 55 -c "$SCRATCH_ROOT" \
 	"bash --rcfile '$DEMO_RC' -i" &
 
 tries=0
@@ -138,8 +185,8 @@ until tmux has-session -t "$TMUX_SESSION" 2>/dev/null; do
 	}
 done
 x11_wait_for_class "$TERM_CLASS" 15
-x11_place "$TERM_CLASS" 0 0 $((XVFB_WIDTH / 2)) "$XVFB_HEIGHT"
-# Any later split-window (the nano-editing beat) must also get the clean
+x11_fullscreen "$TERM_CLASS"
+# Any later split-window (the nvim-editing beat) must also get the clean
 # bash, not tmux's configured default-shell.
 tmux set-option -t "$TMUX_SESSION" default-command "bash --rcfile '$DEMO_RC' -i"
 sleep 0.5
@@ -152,9 +199,14 @@ REC_START=$(python3 -c "import time; print(time.time())")
 sleep 1
 
 T="$TMUX_SESSION"
+MIDX=$((XVFB_WIDTH / 2))
 
-# --- Beat 1: fugo init -------------------------------------------------
-tmux_type_line "$T" "fugo init $APP_NAME -t app --theme dark -y" 1.2
+# --- Beat 1: fugo init ----------------------------------------------------
+# --no-git: `fugo init`'s default git init + initial commit picks up
+# whatever global git/GPG config is on this machine — if commit signing is
+# on, that pops a real pinentry dialog (with the machine owner's real
+# key/email) that blocks the recording and would leak into the video.
+tmux_type_line "$T" "fugo init $APP_NAME -t app --theme dark --no-git -y" 1.2
 p 1.0
 
 # Swap in the Fugo brand theme (matches site/styles.css's ember palette)
@@ -162,61 +214,95 @@ p 1.0
 # opens already on-brand instead of the template's default blue/purple.
 sed "s/__MODULE__/$APP_NAME/g" "$DEMO_DIR/assets/branded_main.go.tmpl" >"$PROJECT_DIR/main.go"
 
+# Give the app its final full-screen size up front, in fugo.toml, instead
+# of resizing the live GTK/Flutter window later — see x11_move_only in
+# lib/x11.sh for why a runtime resize of the APP (unlike the terminal) is
+# unreliable under Xvfb.
+sed -i \
+	-e "s/^width  = .*/width  = $XVFB_WIDTH/" \
+	-e "s/^height = .*/height = $XVFB_HEIGHT/" \
+	"$PROJECT_DIR/fugo.toml"
+
 tmux_type_line "$T" "cd $APP_NAME" 0.4
 
-# --- Beat 2: fugo doctor -------------------------------------------------
+# --- Beat 2: a quick scaffold tour -----------------------------------------
+tmux_type_line "$T" "ls" 0.8
+p 0.6
+tmux_type_line "$T" "cat fugo.toml" 1.0
+p 0.8
+zoom_beat "$MIDX" 350 1.5 0.9
+
+# --- Beat 3: fugo doctor ---------------------------------------------------
 tmux_type_line "$T" "fugo doctor" 1.5
 p 1.2
-zoom_beat 480 300 1.6
+zoom_beat "$MIDX" 400 1.6
 
-# --- Beat 3: fugo run — spawns the real Flutter window (headless) -------
+# --- Beat 4: fugo run — spawns the real Flutter window (headless) --------
 tmux_type_line "$T" "fugo run" 0.3
 x11_wait_for_class "$APP_CLASS" 90 || true
-p 1.0
-x11_layout_split "$TERM_CLASS" "$APP_CLASS"
-p 0.5
+p 1.5 # let Flutter finish its first real frame before revealing it
+show_app
+zoom_beat "$MIDX" 560 1.6 1.3
 
-APPX=$((XVFB_WIDTH * 3 / 4))
-APPY=$((XVFB_HEIGHT / 2))
-zoom_beat "$APPX" "$APPY" 1.7 1.4
-
-# --- Beat 4: live edit -> hot reload -------------------------------------
+# --- Beat 5: open nvim alongside the running server -----------------------
+show_term
+tmux_split_below "$T:0.0" >/dev/null
 # tmux's split-window does not reliably inherit the split-from pane's LIVE
 # cwd (it's still sitting on the session's original start dir), so `cd`
 # explicitly before opening the editor.
-tmux_split_below "$T:0.0" >/dev/null
-tmux_type_line "$T:0.1" "cd $PROJECT_DIR && nano ui/home.go" 1.0
-tmux_key "$T:0.1" "C-w"
-sleep 0.3
-tmux_type "$T:0.1" "$SEARCH_TERM"
-tmux_key "$T:0.1" Enter
+tmux_type_line "$T:0.1" "cd $PROJECT_DIR && nvim ui/home.go" 2.2
+zoom_beat "$MIDX" 500 1.4 1.0
+
+# --- Edit 1: a tagline on the Home page ------------------------------------
+nvim_replace_line "$T:0.1" "$EDIT1_SEARCH" "$EDIT1_NEW"
+nvim_save "$T:0.1"
+p 1.6 # let the hot reload rebuild + push the patch
+
+show_app
+zoom_beat "$MIDX" 620 1.8 1.5
+
+# --- Edit 2: a real logic change — Increment now adds 2 --------------------
+show_term
+nvim_replace_line "$T:0.1" "$EDIT2_SEARCH" "$EDIT2_NEW"
+nvim_save "$T:0.1"
+p 1.6
+
+show_app
+# Best-effort clicks: coordinates are estimated from the app template's
+# own (centered) layout, not queried live — if the exact layout ever
+# shifts, these just miss the button harmlessly (|| true).
+INCX="$MIDX"
+INCY=574
+x11_click "$INCX" "$INCY" || true
+p 0.5
+x11_click "$INCX" "$INCY" || true
 p 0.6
-tmux_key "$T:0.1" Home
-tmux_key "$T:0.1" "C-k"
-tmux_type "$T:0.1" "$NEW_LINE"
-p 0.3
-tmux_key "$T:0.1" Enter
-tmux_key "$T:0.1" "C-o"
-tmux_key "$T:0.1" Enter
-p 0.3
-tmux_key "$T:0.1" "C-x"
+zoom_beat "$INCX" "$INCY" 1.9 1.4
 
-p 2.0 # let the hot reload rebuild + push the patch
-zoom_beat "$APPX" "$APPY" 1.8 1.6
-
-# --- Beat 5: navigate the router (About page) — best-effort click -------
-x11_click "$APPX" "$((APPY + 180))" || true
+# --- Edit 3: restyle the About page's body text ----------------------------
+show_term
+nvim_replace_line "$T:0.1" "$EDIT3_SEARCH" "$EDIT3_NEW"
+nvim_save "$T:0.1"
 p 1.0
-zoom_beat "$APPX" "$((APPY + 80))" 1.5 1.0
+nvim_quit "$T:0.1"
+p 1.5
 
-# --- Beat 6: fugo build (ship it) ----------------------------------------
+show_app
+ABOUTX="$MIDX"
+ABOUTY=613
+x11_click "$ABOUTX" "$ABOUTY" || true
+p 1.0
+zoom_beat "$MIDX" 500 1.7 1.4
+
+# --- Beat 6: fugo build (ship it) ------------------------------------------
+show_term
 tmux select-pane -t "$T:0.0"
 tmux_key "$T:0.0" C-c
 p 1.0
 tmux_type_line "$T:0.0" "fugo build" 1.5
 p 1.5
 
-# --- Outro: hold a beat before cutting ------------------------------------
+# --- Outro: hold a beat before cutting --------------------------------------
 p 1.5
 
 echo "==> stopping recorder"

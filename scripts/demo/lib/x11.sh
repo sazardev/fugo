@@ -30,8 +30,22 @@ x11_place() {
 	local id
 	id=$(x11_window_id "$class")
 	[[ -z "$id" ]] && return 1
-	xdotool windowsize "$id" "$w" "$h"
-	xdotool windowmove "$id" "$x" "$y"
+	xdotool windowsize --sync "$id" "$w" "$h"
+	xdotool windowmove --sync "$id" "$x" "$y"
+	xdotool windowactivate "$id" >/dev/null 2>&1 || true
+}
+
+# Moves a window without resizing it — used for the Fugo app, which
+# record-demo.sh gives its final full-screen size up front (fugo.toml +
+# FUGO_WIDTH/FUGO_HEIGHT — see the comment in record-demo.sh's DEMO_RC
+# about a real gap in cmd/fugo's hot-reload path) instead of resizing the
+# live window, so it never needs a runtime resize here.
+x11_move_only() {
+	local class="$1" x="$2" y="$3"
+	local id
+	id=$(x11_window_id "$class")
+	[[ -z "$id" ]] && return 1
+	xdotool windowmove --sync "$id" "$x" "$y"
 	xdotool windowactivate "$id" >/dev/null 2>&1 || true
 }
 
@@ -42,6 +56,24 @@ x11_layout_split() {
 	local half=$((XVFB_WIDTH / 2))
 	x11_place "$term_class" 0 0 "$half" "$XVFB_HEIGHT"
 	x11_place "$app_class" "$half" 0 "$half" "$XVFB_HEIGHT"
+}
+
+# Fills the whole virtual screen with the terminal — safe to resize (see
+# x11_move_only for why the app window uses move-only instead).
+x11_fullscreen() {
+	x11_place "$1" 0 0 "$XVFB_WIDTH" "$XVFB_HEIGHT"
+}
+
+# Pushes a window fully outside the root window's bounds — X11 simply does
+# not composite anything positioned past the root's dimensions, so this
+# hides it from the x11grab capture without unmapping it (unmapping a GTK/
+# Flutter window can pause its renderer; this keeps it live so hot-reload
+# updates still land while it's "offscreen").
+x11_park_offscreen() {
+	local id
+	id=$(x11_window_id "$1")
+	[[ -z "$id" ]] && return 0
+	xdotool windowmove "$id" "$XVFB_WIDTH" 0
 }
 
 x11_click() {

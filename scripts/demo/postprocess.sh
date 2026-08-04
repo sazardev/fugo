@@ -26,9 +26,9 @@ command -v ffmpeg >/dev/null 2>&1 || {
 	exit 1
 }
 
-# Same monospace family as the terminal (assets/alacritty-ember.toml) and
-# the site's own brand/heading font-family:ui-monospace,monospace — so the
-# title cards, the terminal, and site/styles.css all read as one system.
+# The recorded terminal itself is the machine's own real config (see
+# record-demo.sh), so it's only these title cards that carry the site's
+# own brand font-family:ui-monospace,monospace explicitly.
 FONT="/usr/share/fonts/TTF/IosevkaTermNerdFontMono-Bold.ttf"
 [[ -f "$FONT" ]] || FONT=$(fc-match -f '%{file}' monospace:bold 2>/dev/null || echo "")
 
