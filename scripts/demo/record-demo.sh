@@ -123,8 +123,9 @@ RC
 # tmux's own default-shell (whatever the account's login shell is) is what
 # actually runs inside the pane, so the clean bash must be its explicit
 # shell-command argument — not just how we invoke tmux itself.
-alacritty --class "$TERM_CLASS" -o 'window.position.x=0' -o 'window.position.y=0' \
-	-e tmux new-session -s "$TMUX_SESSION" -x 100 -y 45 -c "$SCRATCH_ROOT" \
+alacritty --config-file "$DEMO_DIR/assets/alacritty-ember.toml" --class "$TERM_CLASS" \
+	-o 'window.position.x=0' -o 'window.position.y=0' \
+	-e tmux -f "$DEMO_DIR/assets/tmux-ember.conf" new-session -s "$TMUX_SESSION" -x 100 -y 45 -c "$SCRATCH_ROOT" \
 	"bash --rcfile '$DEMO_RC' -i" &
 
 tries=0
@@ -136,10 +137,11 @@ until tmux has-session -t "$TMUX_SESSION" 2>/dev/null; do
 		exit 1
 	}
 done
+x11_wait_for_class "$TERM_CLASS" 15
+x11_place "$TERM_CLASS" 0 0 $((XVFB_WIDTH / 2)) "$XVFB_HEIGHT"
 # Any later split-window (the nano-editing beat) must also get the clean
 # bash, not tmux's configured default-shell.
 tmux set-option -t "$TMUX_SESSION" default-command "bash --rcfile '$DEMO_RC' -i"
-x11_wait_for_class "$TERM_CLASS" 15
 sleep 0.5
 
 echo "==> recording $XVFB_DISPLAY -> $OUTPUT"

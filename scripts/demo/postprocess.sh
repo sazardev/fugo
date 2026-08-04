@@ -26,8 +26,17 @@ command -v ffmpeg >/dev/null 2>&1 || {
 	exit 1
 }
 
-FONT="/usr/share/fonts/TTF/DejaVuSans-Bold.ttf"
-[[ -f "$FONT" ]] || FONT=$(fc-match -f '%{file}' sans-bold 2>/dev/null || echo "")
+# Same monospace family as the terminal (assets/alacritty-ember.toml) and
+# the site's own brand/heading font-family:ui-monospace,monospace — so the
+# title cards, the terminal, and site/styles.css all read as one system.
+FONT="/usr/share/fonts/TTF/IosevkaTermNerdFontMono-Bold.ttf"
+[[ -f "$FONT" ]] || FONT=$(fc-match -f '%{file}' monospace:bold 2>/dev/null || echo "")
+
+# site/styles.css :root[data-theme="dark"] tokens (see site/DESIGN.md).
+BG="0x121110"        # --bg
+INK="0xece6d9"       # --ink
+INK_SOFT="0xd6cfc0"  # --ink-soft
+BG_STRONG="0x231e16" # --bg-strong
 
 read -r W H FPS <<<"$(ffprobe -v error -select_streams v:0 \
 	-show_entries stream=width,height,r_frame_rate \
@@ -42,18 +51,18 @@ OUTRO="$DEMO_DIR/out/.outro.mp4"
 MAIN="$DEMO_DIR/out/.main.mp4"
 
 echo "==> generating intro card"
-ffmpeg -y -f lavfi -i "color=c=0x0B0F14:s=${W}x${H}:d=2.5:r=${FPS}" -vf "
-drawtext=fontfile=${FONT}:text='FUGO':fontsize=140:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2-60:
+ffmpeg -y -f lavfi -i "color=c=${BG}:s=${W}x${H}:d=2.5:r=${FPS}" -vf "
+drawtext=fontfile=${FONT}:text='FUGO':fontsize=140:fontcolor=${INK}:x=(w-text_w)/2:y=(h-text_h)/2-60:
   alpha='if(lt(t,0.4),t/0.4,1)',
-drawtext=fontfile=${FONT}:text='Go escribe. Flutter renderiza.':fontsize=42:fontcolor=0xB9C2CC:x=(w-text_w)/2:y=(h/2)+80:
+drawtext=fontfile=${FONT}:text='Go escribe. Flutter renderiza.':fontsize=38:fontcolor=${INK_SOFT}:x=(w-text_w)/2:y=(h/2)+80:
   alpha='if(lt(t,1.0),0,if(lt(t,1.4),(t-1.0)/0.4,1))'
 " -c:v libx264 -pix_fmt yuv420p -an "$INTRO"
 
 echo "==> generating outro card"
-ffmpeg -y -f lavfi -i "color=c=0x0B0F14:s=${W}x${H}:d=2.5:r=${FPS}" -vf "
-drawtext=fontfile=${FONT}:text='github.com/sazardev/fugo':fontsize=54:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2-30:
+ffmpeg -y -f lavfi -i "color=c=${BG}:s=${W}x${H}:d=2.5:r=${FPS}" -vf "
+drawtext=fontfile=${FONT}:text='github.com/sazardev/fugo':fontsize=50:fontcolor=${INK}:x=(w-text_w)/2:y=(h-text_h)/2-30:
   alpha='if(lt(t,0.4),t/0.4,1)',
-drawtext=fontfile=${FONT}:text='Server-Driven UI. 100% Go.':fontsize=34:fontcolor=0xB9C2CC:x=(w-text_w)/2:y=(h/2)+40:
+drawtext=fontfile=${FONT}:text='Server-Driven UI. 100 percent Go.':fontsize=30:fontcolor=${INK_SOFT}:x=(w-text_w)/2:y=(h/2)+40:
   alpha='if(lt(t,0.8),0,if(lt(t,1.2),(t-0.8)/0.4,1))'
 " -c:v libx264 -pix_fmt yuv420p -an "$OUTRO"
 
@@ -64,11 +73,11 @@ ZOOM_FILTER=$(python3 "$DEMO_DIR/lib/gen_zoom_filter.py" "$TIMELINE" "$W" "$H" "
 echo "==> labeling main footage (zoom beats + lower-thirds at open/close)"
 ffmpeg -y -i "$RAW" -vf "
 ${ZOOM_FILTER},
-drawtext=fontfile=${FONT}:text='FUGO — Go escribe. Flutter renderiza.':fontsize=28:fontcolor=white:
-  box=1:boxcolor=0x0B0F14@0.55:boxborderw=12:x=40:y=h-th-40:
+drawtext=fontfile=${FONT}:text='FUGO — Go escribe. Flutter renderiza.':fontsize=28:fontcolor=${INK}:
+  box=1:boxcolor=${BG_STRONG}@0.75:boxborderw=12:x=40:y=h-th-40:
   enable='between(t,0,4)',
-drawtext=fontfile=${FONT}:text='fugo run — hot reload en vivo':fontsize=28:fontcolor=white:
-  box=1:boxcolor=0x0B0F14@0.55:boxborderw=12:x=40:y=h-th-40:
+drawtext=fontfile=${FONT}:text='fugo run — hot reload en vivo':fontsize=28:fontcolor=${INK}:
+  box=1:boxcolor=${BG_STRONG}@0.75:boxborderw=12:x=40:y=h-th-40:
   enable='between(t,${DUR%.*}-4,${DUR%.*})'
 " -c:v libx264 -pix_fmt yuv420p -an -crf 18 -preset medium "$MAIN"
 
