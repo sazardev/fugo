@@ -154,6 +154,12 @@ T="$TMUX_SESSION"
 # --- Beat 1: fugo init -------------------------------------------------
 tmux_type_line "$T" "fugo init $APP_NAME -t app --theme dark -y" 1.2
 p 1.0
+
+# Swap in the Fugo brand theme (matches site/styles.css's ember palette)
+# before anything else touches the project — silent, instant, so the app
+# opens already on-brand instead of the template's default blue/purple.
+sed "s/__MODULE__/$APP_NAME/g" "$DEMO_DIR/assets/branded_main.go.tmpl" >"$PROJECT_DIR/main.go"
+
 tmux_type_line "$T" "cd $APP_NAME" 0.4
 
 # --- Beat 2: fugo doctor -------------------------------------------------
