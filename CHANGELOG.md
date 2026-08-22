@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.44.8-fugo.1] - 2026-08-22
+
 ### Added
+- native OS notifications, sortable and selectable DataTable, fg.Form validation, Dismissible, SliverScaffold, fg.Store shared state, Responsive breakpoints, drag-and-drop plus OnFileDrop, RequestFocus, system-following theme and font family, AppBar bottom strip, login autostart toggle, Linux packaging from fugo build, native Linux file dialogs
 - `Context.Notifications().Show(title, body)` — native OS notifications (toast / notification center), backed by `local_notifier` on the client.
 - `DataTable` gained `.Sortable(handler)`/`.SetSort` (tappable, sortable column headers) and `.Selectable(handler)`/`.SetSelected` (a leading checkbox column) — Go still owns reordering/selection state.
 - `fg.Form(items...)` — aggregates per-field validation via `.AddField(validate func() string)` + `.Validate() bool`, plus a form-level `.SetError` banner; a plain layout wrapper, since Fugo has no client-owned FormField state to orchestrate.
