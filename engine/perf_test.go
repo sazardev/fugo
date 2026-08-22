@@ -8,10 +8,18 @@ import (
 )
 
 // TestDiffPerformanceBudget guards against gross algorithmic regressions: a
-// 1000-node no-change diff must stay well under a frame. The fast path makes it
-// ~25µs; the 1ms ceiling is race-detector-safe yet still catches an accidental
-// O(n^2) blow-up or the loss of the no-change short-circuit's zero-alloc path.
+// 1000-node no-change diff must stay well under a frame. The fast path makes
+// it ~25µs; the 1ms ceiling still catches an accidental O(n^2) blow-up or the
+// loss of the no-change short-circuit's zero-alloc path.
+//
+// Skipped under the race detector: -race inflates wall-clock ~45x (measured
+// 1.12ms on CI runners vs ~25µs native), so any fixed budget there is either
+// flaky or uselessly loose. The Bench job runs this exact budget without
+// -race, which is the authoritative gate.
 func TestDiffPerformanceBudget(t *testing.T) {
+	if raceEnabled {
+		t.Skip("wall-clock budget is meaningless under the race detector; gated race-free by the Bench job")
+	}
 	oldTree := makeTree(1000)
 	newTree := makeTree(1000)
 
