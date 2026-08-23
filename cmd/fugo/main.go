@@ -586,7 +586,11 @@ func runWithFullRestart(ctx context.Context, addr, flutter string) error {
 }
 
 // startFlutterClient launches the Flutter render client once; it auto-reconnects
-// when the Go server restarts, so the window survives hot reloads.
+// when the Go server restarts, so the window survives hot reloads. The client
+// is spawned from the CLI process — which never ran app.go's exportWindowEnv —
+// so the window/title settings from fugo.toml are forwarded here explicitly;
+// without them the window would fall back to the client's built-in 800x600
+// default regardless of what fugo.toml says.
 func startFlutterClient(ctx context.Context, addr, flutter string) (*exec.Cmd, error) {
 	bin := flutter
 	if bin == "" {
@@ -603,10 +607,34 @@ func startFlutterClient(ctx context.Context, addr, flutter string) (*exec.Cmd, e
 
 	cmd := exec.CommandContext(ctx, bin)
 	cmd.Env = append(os.Environ(), "FUGO_ADDR="+addr)
+
+	if cfg := loadProjectConfig(); cfg != nil {
+		if cfg.Window.Width > 0 {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("FUGO_WIDTH=%d", cfg.Window.Width))
+		}
+		if cfg.Window.Height > 0 {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("FUGO_HEIGHT=%d", cfg.Window.Height))
+		}
+		if cfg.Window.Title != "" {
+			cmd.Env = append(cmd.Env, "FUGO_TITLE="+cfg.Window.Title)
+		}
+	}
+
 	cmd.Stdout = appLog
 	cmd.Stderr = appLog
 
 	return cmd, cmd.Start()
+}
+
+// loadProjectConfig reads ./fugo.toml for the hot-reload spawn path; nil if
+// missing or unparsable (the client then applies its own defaults).
+func loadProjectConfig() *config.Config {
+	cfg, err := config.Load("fugo.toml")
+	if err != nil {
+		return nil
+	}
+
+	return &cfg
 }
 
 func buildApp(ctx context.Context) error {

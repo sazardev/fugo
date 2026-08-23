@@ -67,6 +67,7 @@ func (p *FlutterProcess) Exited() <-chan struct{} {
 func (p *FlutterProcess) WaitForSignal(timeout time.Duration) error {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(sigCh)
 
 	sig := <-sigCh
 	flog.Infof("received signal %v, shutting down", sig)
@@ -75,7 +76,11 @@ func (p *FlutterProcess) WaitForSignal(timeout time.Duration) error {
 }
 
 // Shutdown stops the Flutter subprocess by sending SIGTERM and waiting up to
-// timeout for it to exit; if it does not exit in time it is force-killed.
+// timeout for it to exit; if it does not exit in time it is force-killed. It
+// waits on the Exited channel fed by StartFlutter's single cmd.Wait goroutine
+// — calling cmd.Wait again here would be both racy and useless (the second
+// Wait returns immediately with an error, making a half-dead process look
+// reaped).
 func (p *FlutterProcess) Shutdown(timeout time.Duration) error {
 	flog.Infof("shutting down flutter client")
 
@@ -83,22 +88,14 @@ func (p *FlutterProcess) Shutdown(timeout time.Duration) error {
 		flog.Errorf("signal error: %v", err)
 	}
 
-	done := make(chan error, 1)
-	go func() {
-		done <- p.cmd.Wait()
-	}()
-
 	select {
-	case err := <-done:
-		if err != nil {
-			flog.Errorf("flutter exited with error: %v", err)
-		}
+	case <-p.exited:
 	case <-time.After(timeout):
 		flog.Infof("flutter didn't exit, force killing")
 		if err := p.cmd.Process.Kill(); err != nil {
 			flog.Errorf("force kill error: %v", err)
 		}
-		<-done
+		<-p.exited
 	}
 
 	return nil
