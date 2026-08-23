@@ -97,6 +97,18 @@ func (c *Context) Update() {
 	c.app.scheduler.Enqueue()
 }
 
+// Mutate runs fn on the render goroutine immediately before the next flush —
+// the safe way to mutate retained widgets from any goroutine that is not an
+// event handler. Event handlers already run serialized on the render
+// goroutine; code spawned elsewhere (timers, network callbacks, workers) must
+// route every widget mutation through Mutate instead of touching widgets
+// directly, otherwise its writes race the concurrent tree walk. fn may call
+// Update itself; a flush is scheduled automatically after the queued tasks
+// run, so calling Update is optional.
+func (c *Context) Mutate(fn func()) {
+	c.app.scheduler.EnqueueTask(fn)
+}
+
 // UpdateNow is Update for latency-sensitive changes: it wakes the render loop
 // immediately instead of waiting for the next frame, so the update reaches the
 // client without up to a frame of delay. Prefer Update for ordinary mutations;
@@ -225,7 +237,12 @@ func (a *App) Run(buildUI func(ctx *Context) fg.Widget) {
 }
 
 func (a *App) flush() {
-	tree, widgetMap := fg.BuildTreeWithMerge(a.uiRoot, a.handlers)
+	// A fresh merge map each frame: BuildTreeWithMerge would otherwise write
+	// into a.handlers without holding handlersMu while HandleEvent reads it,
+	// and the accumulate-forever pattern leaked every widget that ever held
+	// a handler. The merged result is handed to collectHandlers, which
+	// swaps in exactly the current frame's handler set.
+	tree, widgetMap := fg.BuildTreeWithMerge(a.uiRoot, make(map[uint32]fg.Widget, 256))
 	a.collectHandlers(widgetMap)
 
 	patches := engine.Diff(a.oldTree, tree)
@@ -257,22 +274,36 @@ const (
 
 // HandleEvent routes a client event to the handler of the widget whose node id
 // matches. It implements the transport's app handler.
+//
+// The event arrives on the transport goroutine, but handlers may mutate
+// retained widgets — so the actual dispatch is queued onto the render
+// goroutine (EnqueueTask), serialized with the tree walk. Handlers therefore
+// run "on the render goroutine", never concurrently with a flush.
 func (a *App) HandleEvent(ev *fugov1.ClientEvent) {
 	switch ev.GetEventType() {
 	case hostEventType:
-		a.dispatchHostReply(ev)
+		// The registry lookup is mutex-guarded and touches no widgets, so it
+		// can happen right here; only the app-supplied callback — which may
+		// mutate widgets — is queued onto the render goroutine.
+		if cb := a.takeHostReply(ev.GetNodeId()); cb != nil {
+			data := ev.GetEventData()
+			a.scheduler.EnqueueTask(func() { cb(data) })
+		}
 
 		return
 	case shortcutEventType:
-		a.dispatchShortcut(string(ev.GetEventData()))
+		data := string(ev.GetEventData())
+		a.scheduler.EnqueueTask(func() { a.dispatchShortcut(data) })
 
 		return
 	case resizeEventType:
-		a.dispatchResize(string(ev.GetEventData()))
+		data := string(ev.GetEventData())
+		a.scheduler.EnqueueTask(func() { a.dispatchResize(data) })
 
 		return
 	case fileDropEventType:
-		a.dispatchFileDrop(string(ev.GetEventData()))
+		data := string(ev.GetEventData())
+		a.scheduler.EnqueueTask(func() { a.dispatchFileDrop(data) })
 
 		return
 	}
@@ -295,11 +326,12 @@ func (a *App) HandleEvent(ev *fugov1.ClientEvent) {
 	}
 
 	flog.Debugf("event: node=%d type=%s", nodeID, ev.GetEventType())
-	w.Handle(fg.Event{
+	event := fg.Event{
 		NodeID:    ev.GetNodeId(),
 		EventType: ev.GetEventType(),
 		Data:      ev.GetEventData(),
-	})
+	}
+	a.scheduler.EnqueueTask(func() { w.Handle(event) })
 }
 
 // sendHost issues a host-service command to the client. When cb is non-nil it
@@ -352,12 +384,14 @@ func (a *App) sendOverlay(cmd *fugov1.OverlayCommand, cb func([]byte)) {
 	a.reconciler.SendOverlayCommand(cmd)
 }
 
-func (a *App) dispatchHostReply(ev *fugov1.ClientEvent) {
-	id, err := strconv.ParseUint(ev.GetNodeId(), 10, 64)
+// takeHostReply pops the callback registered for a host-service request id,
+// or nil when the id is unknown/invalid. Safe from any goroutine.
+func (a *App) takeHostReply(nodeID string) func([]byte) {
+	id, err := strconv.ParseUint(nodeID, 10, 64)
 	if err != nil {
-		flog.Errorf("host reply with bad request id %q: %v", ev.GetNodeId(), err)
+		flog.Errorf("host reply with bad request id %q: %v", nodeID, err)
 
-		return
+		return nil
 	}
 
 	a.hostMu.Lock()
@@ -365,20 +399,33 @@ func (a *App) dispatchHostReply(ev *fugov1.ClientEvent) {
 	delete(a.hostReqs, id)
 	a.hostMu.Unlock()
 
-	if ok && cb != nil {
-		cb(ev.GetEventData())
+	if !ok {
+		return nil
 	}
+
+	return cb
+}
+
+// ClientDisconnected drops every pending host-service reply (clipboard reads,
+// file dialogs, pickers) after the client goes away: their callbacks can never
+// fire now, so keeping them would leak. Called by the transport on stream end.
+func (a *App) ClientDisconnected() {
+	a.hostMu.Lock()
+	a.hostReqs = make(map[uint64]func([]byte))
+	a.hostMu.Unlock()
 }
 
 func (a *App) collectHandlers(m map[uint32]fg.Widget) {
-	a.handlersMu.Lock()
-	defer a.handlersMu.Unlock()
-
+	next := make(map[uint32]fg.Widget, len(m))
 	for id, w := range m {
 		if w.HasHandler() {
-			a.handlers[id] = w
+			next[id] = w
 		}
 	}
+
+	a.handlersMu.Lock()
+	a.handlers = next
+	a.handlersMu.Unlock()
 }
 
 func parseNodeID(s string) uint32 {

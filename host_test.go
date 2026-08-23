@@ -69,6 +69,7 @@ func TestClipboardReadRoundTrip(t *testing.T) {
 		EventType: hostEventType,
 		EventData: []byte("hello clip"),
 	})
+	pumpEvents(app)
 
 	if !called {
 		t.Fatal("read callback was not invoked")
@@ -138,6 +139,7 @@ func TestFileOpenRoundTrip(t *testing.T) {
 		EventType: hostEventType,
 		EventData: []byte(chosen),
 	})
+	pumpEvents(app)
 
 	if got != chosen {
 		t.Errorf("got %q, want %q", got, chosen)
