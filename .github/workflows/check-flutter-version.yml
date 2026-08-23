@@ -34,7 +34,7 @@ jobs:
       current: ${{ steps.diff.outputs.current }}
       latest: ${{ steps.diff.outputs.latest }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Compare against the latest stable Flutter release
         id: diff
@@ -66,7 +66,7 @@ jobs:
     outputs:
       ok: ${{ steps.build.outcome == 'success' }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: subosito/flutter-action@v2
         with:
@@ -90,7 +90,7 @@ jobs:
     if: needs.check.outputs.changed == 'true' && needs.validate.outputs.ok == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Bump FLUTTER_VERSION + VERSION + CHANGELOG and push to main
         run: |
@@ -118,7 +118,7 @@ jobs:
     if: needs.check.outputs.changed == 'true' && needs.validate.outputs.ok == 'false'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - env:
           GH_TOKEN: ${{ github.token }}

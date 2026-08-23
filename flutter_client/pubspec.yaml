@@ -30,19 +30,19 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  grpc: ^4.0.0
-  protobuf: ^3.1.0
+  grpc: ^5.1.0
+  protobuf: ^6.0.0
   fixnum: ^1.1.0
-  window_manager: ^0.4.1
+  window_manager: ^0.5.2
   file_selector: ^1.0.3
   local_notifier: ^0.1.6
-  desktop_drop: ^0.6.0
+  desktop_drop: ^0.8.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  protoc_plugin: ^21.1.0
+  protoc_plugin: ^25.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

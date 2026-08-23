@@ -2,8 +2,8 @@ SHELL := /bin/bash
 VERSION := $(shell cat VERSION 2>/dev/null || echo "0.0.0")
 BINARY := fugo
 # Pin the Dart protoc plugin to the version that matches the pubspec protobuf
-# runtime (protobuf ^3.1.0). A mismatched global plugin breaks `flutter build`.
-PROTOC_DART_VERSION := 21.1.0
+# runtime (protobuf ^6.0.0). A mismatched global plugin breaks `flutter build`.
+PROTOC_DART_VERSION := 25.0.0
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_DATE := $(shell git log -1 --format=%cd --date=format:'%Y-%m-%d_%H:%M:%S' 2>/dev/null || echo "unknown")
 LDFLAGS := -ldflags="-X main.version=$(VERSION) -X main.commit=$(GIT_COMMIT) -X main.date=$(BUILD_DATE)"

@@ -41,7 +41,7 @@ jobs:
             asset: fugo_flutter_client_windows_x64.tar.gz
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # Pinned to FLUTTER_VERSION — the single source of truth for the exact
       # Flutter release fugo targets (see CLAUDE.md's versioning section) —
