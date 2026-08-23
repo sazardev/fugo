@@ -11,6 +11,14 @@ import (
 
 const clickEvent = "click"
 
+// pumpEvents runs every task queued by HandleEvent/Mutate — the work the
+// render goroutine would perform before its next flush.
+func pumpEvents(app *App) {
+	for _, fn := range app.scheduler.DrainTasks() {
+		fn()
+	}
+}
+
 // TestHandleEventDispatch verifies a ClientEvent is routed to the handler of
 // the widget whose node id matches.
 func TestHandleEventDispatch(t *testing.T) {
@@ -32,6 +40,7 @@ func TestHandleEventDispatch(t *testing.T) {
 	}
 
 	app.HandleEvent(&fugov1.ClientEvent{NodeId: strconv.FormatUint(uint64(id), 10), EventType: clickEvent})
+	pumpEvents(app)
 
 	if !clicked {
 		t.Error("expected button handler to fire for matching node id")
@@ -126,5 +135,61 @@ func TestHandlersConcurrentAccess(t *testing.T) {
 
 	if !ok {
 		t.Fatalf("handler for node %d went missing after concurrent access", id)
+	}
+}
+
+// TestClientDisconnectedDropsPendingReplies verifies a disconnect drops every
+// pending host-service callback instead of leaking it forever.
+func TestClientDisconnectedDropsPendingReplies(t *testing.T) {
+	app, stream, ctx := newHostTestApp()
+
+	called := false
+	ctx.Clipboard().Read(func(string) {
+		called = true
+	})
+
+	if host := stream.onlyHost(t); host.GetRequestId() == 0 {
+		t.Fatal("expected a pending request id")
+	}
+
+	app.hostMu.Lock()
+	pending := len(app.hostReqs)
+	app.hostMu.Unlock()
+	if pending != 1 {
+		t.Fatalf("pending = %d, want 1 before disconnect", pending)
+	}
+
+	app.ClientDisconnected()
+
+	app.hostMu.Lock()
+	pending = len(app.hostReqs)
+	app.hostMu.Unlock()
+	if pending != 0 {
+		t.Errorf("pending = %d after ClientDisconnected, want 0", pending)
+	}
+	if called {
+		t.Error("dropped callback must not fire")
+	}
+}
+
+// TestCollectHandlersPrunesStaleEntries verifies a fresh collection replaces —
+// not accumulates — the registry, so widgets that left the tree stop being
+// reachable and the map cannot grow without bound.
+func TestCollectHandlersPrunesStaleEntries(t *testing.T) {
+	app := NewApp(AppOptions{})
+
+	btn := fg.Button("x").OnClick(func(_ fg.Event) {})
+	_, m := fg.BuildTree(fg.Column(btn))
+	app.collectHandlers(m)
+	if len(app.handlers) != 1 {
+		t.Fatalf("after first collect: %d handlers, want 1", len(app.handlers))
+	}
+
+	// Second frame: the button is gone; an unrelated handlerless tree remains.
+	_, empty := fg.BuildTree(fg.Column(fg.Text("no handlers here")))
+	app.collectHandlers(empty)
+
+	if got := len(app.handlers); got != 0 {
+		t.Errorf("stale handler survived re-collection: %d entries remain", got)
 	}
 }

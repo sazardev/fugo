@@ -64,8 +64,16 @@ release: ## Fugo-only release against the same Flutter version: make release MSG
 	echo "=== Release v$$newver (Flutter $$base unchanged) ==="; \
 	echo "$$newver" > VERSION; \
 	date=$$(date -u '+%Y-%m-%d'); \
-	entry="## [$$newver] - $$date"; \
-	sed -i "s/^## \[Unreleased\]$$/## [Unreleased]\n\n$$entry\n\n### Added\n- $(MSG)/" CHANGELOG.md; \
+	MSG="$(MSG)" NEWVER="$$newver" RELDATE="$$date" awk ' \
+		/^## \[Unreleased\]$$/ { \
+			print; print ""; \
+			printf "## [%s] - %s\n\n", ENVIRON["NEWVER"], ENVIRON["RELDATE"]; \
+			print "### Added"; \
+			printf "- %s\n", ENVIRON["MSG"]; \
+			seen_added = 1; next \
+		} \
+		seen_added && /^### Added$$/ { seen_added = 0; next }  # collapse the old heading right below the new section \
+		{ print }' CHANGELOG.md > CHANGELOG.md.tmp && mv CHANGELOG.md.tmp CHANGELOG.md; \
 	git add VERSION CHANGELOG.md; \
 	git commit -m "release: v$$newver"; \
 	echo ""; \
@@ -82,8 +90,16 @@ release-flutter: ## Bump the targeted Flutter version: make release-flutter FLUT
 	echo "$(FLUTTER)" > FLUTTER_VERSION; \
 	echo "$$newver" > VERSION; \
 	date=$$(date -u '+%Y-%m-%d'); \
-	entry="## [$$newver] - $$date"; \
-	sed -i "s/^## \[Unreleased\]$$/## [Unreleased]\n\n$$entry\n\n### Changed\n- Bump the targeted Flutter version to $(FLUTTER). $(MSG)/" CHANGELOG.md; \
+	MSG="$(MSG)" NEWVER="$$newver" RELDATE="$$date" NEWFLUTTER="$(FLUTTER)" awk ' \
+		/^## \[Unreleased\]$$/ { \
+			print; print ""; \
+			printf "## [%s] - %s\n\n", ENVIRON["NEWVER"], ENVIRON["RELDATE"]; \
+			print "### Changed"; \
+			printf "- Bump the targeted Flutter version to %s. %s\n", ENVIRON["NEWFLUTTER"], ENVIRON["MSG"]; \
+			seen_changed = 1; next \
+		} \
+		seen_changed && /^### Changed$$/ { seen_changed = 0; next }  # collapse the old heading right below the new section \
+		{ print }' CHANGELOG.md > CHANGELOG.md.tmp && mv CHANGELOG.md.tmp CHANGELOG.md; \
 	git add VERSION FLUTTER_VERSION CHANGELOG.md; \
 	git commit -m "release: v$$newver (Flutter $(FLUTTER))"; \
 	echo ""; \

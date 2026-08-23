@@ -37,10 +37,18 @@ type Server struct {
 
 // AppHandler is the application-side contract the transport depends on. The
 // server forwards each inbound ClientEvent via HandleEvent and, when a client
-// connects, hands the outbound stream to the app via SetReconciler.
+// connects, hands the outbound stream to the app via SetReconciler. Apps may
+// additionally implement ClientDisconnected() (see DisconnectCleaner) to be
+// told when a client goes away.
 type AppHandler interface {
 	HandleEvent(ev *fugov1.ClientEvent)
 	SetReconciler(stream engine.RenderStream)
+}
+
+// DisconnectCleaner is the optional AppHandler extension notified when the
+// client's render stream ends.
+type DisconnectCleaner interface {
+	ClientDisconnected()
 }
 
 // NewServer returns a Server that routes events to and renders through app.
@@ -58,6 +66,16 @@ func (s *Server) RenderStream(stream fugov1.FugoRender_RenderStreamServer) error
 
 	flog.Infof("flutter client connected")
 
+	err := s.serveStream(stream)
+
+	if cleaner, ok := s.app.(DisconnectCleaner); ok {
+		cleaner.ClientDisconnected()
+	}
+
+	return err
+}
+
+func (s *Server) serveStream(stream fugov1.FugoRender_RenderStreamServer) error {
 	for {
 		event, err := stream.Recv()
 		if err != nil {

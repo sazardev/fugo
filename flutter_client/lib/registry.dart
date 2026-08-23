@@ -1272,13 +1272,9 @@ class WidgetRegistry {
   Widget _buildRadioListTile(BuildContext context, proto.WidgetNode node) {
     final props = proto.RadioListTileProps.fromBuffer(node.props);
 
-    return RadioListTile<String>(
-      title: Text(props.title),
-      subtitle: props.subtitle.isNotEmpty ? Text(props.subtitle) : null,
-      secondary: props.secondaryIcon.isNotEmpty
-          ? Icon(_mapIconData(props.secondaryIcon))
-          : null,
-      value: props.value,
+    // Flutter 3.32+ moved radio group state to the RadioGroup ancestor; the
+    // per-tile groupValue/onChanged pair is deprecated.
+    return RadioGroup<String>(
       groupValue: props.groupValue,
       onChanged: (value) {
         sendEvent(proto.ClientEvent(
@@ -1287,6 +1283,14 @@ class WidgetRegistry {
           eventData: props.value.codeUnits,
         ));
       },
+      child: RadioListTile<String>(
+        title: Text(props.title),
+        subtitle: props.subtitle.isNotEmpty ? Text(props.subtitle) : null,
+        secondary: props.secondaryIcon.isNotEmpty
+            ? Icon(_mapIconData(props.secondaryIcon))
+            : null,
+        value: props.value,
+      ),
     );
   }
 

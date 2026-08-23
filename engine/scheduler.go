@@ -17,11 +17,18 @@ import (
 // click) — it wakes the loop immediately so the change reaches the client
 // without waiting up to a full frame. Both priorities still coalesce: many
 // EnqueueNow calls in the same instant collapse into one flush.
+//
+// EnqueueTask is the third entry point and the threading contract for widget
+// mutations: it schedules a closure to run on the render goroutine immediately
+// before the next flush. Because retained-tree walks happen on that same
+// goroutine, mutations executed through EnqueueTask can never race a
+// concurrent BuildTree/Diff.
 type Scheduler struct {
 	interval time.Duration
 	mu       sync.Mutex
 	dirty    bool
 	flushFn  func()
+	tasks    []func()
 	ticker   *time.Ticker
 	wake     chan struct{}
 	done     chan struct{}
@@ -67,6 +74,36 @@ func (s *Scheduler) EnqueueNow() {
 	}
 }
 
+// EnqueueTask schedules fn to run on the render goroutine right before the
+// next flush, and marks the scheduler dirty so a flush follows the tasks.
+// This is the safe path for mutating retained widgets from any goroutine:
+// event dispatches and Context.Mutate both route through here, so widget
+// state is only ever written on the goroutine that also walks the tree.
+func (s *Scheduler) EnqueueTask(fn func()) {
+	s.mu.Lock()
+	s.tasks = append(s.tasks, fn)
+	s.dirty = true
+	s.mu.Unlock()
+
+	select {
+	case s.wake <- struct{}{}:
+	default:
+	}
+}
+
+// DrainTasks pops every queued mutation task so the caller can run them.
+// It exists so custom loops (and tests) can execute exactly what EnqueueTask
+// scheduled; the built-in loop calls it on the render goroutine before each
+// flush.
+func (s *Scheduler) DrainTasks() []func() {
+	s.mu.Lock()
+	tasks := s.tasks
+	s.tasks = nil
+	s.mu.Unlock()
+
+	return tasks
+}
+
 // Start begins the ticker and runs the flush loop in a background goroutine.
 func (s *Scheduler) Start() {
 	s.ticker = time.NewTicker(s.interval)
@@ -86,18 +123,29 @@ func (s *Scheduler) loop() {
 	}
 }
 
-// maybeFlush runs the flush function once if the scheduler is dirty, clearing
-// the dirty flag first so concurrent Enqueue calls during the flush schedule a
-// fresh flush rather than being lost.
+// maybeFlush drains queued mutation tasks and then runs the flush function
+// once if the scheduler is dirty. The dirty flag is cleared first so
+// concurrent Enqueue calls during the drain/flush schedule a fresh flush
+// rather than being lost.
 func (s *Scheduler) maybeFlush() {
 	s.mu.Lock()
 	shouldFlush := s.dirty && s.flushFn != nil
 	s.dirty = false
 	s.mu.Unlock()
 
+	for _, fn := range s.DrainTasks() {
+		fn()
+	}
+
 	if shouldFlush {
 		s.flushFn()
 	}
+}
+
+// MaybeFlushForTest runs one drain+flush cycle synchronously. Production code
+// uses Start; this exists for tests and custom-driven loops.
+func (s *Scheduler) MaybeFlushForTest() {
+	s.maybeFlush()
 }
 
 // Stop halts the flush loop and stops the underlying ticker.

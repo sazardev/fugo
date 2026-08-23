@@ -17,8 +17,9 @@ import (
 // matching — see flutter_client's shortcut listener).
 //
 // Calling this again replaces the previous set entirely; it is not additive.
-// Handlers run on the event goroutine, so they may mutate widgets and call
-// Context.Update, exactly like a widget event handler.
+// Handlers run serialized on the render goroutine (queued via the scheduler),
+// so they may mutate widgets and call Context.Update exactly like a widget
+// event handler — never concurrently with a tree flush.
 func (c *Context) RegisterShortcuts(bindings map[string]func()) {
 	c.app.shortcutsMu.Lock()
 	c.app.shortcuts = bindings
@@ -39,7 +40,7 @@ func (c *Context) RegisterShortcuts(bindings map[string]func()) {
 // the new size — there is no other channel back for Go to learn the client's
 // viewport dimensions (the widget tree is built before anything is measured).
 // Calling this again replaces the previous callback; passing nil disables it.
-// It runs on the event goroutine, so it may mutate widgets and call
+// It runs on the render goroutine, so it may mutate widgets and call
 // Context.Update.
 func (c *Context) OnResize(fn func(width, height float64)) {
 	c.app.resizeMu.Lock()
@@ -51,7 +52,7 @@ func (c *Context) OnResize(fn func(width, height float64)) {
 // the OS onto the client window — the one channel back for Go to learn about
 // a drag-and-drop that originates outside the app. Calling this again
 // replaces the previous callback; passing nil disables it. It runs on the
-// event goroutine, so it may mutate widgets and call Context.Update.
+// render goroutine, so it may mutate widgets and call Context.Update.
 func (c *Context) OnFileDrop(fn func(paths []string)) {
 	c.app.fileDropMu.Lock()
 	c.app.fileDropHandler = fn
