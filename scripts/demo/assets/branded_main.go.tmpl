@@ -1,0 +1,37 @@
+// Command __MODULE__ is a Fugo app: Go owns all logic, state and routing; a
+// precompiled Flutter binary renders the UI over a local gRPC stream.
+package main
+
+import (
+	"github.com/sazardev/fugo"
+	"github.com/sazardev/fugo/fg"
+
+	"__MODULE__/ui"
+)
+
+func main() {
+	// Fugo brand theme — same ember/flame tokens as the project's GitHub
+	// Pages site (site/styles.css), so the demo app and the site read as
+	// the same product: flat corners (no border-radius, ever), warm
+	// near-black surfaces, one flame-orange accent.
+	theme := fg.DarkTheme()
+	theme.Colors = fg.ThemeColors{
+		Primary:    fg.Hex("#FF6A1A"), // flame-core
+		Secondary:  fg.Hex("#C7350C"), // ember-deep
+		Background: fg.Hex("#121110"), // site --bg (dark)
+		Surface:    fg.Hex("#181510"), // site --bg-elevated / --bg-card
+		Error:      fg.Hex("#DC2626"),
+		Success:    fg.Hex("#FFB238"), // flame-bright
+		OnPrimary:  fg.Hex("#1A1006"), // site's on-flame text color
+		OnSurface:  fg.Hex("#ECE6D9"), // site --ink
+		Muted:      fg.Hex("#8C8271"), // site --ink-dim
+		Border:     fg.Hex("#292319"), // site --line
+	}
+	theme.Radius = fg.ThemeRadius{SM: 0, MD: 0, LG: 0}
+	theme.Components.CardRadius = 0
+	theme.Components.ButtonRadius = 0
+	fg.UseTheme(theme)
+
+	// Window title/size and the gRPC address are read from fugo.toml.
+	fugo.RunStandalone(fugo.ConfigOptions("fugo.toml"), ui.Build)
+}

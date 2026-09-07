@@ -21,7 +21,7 @@ else
 	DART_PROTOC_PLUGIN := $(HOME)/.pub-cache/bin/protoc-gen-dart
 endif
 
-.PHONY: help test bench build clean lint vet version changelog release release-flutter install install-tools push pr pr-merge pr-list pr-update proto proto-tools gen-widgets flutter-build spike run run-spike cli cli-test install-cli
+.PHONY: help test bench build clean lint vet version changelog release release-flutter install install-tools push pr pr-merge pr-list pr-update proto proto-tools gen-widgets flutter-build spike run run-spike cli cli-test install-cli demo demo-record demo-post
 
 help:
 	@grep -E '^[a-zA-Z/_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -239,3 +239,24 @@ cli-test: cli ## Build CLI + create test project (init -> build)
 	cmd /c "if exist testapp rmdir /s /q testapp"
 	.\bin\fugo.exe init testapp
 	cd testapp && go build -o bin\app.exe .
+
+demo-record: cli ## Record the headless demo video (Linux only: Xvfb + ffmpeg x11grab)
+	@if [ "$$(uname)" != "Linux" ]; then \
+		echo "ERROR: demo recording needs Linux (Xvfb/x11grab)."; exit 1; \
+	fi
+	@if [ ! -x flutter_client/build/linux/x64/release/bundle/fugo_flutter_client ]; then \
+		echo "=== Building Flutter client (linux --release) ==="; \
+		cd flutter_client && flutter build linux --release; \
+	fi
+	scripts/demo/record-demo.sh
+
+demo-post: ## Cut the newest raw demo recording into the branded final video
+	@raw=$$(ls -t scripts/demo/out/fugo-demo-raw*.mp4 2>/dev/null | head -1); \
+	if [ -z "$$raw" ]; then \
+		echo "No raw recording in scripts/demo/out/ — run 'make demo-record' first."; \
+		exit 1; \
+	fi; \
+	scripts/demo/postprocess.sh "$$raw"
+
+demo: demo-record ## Record + post-process the demo video in one shot
+	@scripts/demo/postprocess.sh "$$(ls -t scripts/demo/out/fugo-demo-raw*.mp4 2>/dev/null | head -1)"

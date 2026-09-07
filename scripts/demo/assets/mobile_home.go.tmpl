@@ -1,0 +1,92 @@
+// Package ui holds the app's screens.
+package ui
+
+import (
+	"fmt"
+	"strconv"
+
+	"github.com/sazardev/fugo"
+	"github.com/sazardev/fugo/fg"
+)
+
+// Build is the app's root: one mobile-style scaffold — an app bar, a
+// scrollable task list, a FAB that adds tasks live, and a bottom nav that
+// switches between three tabs. No fg.Router: tab switching here just
+// swaps the body's SizedBox.Child and calls ctx.Update(), the same
+// retained-tree pattern as any other live mutation.
+func Build(ctx *fugo.Context) fg.Widget {
+	t := fg.CurrentTheme()
+
+	tasks := []string{"Diseñar el logo", "Conectar el backend", "Grabar el demo"}
+
+	taskList := func() fg.Widget {
+		var items []fg.Widget
+		for _, task := range tasks {
+			items = append(items,
+				fg.Card(
+					fg.ListTile(task).
+						Leading(fg.Icons.CheckCircleOutline).
+						Trailing(fg.Icons.ChevronRight),
+				),
+				fg.SizedBox(0, t.Spacing.SM),
+			)
+		}
+
+		return fg.PaddingAll(fg.ScrollView(fg.Column(items...)), t.Spacing.MD)
+	}
+
+	statsPage := func() fg.Widget {
+		return fg.Center(fg.Column(
+			fg.Text(fmt.Sprintf("%d", len(tasks))).FontSize(t.Typography.Heading*2).Weight(fg.WeightBold).Color(t.Colors.Primary),
+			fg.SizedBox(0, t.Spacing.SM),
+			fg.Text("tareas activas").Color(t.Colors.Muted),
+			fg.SizedBox(0, t.Spacing.LG),
+			fg.Row(
+				fg.Chip("Fugo"),
+				fg.SizedBox(t.Spacing.SM, 0),
+				fg.Chip("Go"),
+				fg.SizedBox(t.Spacing.SM, 0),
+				fg.Chip("Flutter"),
+			),
+		))
+	}
+
+	profilePage := func() fg.Widget {
+		return fg.Center(fg.Column(
+			fg.Icon(fg.Icons.AccountCircle).Size(72).Color(t.Colors.Primary),
+			fg.SizedBox(0, t.Spacing.SM),
+			fg.Text("Demo User").FontSize(t.Typography.Heading).Weight(fg.WeightBold),
+			fg.Text("built with Fugo").Color(t.Colors.Muted),
+		))
+	}
+
+	pages := []func() fg.Widget{taskList, statsPage, profilePage}
+	content := fg.SizedBox(0, 0).Child(taskList())
+
+	fab := fg.FloatingActionButton(fg.Icons.Add).OnClick(func(_ fg.Event) {
+		tasks = append(tasks, fmt.Sprintf("Nueva tarea #%d", len(tasks)+1))
+		content.Child(taskList())
+		ctx.Update()
+	})
+
+	nav := fg.NavigationBar().
+		Item(fg.Icons.CheckCircle, "Tasks").
+		Item(fg.Icons.BarChart, "Stats").
+		Item(fg.Icons.Person, "Profile")
+	nav.OnChange(func(e fg.Event) {
+		idx, err := strconv.Atoi(string(e.Data))
+		if err != nil || idx < 0 || idx >= len(pages) {
+			return
+		}
+		content.Child(pages[idx]())
+		ctx.Update()
+	})
+
+	appBar := fg.AppBar("Tasks").
+		Actions(fg.IconButton(fg.Icons.Notifications).OnClick(func(_ fg.Event) {}))
+
+	return fg.Scaffold(content).
+		AppBar(appBar).
+		FAB(fab).
+		BottomBar(nav)
+}
